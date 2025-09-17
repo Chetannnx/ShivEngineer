@@ -4,6 +4,9 @@ body {
   background: #F5F5F5;
 }
 
+h2{
+  text-align: center;
+}
 /* === NAVBAR STYLES === */
 nav {
   padding: 12px 30px;

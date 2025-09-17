@@ -182,7 +182,7 @@ const totalCardHTML = `
   </form>
   <div>
     Show
-    <select onchange="window.location='/tees?page=1&limit='+this.value+'&search=${encodedSearch}&showAll=${showAll ? 'on' : ''}&sortBy=${rawSortBy}&order=${order}'" style="margin-left:6px; padding:4px; width:55px; border-radius:8px;">
+    <select onchange="window.location='/tees?page=1&limit='+this.value+'&search=${encodedSearch}&showAll=${showAll ? 'on' : ''}&sortBy=${rawSortBy}&order=${order}'" style="margin-left:6px; padding:4px; width:55px; border-radius:8px;flex-wrap: wrap;overflow: auto;">
       <option value="5" ${limit===5?'selected':''}>5</option>
       <option value="10" ${limit===10?'selected':''}>10</option>
       <option value="20" ${limit===20?'selected':''}>20</option>
