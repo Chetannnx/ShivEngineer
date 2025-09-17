@@ -8,7 +8,7 @@ router.get('/', (req, res) => {
 <html>
 <head>
   <title>Home</title>
-  <link rel="stylesheet" href="/Page.css">
+  <link rel="stylesheet" href="/Css/Home.css">
   <link href='https://fonts.googleapis.com/css?family=DM Sans' rel='stylesheet'>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">

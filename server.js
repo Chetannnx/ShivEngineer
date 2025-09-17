@@ -10,6 +10,7 @@ app.use(express.json());
 // ✅ Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 
+
 // ✅ Connection pool once (shared everywhere)
 const poolPromise = sql.connect(config).then(pool => {
   console.log('✅ Connected to SQL Server');
