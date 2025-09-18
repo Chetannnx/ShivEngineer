@@ -107,7 +107,14 @@ router.get('/', (req, res) => {
     </div>
 
     <div>
-      <div class="form-group"><label>Blacklist Status :</label><input name="BLACKLIST_STATUS" type="text" value="${truckData.BLACKLIST_STATUS ?? ''}" readonly></div>
+<div class="form-group">
+  <label for="blacklistStatus">Blacklist Status :</label>
+  <select name="BLACKLIST_STATUS" id="blacklistStatus" disabled>
+    <option value="">-- Select --</option>
+    <option value="1" ${truckData.BLACKLIST_STATUS == 1 ? 'selected' : ''}>Blacklist</option>
+    <option value="0" ${truckData.BLACKLIST_STATUS == 0 ? 'selected' : ''}>Not_Blacklist</option>
+  </select>
+</div>
       <div class="form-group"><label>Reason For Blacklist :</label><input name="REASON_FOR_BLACKLIST" type="text" value="${truckData.REASON_FOR_BLACKLIST ?? ''}" readonly></div>
       <div class="form-group"><label>Safety Cer. Valid Upto :</label><input name="SAFETY_CERTIFICATION_NO" type="text" value="${truckData.SAFETY_CERTIFICATION_NO ?? ''}" readonly></div>
       <div class="form-group"><label>Calibration Cer. Valid Upto :</label><input name="CALIBRATION_CERTIFICATION_NO" type="text" value="${truckData.CALIBRATION_CERTIFICATION_NO ?? ''}" readonly></div>
@@ -137,7 +144,14 @@ router.get('/', (req, res) => {
         <input name="TRUCK_REG_NO" value="${truckRegNo}" readonly>
       </div>
       <div class="form-group"><label>Trailer no:</label><input name="TRAILER_NO" required></div>
-      <div class="form-group"><label>Blacklist Status:</label><input name="BLACKLIST_STATUS" required></div>
+      <div class="form-group">
+  <label for="blacklistStatusPopup">Blacklist Status:</label>
+  <select name="BLACKLIST_STATUS" id="blacklistStatusPopup" required>
+    <option value="">-- Select --</option>
+    <option value="1">Blacklist</option>
+    <option value="0">Not_Blacklist</option>
+  </select>
+</div>
       <div class="form-group"><label>Owner Name:</label><input name="OWNER_NAME" required></div>
       <div class="form-group"><label>Reason for Blacklist:</label><input name="REASON_FOR_BLACKLIST" required></div>
       <div class="form-group"><label>Driver Name:</label><input name="DRIVER_NAME" required></div>
@@ -249,7 +263,7 @@ saveBtn?.addEventListener('click', async (e) => {
   e.preventDefault();
   const data = {};
   inputs.forEach(input => {
-    if(input.name === 'TRUCK_SEALING_REQUIREMENT'){
+    if(input.name === 'TRUCK_SEALING_REQUIREMENT' || input.name === 'BLACKLIST_STATUS'){
       data[input.name] = parseInt(input.value); // convert "0"/"1" to number
     } else {
       data[input.name] = input.value;
@@ -346,7 +360,7 @@ router.post('/insert-truck', async (req, res) => {
       .input('HELPER_NAME', sql.VarChar, data.HELPER_NAME)
       .input('CARRIER_COMPANY', sql.VarChar, data.CARRIER_COMPANY)
       .input('TRUCK_SEALING_REQUIREMENT', sql.Bit, truckSealingReq) // ✅ FIXED NAME
-      .input('BLACKLIST_STATUS', sql.VarChar, data.BLACKLIST_STATUS)
+      .input('BLACKLIST_STATUS', sql.Bit, data.BLACKLIST_STATUS)
       .input('REASON_FOR_BLACKLIST', sql.VarChar, data.REASON_FOR_BLACKLIST)
       .input('SAFETY_CERTIFICATION_NO', sql.Date, data.SAFETY_CERTIFICATION_NO)
       .input('CALIBRATION_CERTIFICATION_NO', sql.Date, data.CALIBRATION_CERTIFICATION_NO)
@@ -390,7 +404,7 @@ router.put('/update-truck', async (req, res) => {
       .input('HELPER_NAME', sql.VarChar, data.HELPER_NAME)
       .input('CARRIER_COMPANY', sql.VarChar, data.CARRIER_COMPANY)
       .input('TRUCK_SEALING_REQUIREMENT', sql.Bit, truckSealingReq) // ✅ FIXED NAME
-      .input('BLACKLIST_STATUS', sql.VarChar, data.BLACKLIST_STATUS)
+      .input('BLACKLIST_STATUS', sql.Bit, data.BLACKLIST_STATUS)
       .input('REASON_FOR_BLACKLIST', sql.VarChar, data.REASON_FOR_BLACKLIST)
       .input('SAFETY_CERTIFICATION_NO', sql.Date, data.SAFETY_CERTIFICATION_NO)
       .input('CALIBRATION_CERTIFICATION_NO', sql.Date, data.CALIBRATION_CERTIFICATION_NO)
