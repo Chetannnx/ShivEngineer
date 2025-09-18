@@ -153,7 +153,7 @@ router.get('/', (req, res) => {
   </select>
 </div>
       <div class="form-group"><label>Owner Name:</label><input name="OWNER_NAME" required></div>
-      <div class="form-group"><label>Reason for Blacklist:</label><input name="REASON_FOR_BLACKLIST" required></div>
+      <div class="form-group"><label>Reason for Blacklist:</label><input name="REASON_FOR_BLACKLIST" id="reasonBlacklistPopup" required></div>
       <div class="form-group"><label>Driver Name:</label><input name="DRIVER_NAME" required></div>
       <div class="form-group"><label>Safety Cert. Valid Upto:</label><input type="date" name="SAFETY_CERTIFICATION_NO" required></div>
       <div class="form-group"><label>Helper Name:</label><input name="HELPER_NAME" required></div>
@@ -241,6 +241,42 @@ const cancelBtn = document.getElementById('cancelBtn');
 // include selects too
 const inputs = document.querySelectorAll('.form-container input, .form-container select');
 
+// ===== Add this block here =====
+const blacklistSelect = document.querySelector('select[name="BLACKLIST_STATUS"]');
+const reasonInput = document.querySelector('input[name="REASON_FOR_BLACKLIST"]');
+
+const insertFormBlacklist = document.querySelector('#insertForm select[name="BLACKLIST_STATUS"]');
+const insertFormReason = document.querySelector('#insertForm input[name="REASON_FOR_BLACKLIST"]');
+
+function toggleInsertReasonField() {
+  if (insertFormBlacklist.value === "1") {
+    insertFormReason.removeAttribute('readonly');
+  } else {
+    insertFormReason.setAttribute('readonly', true);
+    insertFormReason.value = ''; // optional: clear if Not_Blacklist
+  }
+}
+
+toggleInsertReasonField();
+
+insertFormBlacklist?.addEventListener('change', toggleInsertReasonField);
+
+function toggleReasonField() {
+  if (blacklistSelect.value === "1") {
+    reasonInput.removeAttribute('readonly');
+  } else {
+    reasonInput.setAttribute('readonly', true);
+    reasonInput.value = ''; // optional: clear if Not_Blacklist
+  }
+}
+
+// Run on page load in case existing data is Blacklist
+
+
+// Run whenever Blacklist dropdown changes
+
+// ===== End of block =====
+
 editBtn?.addEventListener('click', (e) => {
   e.preventDefault();
   inputs.forEach(input => {
@@ -249,6 +285,8 @@ editBtn?.addEventListener('click', (e) => {
       if(input.tagName === 'SELECT') input.disabled = false; // select fields
     }
   });
+  toggleReasonField(); // make sure reason field is correct after clicking Edit
+  blacklistSelect?.addEventListener('change', toggleReasonField);
   editBtn.style.display = 'none';
   saveBtn.style.display = 'inline-block';
   cancelBtn.style.display = 'inline-block';
