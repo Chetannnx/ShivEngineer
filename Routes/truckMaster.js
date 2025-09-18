@@ -83,28 +83,38 @@ router.get('/', (req, res) => {
   <form method="GET" action="/truck-master" style="text-align:center; margin:20px;">
       <input id="TRUCK_REG_NO" style="font-family: 'DM Sans', sans-serif;" type="text" name="truck" placeholder="Enter Truck Reg No" value="${truckRegNo ?? ''}" required>
       <button style="font-family: 'DM Sans', sans-serif;" type="submit">Submit</button>
+      <a href="/truck-master" class="btn-reset">Refresh</a>
   </form>
+  
 
   <div class="form-container">
     <div>
-      <div class="form-group"><label>Truck Number :</label><input type="text" value="${truckData.TRUCK_REG_NO ?? ''}" readonly></div>
-      <div class="form-group"><label>Owner Name :</label><input type="text" value="${truckData.OWNER_NAME ?? ''}" readonly></div>
-      <div class="form-group"><label>Driver Name :</label><input type="text" value="${truckData.DRIVER_NAME ?? ''}" readonly></div>
-      <div class="form-group"><label>Helper Name :</label><input type="text" value="${truckData.HELPER_NAME ?? ''}" readonly></div>
-      <div class="form-group"><label>Carrier Company :</label><input type="text" value="${truckData.CARRIER_COMPANY ?? ''}" readonly></div>
-      <div class="form-group"><label>TRUCK SEALING REQUIREMENT :</label><input type="text" value="${truckData.TRUCK_SEALING_REQUIREMENT ?? ''}" readonly></div>
+      <div class="form-group"><label>Truck Number :</label><input name="TRUCK_REG_NO" type="text" value="${truckData.TRUCK_REG_NO ?? ''}" readonly></div>
+      <div class="form-group"><label>Owner Name :</label><input name="OWNER_NAME" type="text" value="${truckData.OWNER_NAME ?? ''}" readonly></div>
+      <div class="form-group"><label>Driver Name :</label><input name="DRIVER_NAME" type="text" value="${truckData.DRIVER_NAME ?? ''}" readonly></div>
+      <div class="form-group"><label>Helper Name :</label><input name="HELPER_NAME" type="text" value="${truckData.HELPER_NAME ?? ''}" readonly></div>
+      <div class="form-group"><label>Carrier Company :</label><input name="CARRIER_COMPANY" type="text" value="${truckData.CARRIER_COMPANY ?? ''}" readonly></div>
+      <div class="form-group"><label>TRUCK SEALING REQUIREMENT :</label><input name="TRUCK_SEALING_REQUIREMENT" type="text" value="${truckData.TRUCK_SEALING_REQUIREMENT ?? ''}" readonly></div>
     </div>
 
     <div>
-      <div class="form-group"><label>Blacklist Status :</label><input type="text" value="${truckData.BLACKLIST_STATUS ?? ''}" readonly></div>
-      <div class="form-group"><label>Reason For Blacklist :</label><input type="text" value="${truckData.REASON_FOR_BLACKLIST ?? ''}" readonly></div>
-      <div class="form-group"><label>Safety Cer. Valid Upto :</label><input type="text" value="${truckData.SAFETY_CERTIFICATION_NO ?? ''}" readonly></div>
-      <div class="form-group"><label>Calibration Cer. Valid Upto :</label><input type="text" value="${truckData.CALIBRATION_CERTIFICATION_NO ?? ''}" readonly></div>
-      <div class="form-group"><label>Tare Weight :</label><input type="text" value="${truckData.TARE_WEIGHT ?? ''}" readonly></div>
-      <div class="form-group"><label>Max Weight :</label><input type="text" value="${truckData.MAX_WEIGHT ?? ''}" readonly></div>
-      <div class="form-group"><label>Max Fuel Capacity :</label><input type="text" value="${truckData.MAX_FUEL_CAPACITY ?? ''}" readonly></div>
+      <div class="form-group"><label>Blacklist Status :</label><input name="BLACKLIST_STATUS" type="text" value="${truckData.BLACKLIST_STATUS ?? ''}" readonly></div>
+      <div class="form-group"><label>Reason For Blacklist :</label><input name="REASON_FOR_BLACKLIST" type="text" value="${truckData.REASON_FOR_BLACKLIST ?? ''}" readonly></div>
+      <div class="form-group"><label>Safety Cer. Valid Upto :</label><input name="SAFETY_CERTIFICATION_NO" type="text" value="${truckData.SAFETY_CERTIFICATION_NO ?? ''}" readonly></div>
+      <div class="form-group"><label>Calibration Cer. Valid Upto :</label><input name="CALIBRATION_CERTIFICATION_NO" type="text" value="${truckData.CALIBRATION_CERTIFICATION_NO ?? ''}" readonly></div>
+      <div class="form-group"><label>Tare Weight :</label><input name="TARE_WEIGHT" type="text" value="${truckData.TARE_WEIGHT ?? ''}" readonly></div>
+      <div class="form-group"><label>Max Weight :</label><input name="MAX_WEIGHT" type="text" value="${truckData.MAX_WEIGHT ?? ''}" readonly></div>
+      <div class="form-group"><label>Max Fuel Capacity :</label><input name="MAX_FUEL_CAPACITY" type="text" value="${truckData.MAX_FUEL_CAPACITY ?? ''}" readonly></div>
     </div>
   </div>
+
+  <div class="button-container" style="margin: 20px; text-align: left;">
+    <button class="action-btn" id="editBtn">Edit</button>
+    <button class="action-btn hidden" id="saveBtn" style="padding: 8px 16px; border-radius: 8px; display:none;">Save</button>
+    <button class="action-btn hidden" id="cancelBtn" style="padding: 8px 16px; border-radius: 8px; display:none;">Cancel</button>
+    <button class="action-btn" id="deleteBtn" style="background-color: #ff4d4d; color: white;">Delete</button>
+  </div>
+
 
   ${showInsertForm ? `
   <div class="popup" id="popup">
@@ -154,6 +164,8 @@ router.get('/', (req, res) => {
 })();
 </script>
 
+
+
   <script>
     const form = document.getElementById('insertForm');
     if(form){
@@ -188,6 +200,105 @@ router.get('/', (req, res) => {
      maxInput.addEventListener('input', calculateFuel);
    }
   </script>
+
+  
+<script>
+const editBtn = document.getElementById('editBtn');
+const saveBtn = document.getElementById('saveBtn');
+const cancelBtn = document.getElementById('cancelBtn');
+const inputs = document.querySelectorAll('.form-container input');
+
+editBtn?.addEventListener('click', (e) => {
+  e.preventDefault(); // ✅ Prevent form submission
+  console.log("✏️ Edit button clicked, enabling inputs...");
+  inputs.forEach(input => {
+    if (input.name !== "TRUCK_REG_NO") {
+      input.removeAttribute('readonly'); // ✅ Make everything except truck number editable
+    }
+  });
+  editBtn.style.display = 'none';
+  saveBtn.style.display = 'inline-block';
+  cancelBtn.style.display = 'inline-block';
+});
+
+cancelBtn?.addEventListener('click', (e) => {
+  e.preventDefault();
+  console.log("↩️ Cancel clicked, reloading page...");
+  window.location.reload(); // Just reload to reset values
+});
+
+saveBtn?.addEventListener('click', async (e) => {
+  e.preventDefault();
+  console.log("💾 Save button clicked, collecting data...");
+
+  const data = {};
+  inputs.forEach(input => data[input.name] = input.value); // ✅ Use name attribute
+
+  console.log("📤 Sending data to server:", data);
+
+  try {
+    const res = await fetch('/truck-master/update-truck', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+
+    if (res.ok) {
+      alert('Truck updated successfully');
+      window.location.reload();
+    } else {
+      const errorText = await res.text();
+      console.error("❌ Server responded with error:", errorText);
+      alert('Error updating data: ' + errorText);
+    }
+  } catch (err) {
+    console.error("🚨 Network/Fetch error:", err);
+    alert('Failed to reach server.');
+  }
+});
+</script>
+
+
+<script>
+var deleteBtn = document.getElementById('deleteBtn');
+
+if (deleteBtn) {
+  deleteBtn.addEventListener('click', function (e) {
+    e.preventDefault();
+
+    var truckRegNoInput = document.querySelector('input[name="TRUCK_REG_NO"]');
+    var truckRegNo = truckRegNoInput ? truckRegNoInput.value : '';
+
+    if (!truckRegNo) {
+      alert("No truck selected for deletion!");
+      return;
+    }
+
+    var confirmDelete = confirm("Are you sure you want to delete Truck: " + truckRegNo + "?");
+    if (!confirmDelete) return;
+
+    fetch('/truck-master/delete-truck/' + encodeURIComponent(truckRegNo), {
+      method: 'DELETE'
+    })
+      .then(function (res) {
+        if (res.ok) {
+          alert('Truck deleted successfully');
+          window.location.href = '/truck-master';
+        } else {
+          return res.text().then(function (errorText) {
+            console.error("❌ Server responded with error:", errorText);
+            alert('Error deleting data: ' + errorText);
+          });
+        }
+      })
+      .catch(function (err) {
+        console.error("🚨 Network/Fetch error:", err);
+        alert('Failed to reach server.');
+      });
+  });
+}
+</script>
+
 
 </body>
 </html>`;
@@ -238,6 +349,81 @@ router.post('/insert-truck', express.json(), async (req, res) => {
   } catch (err) {
     console.error('Error inserting truck:', err);
     res.status(500).send('Error inserting data');
+  }
+
+});
+
+  // ====== UPDATE TRUCK API ======
+router.put('/update-truck', express.json(), async (req, res) => {
+  try {
+    const pool = await sql.connect(dbConfig);
+    const data = req.body;
+
+    console.log("🟢 Update request received:", data); // <-- LOG FULL DATA
+
+    const result = await pool.request()
+      .input('TRUCK_REG_NO', sql.VarChar, data.TRUCK_REG_NO)
+      .input('OWNER_NAME', sql.VarChar, data.OWNER_NAME)
+      .input('DRIVER_NAME', sql.VarChar, data.DRIVER_NAME)
+      .input('HELPER_NAME', sql.VarChar, data.HELPER_NAME)
+      .input('CARRIER_COMPANY', sql.VarChar, data.CARRIER_COMPANY)
+      .input('TRUCK_SEALING_REQUIREMENT', sql.VarChar, data.TRUCK_SEALING_REQUIREMENT)
+      .input('BLACKLIST_STATUS', sql.VarChar, data.BLACKLIST_STATUS)
+      .input('REASON_FOR_BLACKLIST', sql.VarChar, data.REASON_FOR_BLACKLIST)
+      .input('SAFETY_CERTIFICATION_NO', sql.Date, data.SAFETY_CERTIFICATION_NO)
+      .input('CALIBRATION_CERTIFICATION_NO', sql.Date, data.CALIBRATION_CERTIFICATION_NO)
+      .input('TARE_WEIGHT', sql.Decimal(10, 4), data.TARE_WEIGHT || 0)
+      .input('MAX_WEIGHT', sql.Decimal(10, 4), data.MAX_WEIGHT || 0)
+      .input('MAX_FUEL_CAPACITY', sql.Decimal(10, 4), data.MAX_FUEL_CAPACITY || 0)
+      .query(`
+        UPDATE TRUCK_MASTER SET
+          OWNER_NAME = @OWNER_NAME,
+          DRIVER_NAME = @DRIVER_NAME,
+          HELPER_NAME = @HELPER_NAME,
+          CARRIER_COMPANY = @CARRIER_COMPANY,
+          TRUCK_SEALING_REQUIREMENT = @TRUCK_SEALING_REQUIREMENT,
+          BLACKLIST_STATUS = @BLACKLIST_STATUS,
+          REASON_FOR_BLACKLIST = @REASON_FOR_BLACKLIST,
+          SAFETY_CERTIFICATION_NO = @SAFETY_CERTIFICATION_NO,
+          CALIBRATION_CERTIFICATION_NO = @CALIBRATION_CERTIFICATION_NO,
+          TARE_WEIGHT = @TARE_WEIGHT,
+          MAX_WEIGHT = @MAX_WEIGHT,
+          MAX_FUEL_CAPACITY = @MAX_FUEL_CAPACITY
+        WHERE TRUCK_REG_NO = @TRUCK_REG_NO
+      `);
+
+    console.log("✅ Rows affected:", result.rowsAffected);
+
+    if (result.rowsAffected[0] === 0) {
+      console.warn("⚠️ No rows updated. Check TRUCK_REG_NO value!");
+      return res.status(404).send("No matching truck found");
+    }
+
+    res.status(200).send('Updated successfully');
+  } catch (err) {
+    console.error('❌ Error updating truck:', err); // <-- Will show exact SQL error
+    res.status(500).send('Error updating data: ' + err.message); // <-- send error to frontend
+  }
+});
+
+// ====== DELETE TRUCK API ======
+router.delete('/delete-truck/:truckRegNo', async (req, res) => {
+  try {
+    const pool = await sql.connect(dbConfig);
+    const truckRegNo = req.params.truckRegNo;
+
+    const result = await pool.request()
+      .input('TRUCK_REG_NO', sql.VarChar, truckRegNo)
+      .query(`DELETE FROM TRUCK_MASTER WHERE TRUCK_REG_NO = @TRUCK_REG_NO`);
+
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).send('Truck not found');
+    }
+
+    res.status(200).send('Deleted successfully');
+  } catch (err) {
+    console.error('❌ Error deleting truck:', err);
+    res.status(500).send('Error deleting data: ' + err.message);
   }
 });
 

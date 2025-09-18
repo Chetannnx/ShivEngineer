@@ -22,7 +22,7 @@ router.get('/', (req, res) => {
       <li><a href="/contact">Contact</a></li>
     </ul>
   </nav>
-  <h2 style="font-family: 'DM Sans', sans-serif;">Welcome to Home Page</h2>
+  <h2 style="font-family: 'DM Sans', sans-serif;">SHIV ENGINEERING</h2>
 </body>
 </html>`;
     res.send(html);

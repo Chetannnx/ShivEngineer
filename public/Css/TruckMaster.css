@@ -261,7 +261,7 @@ input[type="text"]{
   box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.08);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border-radius:10px;
+  border-radius: 12px;
 }
 
 /* Each Form Group */
@@ -486,4 +486,50 @@ input{
 .form-container input {
   font-family: inherit; /* makes inputs use the same font */
   border-radius: 6px; /* optional: rounded input corners */
+}
+
+/* Container styling */
+.button-container {
+  margin: 20px;
+  text-align: left;
+  font-family: Roboto, Helvetica, sans-serif;
+  padding-left: 330px;
+}
+
+/* Button styling */
+.action-btn {
+  font-family: Roboto, Helvetica, sans-serif;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  background: #6571ff; /* Blue color */
+  color: white;
+  cursor: pointer;
+  margin-right: 8px;
+  transition: background-color 0.3s ease;
+  border-radius: 12px;
+}
+.action-btn hidden{
+  border-radius: 12px;
+}
+
+.hidden {
+  display: none;
+  border-radius: 12px;
+}
+
+a.btn-reset {
+  display: inline-block;
+  padding-left: 10px;
+  padding-right: 10px;
+  color:#1e3a8a;
+  font-size: 17px;
+  font-weight: 800;
+  font-family: 'DM Sans', sans-serif;
+  text-decoration: none;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+a.btn-reset:hover {
+  transform: scale(1.05);
 }

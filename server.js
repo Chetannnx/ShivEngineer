@@ -28,10 +28,11 @@ app.use('/', require('./Routes/home'));
 app.use('/tees', require('./Routes/tees'));
 app.use('/', require('./Routes/tees')); // ✅ mounts routes globally
 app.use('/truckmaster', require('./Routes/truckMaster'));
-const truckMasterRoutes = require('./Routes/truckMaster');
+//const truckMasterRoutes = require('./Routes/truckMaster');
 app.use('/truck-master', require('./Routes/truckMaster'));
 
-app.use('/truck-master', truckMasterRoutes); // ✅ must match your URL
+const truckMasterRouter = require('./Routes/truckMaster');
+app.use('/truck-master', truckMasterRouter);
 
 
 
