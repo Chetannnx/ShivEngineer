@@ -30,6 +30,7 @@ router.get('/', (req, res) => {
 
       let truckData = {
         TRUCK_REG_NO: truckRegNo || '',
+        TRAILER_NO:'',
         OWNER_NAME: '',
         DRIVER_NAME: '',
         HELPER_NAME: '',
@@ -90,11 +91,19 @@ router.get('/', (req, res) => {
   <div class="form-container">
     <div>
       <div class="form-group"><label>Truck Number :</label><input name="TRUCK_REG_NO" type="text" value="${truckData.TRUCK_REG_NO ?? ''}" readonly></div>
+      <div class="form-group"><label>Trailer no :</label><input name="TRAILER_NO" type="text" value="${truckData.TRAILER_NO ?? ''}" readonly></div>
       <div class="form-group"><label>Owner Name :</label><input name="OWNER_NAME" type="text" value="${truckData.OWNER_NAME ?? ''}" readonly></div>
       <div class="form-group"><label>Driver Name :</label><input name="DRIVER_NAME" type="text" value="${truckData.DRIVER_NAME ?? ''}" readonly></div>
       <div class="form-group"><label>Helper Name :</label><input name="HELPER_NAME" type="text" value="${truckData.HELPER_NAME ?? ''}" readonly></div>
       <div class="form-group"><label>Carrier Company :</label><input name="CARRIER_COMPANY" type="text" value="${truckData.CARRIER_COMPANY ?? ''}" readonly></div>
-      <div class="form-group"><label>TRUCK SEALING REQUIREMENT :</label><input name="TRUCK_SEALING_REQUIREMENT" type="text" value="${truckData.TRUCK_SEALING_REQUIREMENT ?? ''}" readonly></div>
+<div class="form-group">
+  <label for="truckSealingReq">TRUCK SEALING REQUIREMENT :</label>
+  <select name="TRUCK_SEALING_REQUIREMENT" id="truckSealingReq" disabled>
+    <option value="">-- Select --</option>
+    <option value="1" ${truckData.TRUCK_SEALING_REQUIREMENT == 1 ? 'selected' : ''}>Yes</option>
+    <option value="0" ${truckData.TRUCK_SEALING_REQUIREMENT == 0 ? 'selected' : ''}>No</option>
+  </select>
+</div>      
     </div>
 
     <div>
@@ -127,6 +136,7 @@ router.get('/', (req, res) => {
         <label>Truck Number:</label>
         <input name="TRUCK_REG_NO" value="${truckRegNo}" readonly>
       </div>
+      <div class="form-group"><label>Trailer no:</label><input name="TRAILER_NO" required></div>
       <div class="form-group"><label>Blacklist Status:</label><input name="BLACKLIST_STATUS" required></div>
       <div class="form-group"><label>Owner Name:</label><input name="OWNER_NAME" required></div>
       <div class="form-group"><label>Reason for Blacklist:</label><input name="REASON_FOR_BLACKLIST" required></div>
@@ -136,7 +146,14 @@ router.get('/', (req, res) => {
       <div class="form-group"><label>Calibration Cert. Valid Upto:</label><input type="date" name="CALIBRATION_CERTIFICATION_NO" required></div>
       <div class="form-group"><label>Carrier Company:</label><input name="CARRIER_COMPANY" required></div>
       <div class="form-group"><label>Tare Weight:</label><input name="TARE_WEIGHT" id="tareWeight" required></div>
-      <div class="form-group"><label>Truck Sealing Requirement:</label><input name="TRUCK_SEALING_REQUIREMENT" required></div>
+      <div class="form-group">
+  <label for="truckSealingReq">Truck Sealing Requirement:</label>
+  <select name="TRUCK_SEALING_REQUIREMENT" id="truckSealingReq" required>
+    <option value="">-- Select --</option>
+    <option value="1">Yes</option>
+    <option value="0">No</option>
+  </select>
+</div> 
       <div class="form-group"><label>Max Weight:</label><input name="MAX_WEIGHT" id="maxWeight" required></div>
       <div class="form-group"><label>Max Fuel Capacity:</label><input name="MAX_FUEL_CAPACITY" id="maxFuel" required></div>
       <button style="font-family: 'DM Sans', sans-serif;" type="submit" class="submit-btn">Insert</button>
@@ -193,7 +210,7 @@ router.get('/', (req, res) => {
    function calculateFuel() {
      const tare = parseFloat(tareInput.value) || 0;
      const max = parseFloat(maxInput.value) || 0;
-     fuelInput.value = tare + max;
+     fuelInput.value = max - tare;
    }
    if(tareInput && maxInput && fuelInput){
      tareInput.addEventListener('input', calculateFuel);
@@ -206,14 +223,16 @@ router.get('/', (req, res) => {
 const editBtn = document.getElementById('editBtn');
 const saveBtn = document.getElementById('saveBtn');
 const cancelBtn = document.getElementById('cancelBtn');
-const inputs = document.querySelectorAll('.form-container input');
+
+// include selects too
+const inputs = document.querySelectorAll('.form-container input, .form-container select');
 
 editBtn?.addEventListener('click', (e) => {
-  e.preventDefault(); // ✅ Prevent form submission
-  console.log("✏️ Edit button clicked, enabling inputs...");
+  e.preventDefault();
   inputs.forEach(input => {
     if (input.name !== "TRUCK_REG_NO") {
-      input.removeAttribute('readonly'); // ✅ Make everything except truck number editable
+      input.removeAttribute('readonly');  // input fields
+      if(input.tagName === 'SELECT') input.disabled = false; // select fields
     }
   });
   editBtn.style.display = 'none';
@@ -223,18 +242,19 @@ editBtn?.addEventListener('click', (e) => {
 
 cancelBtn?.addEventListener('click', (e) => {
   e.preventDefault();
-  console.log("↩️ Cancel clicked, reloading page...");
-  window.location.reload(); // Just reload to reset values
+  window.location.reload(); // reset values
 });
 
 saveBtn?.addEventListener('click', async (e) => {
   e.preventDefault();
-  console.log("💾 Save button clicked, collecting data...");
-
   const data = {};
-  inputs.forEach(input => data[input.name] = input.value); // ✅ Use name attribute
-
-  console.log("📤 Sending data to server:", data);
+  inputs.forEach(input => {
+    if(input.name === 'TRUCK_SEALING_REQUIREMENT'){
+      data[input.name] = parseInt(input.value); // convert "0"/"1" to number
+    } else {
+      data[input.name] = input.value;
+    }
+  });
 
   try {
     const res = await fetch('/truck-master/update-truck', {
@@ -248,16 +268,17 @@ saveBtn?.addEventListener('click', async (e) => {
       window.location.reload();
     } else {
       const errorText = await res.text();
-      console.error("❌ Server responded with error:", errorText);
       alert('Error updating data: ' + errorText);
     }
   } catch (err) {
-    console.error("🚨 Network/Fetch error:", err);
     alert('Failed to reach server.');
   }
 });
-</script>
 
+
+
+
+</script>
 
 <script>
 var deleteBtn = document.getElementById('deleteBtn');
@@ -299,7 +320,6 @@ if (deleteBtn) {
 }
 </script>
 
-
 </body>
 </html>`;
       res.send(html);
@@ -311,63 +331,65 @@ if (deleteBtn) {
 });
 
 // ====== INSERT TRUCK API ======
-router.post('/insert-truck', express.json(), async (req, res) => {
+router.post('/insert-truck', async (req, res) => {
   try {
     const pool = await sql.connect(dbConfig);
     const data = req.body;
 
+    const truckSealingReq = data.TRUCK_SEALING_REQUIREMENT; // ✅ 1 or 0
+
     await pool.request()
       .input('TRUCK_REG_NO', sql.VarChar, data.TRUCK_REG_NO)
+      .input('TRAILER_NO', sql.VarChar, data.TRAILER_NO)
       .input('OWNER_NAME', sql.VarChar, data.OWNER_NAME)
       .input('DRIVER_NAME', sql.VarChar, data.DRIVER_NAME)
       .input('HELPER_NAME', sql.VarChar, data.HELPER_NAME)
       .input('CARRIER_COMPANY', sql.VarChar, data.CARRIER_COMPANY)
-      .input('TRUCK_SEALING_REQUIREMENT', sql.VarChar, data.TRUCK_SEALING_REQUIREMENT)
+      .input('TRUCK_SEALING_REQUIREMENT', sql.Bit, truckSealingReq) // ✅ FIXED NAME
       .input('BLACKLIST_STATUS', sql.VarChar, data.BLACKLIST_STATUS)
       .input('REASON_FOR_BLACKLIST', sql.VarChar, data.REASON_FOR_BLACKLIST)
-      .input('SAFETY_CERTIFICATION_NO', sql.VarChar, data.SAFETY_CERTIFICATION_NO)
-      .input('CALIBRATION_CERTIFICATION_NO', sql.VarChar, data.CALIBRATION_CERTIFICATION_NO)
+      .input('SAFETY_CERTIFICATION_NO', sql.Date, data.SAFETY_CERTIFICATION_NO)
+      .input('CALIBRATION_CERTIFICATION_NO', sql.Date, data.CALIBRATION_CERTIFICATION_NO)
       .input('TARE_WEIGHT', sql.Decimal(10, 4), data.TARE_WEIGHT || 0)
       .input('MAX_WEIGHT', sql.Decimal(10, 4), data.MAX_WEIGHT || 0)
       .input('MAX_FUEL_CAPACITY', sql.Decimal(10, 4), data.MAX_FUEL_CAPACITY || 0)
       .query(`
-        INSERT INTO TRUCK_MASTER (
-          TRUCK_REG_NO, OWNER_NAME, DRIVER_NAME, HELPER_NAME, CARRIER_COMPANY,
-          TRUCK_SEALING_REQUIREMENT, BLACKLIST_STATUS, REASON_FOR_BLACKLIST,
-          SAFETY_CERTIFICATION_NO, CALIBRATION_CERTIFICATION_NO,
-          TARE_WEIGHT, MAX_WEIGHT, MAX_FUEL_CAPACITY
-        )
-        VALUES (
-          @TRUCK_REG_NO, @OWNER_NAME, @DRIVER_NAME, @HELPER_NAME, @CARRIER_COMPANY,
-          @TRUCK_SEALING_REQUIREMENT, @BLACKLIST_STATUS, @REASON_FOR_BLACKLIST,
-          @SAFETY_CERTIFICATION_NO, @CALIBRATION_CERTIFICATION_NO,
-          @TARE_WEIGHT, @MAX_WEIGHT, @MAX_FUEL_CAPACITY
-        )
+        INSERT INTO TRUCK_MASTER 
+        (TRUCK_REG_NO, TRAILER_NO, OWNER_NAME, DRIVER_NAME, HELPER_NAME, 
+         CARRIER_COMPANY, TRUCK_SEALING_REQUIREMENT, BLACKLIST_STATUS, 
+         REASON_FOR_BLACKLIST, SAFETY_CERTIFICATION_NO, 
+         CALIBRATION_CERTIFICATION_NO, TARE_WEIGHT, MAX_WEIGHT, MAX_FUEL_CAPACITY)
+        VALUES
+        (@TRUCK_REG_NO, @TRAILER_NO, @OWNER_NAME, @DRIVER_NAME, @HELPER_NAME, 
+         @CARRIER_COMPANY, @TRUCK_SEALING_REQUIREMENT, @BLACKLIST_STATUS, 
+         @REASON_FOR_BLACKLIST, @SAFETY_CERTIFICATION_NO, 
+         @CALIBRATION_CERTIFICATION_NO, @TARE_WEIGHT, @MAX_WEIGHT, @MAX_FUEL_CAPACITY)
       `);
 
-    res.status(200).send('Inserted successfully');
+    res.status(201).send('✅ Truck inserted successfully');
   } catch (err) {
-    console.error('Error inserting truck:', err);
-    res.status(500).send('Error inserting data');
+    console.error('❌ Error inserting truck:', err);
+    res.status(500).send('Error inserting data: ' + err.message);
   }
-
 });
 
+
   // ====== UPDATE TRUCK API ======
-router.put('/update-truck', express.json(), async (req, res) => {
+router.put('/update-truck', async (req, res) => {
   try {
     const pool = await sql.connect(dbConfig);
     const data = req.body;
 
-    console.log("🟢 Update request received:", data); // <-- LOG FULL DATA
+    const truckSealingReq = data.TRUCK_SEALING_REQUIREMENT; // ✅ 1 or 0
 
-    const result = await pool.request()
+    await pool.request()
       .input('TRUCK_REG_NO', sql.VarChar, data.TRUCK_REG_NO)
+      .input('TRAILER_NO', sql.VarChar, data.TRAILER_NO)
       .input('OWNER_NAME', sql.VarChar, data.OWNER_NAME)
       .input('DRIVER_NAME', sql.VarChar, data.DRIVER_NAME)
       .input('HELPER_NAME', sql.VarChar, data.HELPER_NAME)
       .input('CARRIER_COMPANY', sql.VarChar, data.CARRIER_COMPANY)
-      .input('TRUCK_SEALING_REQUIREMENT', sql.VarChar, data.TRUCK_SEALING_REQUIREMENT)
+      .input('TRUCK_SEALING_REQUIREMENT', sql.Bit, truckSealingReq) // ✅ FIXED NAME
       .input('BLACKLIST_STATUS', sql.VarChar, data.BLACKLIST_STATUS)
       .input('REASON_FOR_BLACKLIST', sql.VarChar, data.REASON_FOR_BLACKLIST)
       .input('SAFETY_CERTIFICATION_NO', sql.Date, data.SAFETY_CERTIFICATION_NO)
@@ -377,6 +399,7 @@ router.put('/update-truck', express.json(), async (req, res) => {
       .input('MAX_FUEL_CAPACITY', sql.Decimal(10, 4), data.MAX_FUEL_CAPACITY || 0)
       .query(`
         UPDATE TRUCK_MASTER SET
+          TRAILER_NO = @TRAILER_NO,
           OWNER_NAME = @OWNER_NAME,
           DRIVER_NAME = @DRIVER_NAME,
           HELPER_NAME = @HELPER_NAME,
@@ -392,19 +415,13 @@ router.put('/update-truck', express.json(), async (req, res) => {
         WHERE TRUCK_REG_NO = @TRUCK_REG_NO
       `);
 
-    console.log("✅ Rows affected:", result.rowsAffected);
-
-    if (result.rowsAffected[0] === 0) {
-      console.warn("⚠️ No rows updated. Check TRUCK_REG_NO value!");
-      return res.status(404).send("No matching truck found");
-    }
-
-    res.status(200).send('Updated successfully');
+    res.status(200).send('✅ Truck updated successfully');
   } catch (err) {
-    console.error('❌ Error updating truck:', err); // <-- Will show exact SQL error
-    res.status(500).send('Error updating data: ' + err.message); // <-- send error to frontend
+    console.error('❌ Error updating truck:', err);
+    res.status(500).send('Error updating data: ' + err.message);
   }
 });
+
 
 // ====== DELETE TRUCK API ======
 router.delete('/delete-truck/:truckRegNo', async (req, res) => {

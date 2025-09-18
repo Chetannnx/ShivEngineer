@@ -30,6 +30,8 @@ app.use('/', require('./Routes/tees')); // ✅ mounts routes globally
 app.use('/truckmaster', require('./Routes/truckMaster'));
 //const truckMasterRoutes = require('./Routes/truckMaster');
 app.use('/truck-master', require('./Routes/truckMaster'));
+app.use('/', require('./Routes/truckMaster'));
+
 
 const truckMasterRouter = require('./Routes/truckMaster');
 app.use('/truck-master', truckMasterRouter);
