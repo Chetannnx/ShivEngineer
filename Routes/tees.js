@@ -212,7 +212,7 @@ const totalCardHTML = `
     <li><a href="/">HOME</a></li>
       <li><a class="active">CARD MASTER</a></li>
       <li><a href="/truck-master">TRUCK MASTER</a></li>
-      <li><a>FAN GENERATION</a></li>
+      <li><a href="/Fan-Generation">FAN GENERATION</a></li>
       <li><a>ENTRY BRIDGE</a></li>
     </ul>
   </nav>

@@ -67,6 +67,7 @@ router.get('/', (req, res) => {
 <head>
   <title>Truck Master</title>
   <link rel="stylesheet" href="/Css/TruckMaster.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link href='https://fonts.googleapis.com/css?family=DM Sans' rel='stylesheet'>
 </head>
 <body>
@@ -75,12 +76,16 @@ router.get('/', (req, res) => {
       <li><a href="/">HOME</a></li>
       <li><a href="/tees">CARD MASTER</a></li>
       <li><a href="/truck-master" class="active">TRUCK MASTER</a></li>
-      <li><a href="/about">FAN GENERATION</a></li>
+      <li><a href="/Fan-Generation">FAN GENERATION</a></li>
       <li><a href="/contact">ENTRY BRIDGE</a></li>
     </ul>
   </nav>
 
-  <h2 style="text-align:center;font-family: 'DM Sans', sans-serif;">TRUCK MASTER DATA</h2>
+ <h2 style="text-align:center;font-family: 'DM Sans', sans-serif;">
+  <i class="fa-solid fa-truck-fast" style="font-size: 21px;"></i>
+  TRUCK MASTER DATA
+</h2>
+
 
   <form method="GET" action="/truck-master" style="text-align:center; margin:20px;">
       <input id="TRUCK_REG_NO" style="font-family: 'DM Sans', sans-serif;" type="text" name="truck" placeholder="Enter Truck Reg No" value="${truckRegNo ?? ''}" required>

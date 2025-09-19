@@ -36,7 +36,7 @@ app.use('/', require('./Routes/truckMaster'));
 const truckMasterRouter = require('./Routes/truckMaster');
 app.use('/truck-master', truckMasterRouter);
 
-
+app.use('/Fan-Generation', require('./Routes/Fangeneration'))
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`🚀 Server running at http://localhost:${PORT}`));
