@@ -147,7 +147,6 @@ router.get('/', (req, res) => {
       <div class="form-group">
   <label for="blacklistStatusPopup">Blacklist Status:</label>
   <select name="BLACKLIST_STATUS" id="blacklistStatusPopup" required>
-    <option value="">-- Select --</option>
     <option value="1">Blacklist</option>
     <option value="0">Not_Blacklist</option>
   </select>
@@ -234,102 +233,141 @@ router.get('/', (req, res) => {
 
   
 <script>
-const editBtn = document.getElementById('editBtn');
-const saveBtn = document.getElementById('saveBtn');
-const cancelBtn = document.getElementById('cancelBtn');
+document.addEventListener('DOMContentLoaded', () => {
+  console.log("✅ Script Loaded");
 
-// include selects too
-const inputs = document.querySelectorAll('.form-container input, .form-container select');
+  const editBtn = document.getElementById('editBtn');
+  const saveBtn = document.getElementById('saveBtn');
+  const cancelBtn = document.getElementById('cancelBtn');
 
-// ===== Add this block here =====
-const blacklistSelect = document.querySelector('select[name="BLACKLIST_STATUS"]');
-const reasonInput = document.querySelector('input[name="REASON_FOR_BLACKLIST"]');
+  // include selects too
+  const inputs = document.querySelectorAll('.form-container input, .form-container select');
 
-const insertFormBlacklist = document.querySelector('#insertForm select[name="BLACKLIST_STATUS"]');
-const insertFormReason = document.querySelector('#insertForm input[name="REASON_FOR_BLACKLIST"]');
+  // ===== Main form Blacklist + Reason =====
+  const blacklistSelect = document.querySelector('.form-container select[name="BLACKLIST_STATUS"]');
+  const reasonInput = document.querySelector('.form-container input[name="REASON_FOR_BLACKLIST"]');
 
-function toggleInsertReasonField() {
-  if (insertFormBlacklist.value === "1") {
-    insertFormReason.removeAttribute('readonly');
-  } else {
-    insertFormReason.setAttribute('readonly', true);
-    insertFormReason.value = ''; // optional: clear if Not_Blacklist
-  }
-}
-
-toggleInsertReasonField();
-
-insertFormBlacklist?.addEventListener('change', toggleInsertReasonField);
-
-function toggleReasonField() {
-  if (blacklistSelect.value === "1") {
-    reasonInput.removeAttribute('readonly');
-  } else {
-    reasonInput.setAttribute('readonly', true);
-    reasonInput.value = ''; // optional: clear if Not_Blacklist
-  }
-}
-
-// Run on page load in case existing data is Blacklist
-
-
-// Run whenever Blacklist dropdown changes
-
-// ===== End of block =====
-
-editBtn?.addEventListener('click', (e) => {
-  e.preventDefault();
-  inputs.forEach(input => {
-    if (input.name !== "TRUCK_REG_NO") {
-      input.removeAttribute('readonly');  // input fields
-      if(input.tagName === 'SELECT') input.disabled = false; // select fields
-    }
-  });
-  toggleReasonField(); // make sure reason field is correct after clicking Edit
-  blacklistSelect?.addEventListener('change', toggleReasonField);
-  editBtn.style.display = 'none';
-  saveBtn.style.display = 'inline-block';
-  cancelBtn.style.display = 'inline-block';
-});
-
-cancelBtn?.addEventListener('click', (e) => {
-  e.preventDefault();
-  window.location.reload(); // reset values
-});
-
-saveBtn?.addEventListener('click', async (e) => {
-  e.preventDefault();
-  const data = {};
-  inputs.forEach(input => {
-    if(input.name === 'TRUCK_SEALING_REQUIREMENT' || input.name === 'BLACKLIST_STATUS'){
-      data[input.name] = parseInt(input.value); // convert "0"/"1" to number
+  function toggleReasonField() {
+    if (!blacklistSelect || !reasonInput) return;
+    console.log("Main form toggleReasonField ->", blacklistSelect.value);
+    if (blacklistSelect.value === "1" || blacklistSelect.value.toLowerCase() === "blacklist") {
+      reasonInput.readOnly = false;
     } else {
-      data[input.name] = input.value;
+      reasonInput.readOnly = true;
+      reasonInput.value = '';
     }
-  });
+  }
 
-  try {
-    const res = await fetch('/truck-master/update-truck', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+  blacklistSelect?.addEventListener('change', toggleReasonField);
+
+  // ===== Insert popup logic =====
+  function initPopupLogic() {
+  console.log("✅ initPopupLogic CALLED");
+
+  const insertForm = document.getElementById('insertForm');
+  if (!insertForm) {
+    console.error("❌ insertForm not found!");
+    return;
+  }
+
+  const insertFormBlacklist = insertForm.querySelector('select[name="BLACKLIST_STATUS"]');
+  const insertFormReason = insertForm.querySelector('input[name="REASON_FOR_BLACKLIST"]');
+
+  console.log("🔍 Found elements ->", insertFormBlacklist, insertFormReason);
+
+  if (!insertFormBlacklist || !insertFormReason) {
+    console.error("❌ Missing BLACKLIST_STATUS or REASON_FOR_BLACKLIST field!");
+    return;
+  }
+
+  // Default
+  insertFormBlacklist.value = "0";
+  insertFormReason.value = "";
+  insertFormReason.readOnly = true;
+  insertFormReason.style.backgroundColor = "#f5f5f5";
+
+  function toggleInsertReasonField() {
+    console.log("🔄 Dropdown changed ->", insertFormBlacklist.value, typeof insertFormBlacklist.value);
+    if (insertFormBlacklist.value.trim() === "0") {
+      console.log("🟢 Not_Blacklist -> set readonly");
+      insertFormReason.readOnly = true;
+      insertFormReason.value = '';
+      insertFormReason.style.backgroundColor = "#f5f5f5";
+    } else {
+      console.log("🔴 Blacklist -> make editable");
+      insertFormReason.readOnly = false;
+      insertFormReason.style.backgroundColor = "#ffffff";
+    }
+  }
+
+  insertFormBlacklist.removeEventListener('change', toggleInsertReasonField);
+  insertFormBlacklist.addEventListener('change', toggleInsertReasonField);
+
+  toggleInsertReasonField(); // run once
+}
+
+document.getElementById('openInsertPopupBtn')?.addEventListener('click', () => {
+  console.log("🖱️ Popup open button clicked");
+  setTimeout(initPopupLogic, 100);
+});
+
+  // ===== Edit button =====
+  editBtn?.addEventListener('click', (e) => {
+    console.log("✏️ Edit button clicked");
+    e.preventDefault();
+    inputs.forEach(input => {
+      if (input.name !== "TRUCK_REG_NO") {
+        input.readOnly = false;
+        if (input.tagName === 'SELECT') input.disabled = false;
+      }
     });
 
-    if (res.ok) {
-      alert('Truck updated successfully');
-      window.location.reload();
-    } else {
-      const errorText = await res.text();
-      alert('Error updating data: ' + errorText);
+    toggleReasonField(); // re-check blacklist reason state
+
+    editBtn.style.display = 'none';
+    saveBtn.style.display = 'inline-block';
+    cancelBtn.style.display = 'inline-block';
+  });
+
+  // ===== Cancel button =====
+  cancelBtn?.addEventListener('click', (e) => {
+    e.preventDefault();
+    window.location.reload();
+  });
+
+  // ===== Save button =====
+  saveBtn?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    const data = {};
+    inputs.forEach(input => {
+      if (input.name === 'TRUCK_SEALING_REQUIREMENT' || input.name === 'BLACKLIST_STATUS') {
+        data[input.name] = parseInt(input.value);
+      } else {
+        data[input.name] = input.value;
+      }
+    });
+
+    try {
+      const res = await fetch('/truck-master/update-truck', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      if (res.ok) {
+        alert('Truck updated successfully');
+        window.location.reload();
+      } else {
+        const errorText = await res.text();
+        alert('Error updating data: ' + errorText);
+      }
+    } catch (err) {
+      console.error("❌ Save error", err);
+      alert('Failed to reach server.');
     }
-  } catch (err) {
-    alert('Failed to reach server.');
-  }
+  });
+
 });
-
-
-
-
 </script>
 
 <script>

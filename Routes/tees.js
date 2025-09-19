@@ -40,7 +40,7 @@ router.get('/', async (req, res) => {
 
   const msg = req.query.msg || '';
   const page = Math.max(1, parseInt(req.query.page) || 1);
-  const limit = parseInt(req.query.limit) || 10;
+  const limit = parseInt(req.query.limit) || 20;
   const offset = (page - 1) * limit;
   const rawSearch = req.query.search || '';
   const search = rawSearch.trim();
@@ -71,12 +71,31 @@ router.get('/', async (req, res) => {
       requestForCount.input('search', sql.VarChar, searchParam);
     }
 
+    // ✅ Build dynamic ORDER BY based on selected column
+let orderByClause = '';
+if (sortColumn === 'CARD_STATUS') {
+  // ✅ CARD_STATUS is numeric (1 = Active, 0 = Block)
+  // So ASC => Block first, Active second, we flip logic to get Active first
+  if (order === 'ASC') {
+    // Active first
+    orderByClause = `CARD_STATUS DESC, TRY_CAST(CARD_NO AS INT) ASC`;
+  } else {
+    // Block first
+    orderByClause = `CARD_STATUS ASC, TRY_CAST(CARD_NO AS INT) ASC`;
+  }
+} else if (sortColumn === 'CARD_NO') {
+  orderByClause = `TRY_CAST(CARD_NO AS INT) ${order}`;
+} else {
+  orderByClause = `${sortColumn} ${order}`;
+}
+
+
     let dataQuery = `
       WITH OrderedData AS (
         SELECT
           CARD_NO,
           CARD_STATUS,
-          ROW_NUMBER() OVER (ORDER BY TRY_CAST(CARD_NO AS INT) ${order}) AS SRNO
+          ROW_NUMBER() OVER (ORDER BY ${orderByClause}) AS SRNO
         FROM CARD_MASTER
         ${whereClause}
       )
@@ -152,9 +171,9 @@ router.get('/', async (req, res) => {
 
 const totalCardHTML = `
   <div style="margin: 10px 0; font-family:'DM Sans', sans-serif; font-weight:bold; font-size:16px;">
-    Total Card No = ${totalRows} 
-    <span style="color:green;">Active: ${activeCount}</span> | 
-    <span style="color:red;">Block: ${blockCount}</span>
+    Total Card No = ${totalRows} |
+    <span style="color:green;">Active= ${activeCount}</span> | 
+    <span style="color:red;">Block= ${blockCount}</span>
   </div>`;
 
 
@@ -183,10 +202,10 @@ const totalCardHTML = `
   <div style="display:inline-flex; align-items:center; gap:6px; flex:0 1 auto; min-width:0;">
     Show
     <select onchange="window.location='/tees?page=1&limit='+this.value+'&search=${encodedSearch}&showAll=${showAll ? 'on' : ''}&sortBy=${rawSortBy}&order=${order}'" style="margin-left:6px; padding:4px; min-width:44px; width:auto; max-width:100%; border-radius:8px; box-sizing:border-box;">
-      <option value="5" ${limit===5?'selected':''}>5</option>
-      <option value="10" ${limit===10?'selected':''}>10</option>
       <option value="20" ${limit===20?'selected':''}>20</option>
       <option value="50" ${limit===50?'selected':''}>50</option>
+      <option value="100" ${limit===100?'selected':''}>100</option>
+      <option value="200" ${limit===200?'selected':''}>200</option>
     </select> rows
   </div>
 </div>`;
