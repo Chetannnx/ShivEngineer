@@ -27,7 +27,6 @@ function buildRedirectQuery(body) {
   if (body.page) params.append('page', body.page);
   if (body.limit) params.append('limit', body.limit);
   if (body.search) params.append('search', body.search);
-  if (body.showAll) params.append('showAll', body.showAll);
   if (body.sortBy) params.append('sortBy', body.sortBy);
   if (body.order) params.append('order', body.order);
   return '?' + params.toString();
@@ -44,7 +43,6 @@ router.get('/', async (req, res) => {
   const offset = (page - 1) * limit;
   const rawSearch = req.query.search || '';
   const search = rawSearch.trim();
-  const showAll = (req.query.showAll === 'on' || req.query.showAll === 'true');
   const rawSortBy = req.query.sortBy || 'CARD_NO';
   const rawOrder = (req.query.order || 'ASC').toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
 
@@ -64,7 +62,7 @@ router.get('/', async (req, res) => {
     const requestForData = new sql.Request();
     const requestForCount = new sql.Request();
 
-    if (search && !showAll) {
+    if (search) {
       whereClause = 'WHERE CARD_NO LIKE @search';
       const searchParam = `%${search}%`;
       requestForData.input('search', sql.VarChar, searchParam);
@@ -103,9 +101,8 @@ if (sortColumn === 'CARD_STATUS') {
       FROM OrderedData
       ORDER BY SRNO
     `;
-    if (!showAll) {
-      dataQuery += ` OFFSET ${offset} ROWS FETCH NEXT ${limit} ROWS ONLY`;
-    }
+    
+    dataQuery += ` OFFSET ${offset} ROWS FETCH NEXT ${limit} ROWS ONLY`;
 
     const dataResult = await requestForData.query(dataQuery);
     const rows = dataResult.recordset || [];
@@ -121,7 +118,7 @@ if (sortColumn === 'CARD_STATUS') {
     const countResult = await requestForCount.query(countQuery);
 
     const totalRows = countResult.recordset[0].totalCount || 0;
-    const totalPages = showAll ? 1 : Math.max(1, Math.ceil(totalRows / limit));
+    const totalPages = Math.max(1, Math.ceil(totalRows / limit));
     const activeCount = countResult.recordset[0].activeCount || 0;
     const blockCount = countResult.recordset[0].blockCount || 0;
 
@@ -191,17 +188,13 @@ const totalCardHTML = `
     </button>
  <a href="/tees" class="btn-reset">Refresh</a>
 
-    <label style="display:flex; align-items:center; gap:6px; font-size:14px;">
-      <input type="checkbox" name="showAll" ${showAll ? 'checked' : ''} onchange="this.form.submit()">
-      Show All
-    </label>
     <input type="hidden" name="sortBy" value="${escapeHtml(rawSortBy)}">
     <input type="hidden" name="order" value="${escapeHtml(order)}">
     <input type="hidden" name="limit" value="${limit}">
   </form>
   <div style="display:inline-flex; align-items:center; gap:6px; flex:0 1 auto; min-width:0;">
     Show
-    <select onchange="window.location='/tees?page=1&limit='+this.value+'&search=${encodedSearch}&showAll=${showAll ? 'on' : ''}&sortBy=${rawSortBy}&order=${order}'" style="margin-left:6px; padding:4px; min-width:44px; width:auto; max-width:100%; border-radius:8px; box-sizing:border-box;">
+    <select onchange="window.location='/tees?page=1&limit='+this.value+'&search=${encodedSearch}&sortBy=${rawSortBy}&order=${order}'" style="margin-left:6px; padding:4px; min-width:44px; width:auto; max-width:100%; border-radius:8px; box-sizing:border-box;">
       <option value="20" ${limit===20?'selected':''}>20</option>
       <option value="50" ${limit===50?'selected':''}>50</option>
       <option value="100" ${limit===100?'selected':''}>100</option>
@@ -283,12 +276,12 @@ ${topControls}
       <th class="select-col">Select</th>
       <th class="srno-col">Sr. No</th>
       <th class="cardno-col">
-        <a href="/tees?page=1&limit=${limit}&search=${encodedSearch}&showAll=${showAll ? 'on' : ''}&sortBy=CARD_NO&order=${nextOrderFor('CARD_NO')}">
+        <a href="/tees?page=1&limit=${limit}&search=${encodedSearch}&sortBy=CARD_NO&order=${nextOrderFor('CARD_NO')}">
           Card No${sortArrow('CARD_NO')}
         </a>
       </th>
       <th class="status-col">
-        <a href="/tees?page=1&limit=${limit}&search=${encodedSearch}&showAll=${showAll ? 'on' : ''}&sortBy=CARD_STATUS&order=${nextOrderFor('CARD_STATUS')}">
+        <a href="/tees?page=1&limit=${limit}&search=${encodedSearch}&sortBy=CARD_STATUS&order=${nextOrderFor('CARD_STATUS')}">
           Card Status${sortArrow('CARD_STATUS')}
         </a>
       </th>
@@ -303,8 +296,7 @@ ${topControls}
 <input type="hidden" name="limit" value="${limit}">
 <input type="hidden" name="search" value="${escapeHtml(search)}">
 <input type="hidden" name="sortBy" value="${escapeHtml(rawSortBy)}">
-<input type="hidden" name="order" value="${escapeHtml(order)}">
-<input type="hidden" name="showAll" value="${showAll}">`);
+<input type="hidden" name="order" value="${escapeHtml(order)}">`);
 
         rows.forEach((row) => {
             const statusClass = row.CARD_STATUS == 1 ? 'active' : 'block';
@@ -358,17 +350,17 @@ if (rows.length === 0) {
 </div>
 </form>`;
 
-        if (!showAll) {
+        
             html += `<div style="width:100%; margin:12px 0; text-align:center;">`;
             if (page > 1) {
-                html += `<a href="/tees?page=${page-1}&limit=${limit}&search=${encodedSearch}&showAll=${showAll ? 'on' : ''}&sortBy=${rawSortBy}&order=${order}" style="margin-right:10px;">◀ Previous</a>`;
+                html += `<a href="/tees?page=${page-1}&limit=${limit}&search=${encodedSearch}&sortBy=${rawSortBy}&order=${order}" style="margin-right:10px;">◀ Previous</a>`;
             }
             html += ` Page ${page} of ${totalPages} `;
             if (page < totalPages) {
-                html += `<a href="/tees?page=${page+1}&limit=${limit}&search=${encodedSearch}&showAll=${showAll ? 'on' : ''}&sortBy=${rawSortBy}&order=${order}" style="margin-left:10px;" >Next ▶</a>`;
+                html += `<a href="/tees?page=${page+1}&limit=${limit}&search=${encodedSearch}&sortBy=${rawSortBy}&order=${order}" style="margin-left:10px;" >Next ▶</a>`;
             }
             html += `</div>`;
-        }
+        
 
         // Popups (Add/Edit) - added hidden inputs inside both forms to preserve state
         html += `
@@ -384,7 +376,7 @@ if (rows.length === 0) {
       <input type="hidden" name="search" value="${escapeHtml(search)}">
       <input type="hidden" name="sortBy" value="${escapeHtml(rawSortBy)}">
       <input type="hidden" name="order" value="${escapeHtml(order)}">
-      <input type="hidden" name="showAll" value="${showAll}">
+      
 
       <label>Card No:</label><br>
       <input id="CARD_NO" type="text" name="CARD_NO"
@@ -432,7 +424,6 @@ if (rows.length === 0) {
       <input type="hidden" name="search" value="${escapeHtml(search)}">
       <input type="hidden" name="sortBy" value="${escapeHtml(rawSortBy)}">
       <input type="hidden" name="order" value="${escapeHtml(order)}">
-      <input type="hidden" name="showAll" value="${showAll}">
       <input type="hidden" name="CARD_NO" id="edit_CARD_NO">
       <label>Card No:</label><br>
       <input type="text" name="NEW_CARD_NO" id="edit_NEW_CARD_NO" style="width:80%; padding:8px; margin:8px 0;" readonly><br>
