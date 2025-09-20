@@ -69,6 +69,7 @@ router.get('/', (req, res) => {
   <link rel="stylesheet" href="/Css/TruckMaster.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link href='https://fonts.googleapis.com/css?family=DM Sans' rel='stylesheet'>
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 </head>
 <body>
   <nav  style="font-family: 'DM Sans', sans-serif;">

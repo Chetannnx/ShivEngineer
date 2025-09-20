@@ -13,7 +13,6 @@ router.get('/', async (req, res) => {
         <title>Fan Generation</title>
         <meta charset="UTF-8" />
         <link href="https://fonts.googleapis.com/css?family=DM Sans" rel="stylesheet">
-        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="/Css/FanGeneration.css">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
         <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
@@ -56,7 +55,7 @@ router.get('/', async (req, res) => {
               <select id="TRUCK_SEALING_REQUIREMENT" name="TRUCK_SEALING_REQUIREMENT" disabled>
                 <option value="">-- Select --</option>
                 <option value="1">Yes</option>
-                <option value="2">No</option>
+                <option value="0">No</option>
               </select>
             </div>
 
