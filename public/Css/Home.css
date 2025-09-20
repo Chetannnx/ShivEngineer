@@ -1,14 +1,9 @@
-html{
-  scroll-behavior: smooth;
-}
 body {
-   background: white;
-  /* Optional: to make it look more "upper" focused, add an angle */
-  /* background: linear-gradient(135deg, rgba(255, 255, 255, 0) 0%, rgba(255, 192, 203, 0.2) 100%); */
-  min-height: 100vh;
-  margin: 0;
+  font-family: 'DM Sans', sans-serif;
   padding: 10px;
+  background: #F5F5F5;
 }
+
 
 h2{
   text-align: center;

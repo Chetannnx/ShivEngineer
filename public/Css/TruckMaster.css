@@ -1,13 +1,8 @@
-
 /* === Base Styles === */
 body {
-  font-family: Roboto, Helvetica, sans-serif;
-  background: linear-gradient(45deg, rgba(255, 255, 255, 0) 0%, rgba(211, 211, 211, 0.616) 100%);
-  /* Optional: to make it look more "upper" focused, add an angle */
-  /* background: linear-gradient(135deg, rgba(255, 255, 255, 0) 0%, rgba(255, 192, 203, 0.2) 100%); */
-  min-height: 100vh;
-  margin: 0;
+  font-family: 'DM Sans', sans-serif;
   padding: 10px;
+  background: #F5F5F5;
 }
 
 /* === Top Bar (Search + Buttons + Dropdown) === */
@@ -259,7 +254,7 @@ input[type="text"]{
   grid-template-columns: 1fr 1fr;
   gap: 30px;
   max-width: 1100px;
-  margin: 30px auto;
+  margin: 20px auto;
   padding: 30px;
   background: rgba(255, 255, 255, 0.2);
   border: 1px solid #ddd;
