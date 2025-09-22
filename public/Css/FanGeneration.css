@@ -102,6 +102,8 @@ nav ul li a.active::after {
 /* Input and Select Styling */
 .form-group input,
 .form-group select {
+  font-family:'DM Sans', sans-serif ;
+  font-weight: bold;
   flex: 2;
   padding: 8px 10px;
   border: 1px solid #ccc;
@@ -152,11 +154,23 @@ nav ul li a.active::after {
 }
 
  .top-actions {
-    text-align: center;
-    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 19px;
+    margin-bottom: 5px;
     font-family: 'DM Sans', sans-serif;
     font-weight: bold;
   }
+
+.input-group select {
+  padding: 8px 15px;
+  font-family: 'DM Sans', sans-serif;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  gap:19px;
+  font-size: 14px;
+  width: 315px;  /* fixed width for balance */
+}
 .top-actions input[type="text"] {
   font-family: 'DM Sans', sans-serif;
   font-weight: bold;
@@ -183,4 +197,9 @@ nav ul li a.active::after {
   font-weight: bold;
   margin-top: 8px;
   transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.top-actions1 {
+  display: flex;
+  justify-content: center;
 }
