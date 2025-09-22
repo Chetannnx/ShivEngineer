@@ -116,10 +116,28 @@ router.get('/', async (req, res) => {
         <script>
   // Define the fetch function
  async function fetchTruckData() {
-    const truckRegNo = document.getElementById("truckRegInput").value.trim();
-    if (!truckRegNo) return alert("Please enter a Truck Reg No");
+  const truckRegNo = document.getElementById("truckRegInput").value.trim();
+  const cardNo = document.getElementById("cardAllocated").value.trim();
 
-    // Clear all truck master + data master fields first
+  if (!truckRegNo && !cardNo) return alert("Please enter Truck No or Card Allocated No");
+
+  try {
+    // ✅ Use unified route for both
+    const inputValue = truckRegNo || cardNo;
+    const url = '/Fan-Generation/api/fan-generation/truck/' + inputValue;
+
+    const res = await fetch(url);
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || "Truck or Card not found");
+    }
+
+    const data = await res.json();
+
+    // Map CARD_NO to cardAllocated
+    if (data.CARD_NO) data.cardAllocated = data.CARD_NO;
+
+    // Fill all fields
     const allFields = [
       "TRUCK_REG_NO", "TRAILER_NO", "OWNER_NAME", "DRIVER_NAME", "HELPER_NAME", "CARRIER_COMPANY",
       "TRUCK_SEALING_REQUIREMENT", "BLACKLIST_STATUS", "REASON_FOR_BLACKLIST",
@@ -129,33 +147,37 @@ router.get('/', async (req, res) => {
       "FAN_TIME_OUT", "WEIGHT_TO_FILLED", "cardAllocated"
     ];
     allFields.forEach(id => {
-        const field = document.getElementById(id);
-        if (field) field.value = "";
+      const field = document.getElementById(id);
+      if (field) field.value = data[id] ?? "";
     });
+    
+        // ✅ Fill the top Truck Reg No input separately
+    document.getElementById("truckRegInput").value = data.TRUCK_REG_NO || "";
 
-    try {
-      const res = await fetch('/Fan-Generation/api/fan-generation/' + truckRegNo);
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || "Truck not found");
-      }
-      const data = await res.json();
 
-      // Map CARD_NO to cardAllocated
-      if (data.CARD_NO) data.cardAllocated = data.CARD_NO;
-
-      // Fill fields with returned data
-      allFields.forEach(id => {
-        if (data.hasOwnProperty(id)) {
-          const field = document.getElementById(id);
-          if (field) field.value = data[id] ?? "";
-        }
-      });
-    } catch (err) {
-      console.error(err);
-      alert(err.message);
-    }
+  } catch (err) {
+    console.error(err);
+    alert(err.message);
+  }
 }
+
+
+// Trigger fetch on Enter key for Truck No
+document.getElementById("truckRegInput").addEventListener("keypress", function(e) {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    fetchTruckData();
+  }
+});
+
+// Trigger fetch on Enter key for Card Allocated
+document.getElementById("cardAllocated").addEventListener("keypress", function(e) {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    fetchTruckData();
+  }
+});
+
 
 
 
@@ -230,45 +252,128 @@ router.get('/', async (req, res) => {
 });
 
 // API route: Fetch Truck Master + optional Fan Generation data
-router.get('/api/fan-generation/:truckRegNo', async (req, res) => {
-  const truckRegNo = req.params.truckRegNo;
-
+// Fetch by Truck No (existing)
+// Fetch by Card No (with Truck Master details)
+// Fetch by Truck No (with Truck Master + Data Master)
+// Unified API: Fetch by Truck No OR Card Allocated No
+// Unified API: Fetch by Truck No OR Card Allocated No
+// Unified API: Fetch by Truck No OR Card Allocated No
+router.get('/api/fan-generation/truck/:inputValue', async (req, res) => {
+  const inputValue = req.params.inputValue?.trim();
   try {
     const pool = await sql.connect(dbConfig);
 
-    // 1️⃣ Fetch TRUCK_MASTER
+    let truckData = {};
+    let dataMaster = {};
+
+    // 1️⃣ Try fetching as Truck No first
     const truckResult = await pool.request()
-      .input('truckRegNo', sql.VarChar, truckRegNo)
+      .input('truckRegNo', sql.VarChar, inputValue)
       .query('SELECT * FROM TRUCK_MASTER WHERE TRUCK_REG_NO = @truckRegNo');
 
-    if (truckResult.recordset.length === 0) {
-      return res.status(404).json({ message: 'Truck not found' });
-    }
+    if (truckResult.recordset.length > 0) {
+      truckData = truckResult.recordset[0];
 
-    const truckData = truckResult.recordset[0];
-
-    // 2️⃣ Fetch DATA_MASTER info (latest row)
-    let dataMaster = {};
-    try {
+      // Fetch latest DATA_MASTER for this truck
       const dataResult = await pool.request()
-        .input('truckRegNo', sql.VarChar, truckRegNo)
-        // Use FAN_TIME_OUT or some unique column if no ID exists
+        .input('truckRegNo', sql.VarChar, truckData.TRUCK_REG_NO)
         .query('SELECT TOP 1 * FROM DATA_MASTER WHERE TRUCK_REG_NO = @truckRegNo ORDER BY FAN_TIME_OUT DESC');
-      dataMaster = dataResult.recordset[0] || {};
-    } catch (e) {
-      console.log('DATA_MASTER fetch error (maybe missing column):', e.message);
+
+      if (dataResult.recordset.length > 0) {
+        dataMaster = dataResult.recordset[0];
+      }
+
+      return res.json({
+  ...dataMaster,
+  ...truckData, // overwrite TRUCK_REG_NO from truckData
+  cardAllocated: dataMaster.CARD_NO
+});
     }
 
-    // 3️⃣ Merge safely
-    const mergedData = { ...truckData, ...dataMaster };
+    // 2️⃣ If not found as Truck, try Card No
+    const cardResult = await pool.request()
+      .input('cardNo', sql.VarChar, inputValue)
+      .query('SELECT TOP 1 * FROM DATA_MASTER WHERE CARD_NO = @cardNo ORDER BY FAN_TIME_OUT DESC');
 
-    res.json(mergedData);
+    if (cardResult.recordset.length === 0) {
+      return res.status(404).json({ message: "Truck or Card not found" });
+    }
+
+    dataMaster = cardResult.recordset[0];
+
+    // Fetch truck info if TRUCK_REG_NO exists in dataMaster
+    if (dataMaster.TRUCK_REG_NO) {
+      const truckResultByCard = await pool.request()
+        .input('truckRegNo', sql.VarChar, dataMaster.TRUCK_REG_NO)
+        .query('SELECT * FROM TRUCK_MASTER WHERE TRUCK_REG_NO = @truckRegNo');
+
+      if (truckResultByCard.recordset.length > 0) {
+        truckData = truckResultByCard.recordset[0];
+      }
+    }
+
+    // Merge truck info + dataMaster
+   // Merge truck info + dataMaster, but ensure TRUCK_REG_NO is filled
+res.json({
+  ...dataMaster,
+  ...truckData, // overwrite TRUCK_REG_NO from truckData
+  cardAllocated: dataMaster.CARD_NO
+});
+
 
   } catch (err) {
-    console.error('Database error:', err.message);
-    res.status(500).json({ message: 'Database error: ' + err.message });
+    console.error("Database Error:", err);
+    res.status(500).json({ message: "Database Error" });
   }
 });
+
+
+
+// Fetch by Card No (with Truck Master fallback)
+// router.get('/api/fan-generation/card/:cardNo', async (req, res) => {
+//   const cardNo = req.params.cardNo;
+//   try {
+//     const pool = await sql.connect(dbConfig);
+
+//     // 1️⃣ Get Data Master by Card
+//     const dataResult = await pool.request()
+//       .input('cardNo', sql.VarChar, cardNo)
+//       .query('SELECT TOP 1 * FROM DATA_MASTER WHERE CARD_NO = @cardNo ORDER BY FAN_TIME_OUT DESC');
+
+//     if (dataResult.recordset.length === 0) {
+//       return res.status(404).json({ message: "Card not found in DATA_MASTER" });
+//     }
+
+//     const dataMaster = dataResult.recordset[0];
+
+//     // Safety: Trim Truck No before query (in case of spaces)
+//     const truckRegNo = (dataMaster.TRUCK_REG_NO || "").trim();
+
+//     // 2️⃣ Always try to get TRUCK_MASTER (if truckRegNo is available)
+//     let truckData = {};
+//     if (truckRegNo) {
+//       const truckResult = await pool.request()
+//         .input('truckRegNo', sql.VarChar, truckRegNo)
+//         .query('SELECT * FROM TRUCK_MASTER WHERE TRUCK_REG_NO = @truckRegNo');
+
+//       if (truckResult.recordset.length > 0) {
+//         truckData = truckResult.recordset[0];
+//       }
+//     }
+
+//     // 3️⃣ Merge truck master + data master
+//     const mergedData = { ...truckData, ...dataMaster };
+
+//     // If truck data missing, still return dataMaster to show CARD info
+//     res.json(mergedData);
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ message: "Database Error" });
+//   }
+// });
+
+
+
 
 
 // API route: Assign Card & Save to DATA_MASTER
