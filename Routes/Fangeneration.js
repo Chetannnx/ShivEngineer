@@ -40,7 +40,7 @@ router.get('/', async (req, res) => {
   </div>
   <div class="input-group">
     <label>Card Allocated : </label>
-    <input id="cardAllocated" type="text" placeholder="Card Allocated">
+    <input id="CARD_NO" type="text" placeholder="Card Allocated">
   </div>
 </div>
 
@@ -117,7 +117,7 @@ router.get('/', async (req, res) => {
   // Define the fetch function
  async function fetchTruckData() {
   const truckRegNo = document.getElementById("truckRegInput").value.trim();
-  const cardNo = document.getElementById("cardAllocated").value.trim();
+  const cardNo = document.getElementById("CARD_NO").value.trim();
 
   if (!truckRegNo && !cardNo) return alert("Please enter Truck No or Card Allocated No");
 
@@ -134,8 +134,8 @@ router.get('/', async (req, res) => {
 
     const data = await res.json();
 
-    // Map CARD_NO to cardAllocated
-    if (data.CARD_NO) data.cardAllocated = data.CARD_NO;
+    // Map CARD_NO to CARD_NO
+    if (data.CARD_NO) data.CARD_NO = data.CARD_NO;
 
     // Fill all fields
     const allFields = [
@@ -144,13 +144,13 @@ router.get('/', async (req, res) => {
       "SAFETY_CERTIFICATION_NO", "CALIBRATION_CERTIFICATION_NO",
       "TARE_WEIGHT", "MAX_WEIGHT", "MAX_FUEL_CAPACITY",
       "CUSTOMER_NAME", "ADDRESS_LINE_1", "ADDRESS_LINE_2", "ITEM_DESCRIPTION",
-      "FAN_TIME_OUT", "WEIGHT_TO_FILLED", "cardAllocated"
+      "FAN_TIME_OUT", "WEIGHT_TO_FILLED", "CARD_NO"
     ];
     allFields.forEach(id => {
       const field = document.getElementById(id);
       if (field) field.value = data[id] ?? "";
     });
-    
+
         // ✅ Fill the top Truck Reg No input separately
     document.getElementById("truckRegInput").value = data.TRUCK_REG_NO || "";
 
@@ -171,7 +171,7 @@ document.getElementById("truckRegInput").addEventListener("keypress", function(e
 });
 
 // Trigger fetch on Enter key for Card Allocated
-document.getElementById("cardAllocated").addEventListener("keypress", function(e) {
+document.getElementById("CARD_NO").addEventListener("keypress", function(e) {
   if (e.key === "Enter") {
     e.preventDefault();
     fetchTruckData();
@@ -196,7 +196,7 @@ document.getElementById("cardAllocated").addEventListener("keypress", function(e
   if (assignBtn) {
     assignBtn.addEventListener("click", async () => {
       const truckRegNo = document.getElementById("truckRegInput").value.trim();
-      const cardNo = document.getElementById("cardAllocated").value.trim();
+      const cardNo = document.getElementById("CARD_NO").value.trim();
       if (!truckRegNo) return alert("Enter Truck Reg No");
       if (!cardNo) return alert("Enter Card Allocated");
 
@@ -226,7 +226,7 @@ document.getElementById("cardAllocated").addEventListener("keypress", function(e
         const data = await res.json();
         if (res.ok) {
           alert("Card Assigned Successfully!");
-          //document.getElementById("cardAllocated").value = "";
+          //document.getElementById("CARD_NO").value = "";
         } else {
           alert("Error: " + data.message);
         }
@@ -238,6 +238,31 @@ document.getElementById("cardAllocated").addEventListener("keypress", function(e
   }
 });
 
+
+
+//find Using URL
+   (function () {
+  // Get query parameters from URL
+  const params = new URLSearchParams(window.location.search);
+
+  // Read CARD_NO from query string
+  const cardNo = params.get('CARD_NO'); // should match URL parameter
+
+  // If CARD_NO exists, set it in input field
+  if (cardNo) {
+    const cardInput = document.getElementById('CARD_NO');
+    if (cardInput) {
+      cardInput.value = cardNo;
+
+      // Optional: auto-fetch truck data if CARD_NO is present
+      if (typeof fetchTruckData === "function") {
+        fetchTruckData();
+      }
+    } else {
+      console.warn('Input with id="CARD_NO" not found.');
+    }
+  }
+})();
 
 </script>
 
@@ -286,7 +311,7 @@ router.get('/api/fan-generation/truck/:inputValue', async (req, res) => {
       return res.json({
   ...dataMaster,
   ...truckData, // overwrite TRUCK_REG_NO from truckData
-  cardAllocated: dataMaster.CARD_NO
+  CARD_NO: dataMaster.CARD_NO
 });
     }
 
@@ -317,7 +342,7 @@ router.get('/api/fan-generation/truck/:inputValue', async (req, res) => {
 res.json({
   ...dataMaster,
   ...truckData, // overwrite TRUCK_REG_NO from truckData
-  cardAllocated: dataMaster.CARD_NO
+  CARD_NO: dataMaster.CARD_NO
 });
 
 
