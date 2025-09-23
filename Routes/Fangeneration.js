@@ -53,6 +53,7 @@ router.get('/', async (req, res) => {
   <div class="input-group">
     <label for="processType">Process Type:</label>
     <select id="processType">
+      <option value="">-- Select --</option>
       <option value="1">Loading</option>
       <option value="0">Unloading</option>
     </select>
@@ -115,6 +116,7 @@ router.get('/', async (req, res) => {
         <!-- Inline Script -->
         <script>
   // Define the fetch function
+
  async function fetchTruckData() {
   const truckRegNo = document.getElementById("truckRegInput").value.trim();
   const cardNo = document.getElementById("CARD_NO").value.trim();
@@ -129,6 +131,12 @@ router.get('/', async (req, res) => {
     const res = await fetch(url);
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
+
+      // 🆕 Special handling for card already assigned
+  if (res.status === 400 && errorData.truckRegNo) {
+  alert("This Card (" + inputValue + ") is already registered with Truck " + errorData.truckRegNo);
+  return;
+}
       throw new Error(errorData.message || "Truck or Card not found");
     }
 
@@ -150,6 +158,12 @@ router.get('/', async (req, res) => {
       const field = document.getElementById(id);
       if (field) field.value = data[id] ?? "";
     });
+
+    // Set the Process Type select value
+const processTypeField = document.getElementById("processType");
+if (processTypeField && data.PROCESS_TYPE != null) {
+  processTypeField.value = data.PROCESS_TYPE;
+}
 
         // ✅ Fill the top Truck Reg No input separately
     document.getElementById("truckRegInput").value = data.TRUCK_REG_NO || "";
@@ -207,13 +221,15 @@ document.getElementById("CARD_NO").addEventListener("keypress", function(e) {
       const itemDesc = document.getElementById("ITEM_DESCRIPTION").value.trim();
       const fanTimeOut = document.getElementById("FAN_TIME_OUT").value.trim();
       const weightToFill = document.getElementById("WEIGHT_TO_FILLED").value.trim();
+      const processType = document.getElementById("processType").value;  // ✅ ADD THIS
+
 
       try {
         const res = await fetch('/Fan-Generation/api/assign-card', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            truckRegNo, cardNo,
+            truckRegNo, cardNo, processType,
             CUSTOMER_NAME: customerName,
             ADDRESS_LINE_1: address1,
             ADDRESS_LINE_2: address2,
@@ -276,12 +292,7 @@ document.getElementById("CARD_NO").addEventListener("keypress", function(e) {
   }
 });
 
-// API route: Fetch Truck Master + optional Fan Generation data
-// Fetch by Truck No (existing)
-// Fetch by Card No (with Truck Master details)
-// Fetch by Truck No (with Truck Master + Data Master)
-// Unified API: Fetch by Truck No OR Card Allocated No
-// Unified API: Fetch by Truck No OR Card Allocated No
+
 // Unified API: Fetch by Truck No OR Card Allocated No
 router.get('/api/fan-generation/truck/:inputValue', async (req, res) => {
   const inputValue = req.params.inputValue?.trim();
@@ -302,7 +313,14 @@ router.get('/api/fan-generation/truck/:inputValue', async (req, res) => {
       // Fetch latest DATA_MASTER for this truck
       const dataResult = await pool.request()
         .input('truckRegNo', sql.VarChar, truckData.TRUCK_REG_NO)
-        .query('SELECT TOP 1 * FROM DATA_MASTER WHERE TRUCK_REG_NO = @truckRegNo ORDER BY FAN_TIME_OUT DESC');
+        .query(`
+        SELECT TOP 1 
+            TRUCK_REG_NO, CARD_NO, PROCESS_TYPE, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, 
+            ITEM_DESCRIPTION, FAN_TIME_OUT, WEIGHT_TO_FILLED 
+        FROM DATA_MASTER 
+        WHERE TRUCK_REG_NO = @truckRegNo 
+        ORDER BY FAN_TIME_OUT DESC
+    `);
 
       if (dataResult.recordset.length > 0) {
         dataMaster = dataResult.recordset[0];
@@ -311,14 +329,22 @@ router.get('/api/fan-generation/truck/:inputValue', async (req, res) => {
       return res.json({
   ...dataMaster,
   ...truckData, // overwrite TRUCK_REG_NO from truckData
-  CARD_NO: dataMaster.CARD_NO
+  CARD_NO: dataMaster.CARD_NO,
+   PROCESS_TYPE: dataMaster.PROCESS_TYPE ?? "" // ✅ Add this
 });
     }
 
     // 2️⃣ If not found as Truck, try Card No
     const cardResult = await pool.request()
       .input('cardNo', sql.VarChar, inputValue)
-      .query('SELECT TOP 1 * FROM DATA_MASTER WHERE CARD_NO = @cardNo ORDER BY FAN_TIME_OUT DESC');
+      .query(`
+        SELECT TOP 1 
+            TRUCK_REG_NO, CARD_NO, PROCESS_TYPE, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, 
+            ITEM_DESCRIPTION, FAN_TIME_OUT, WEIGHT_TO_FILLED 
+        FROM DATA_MASTER 
+        WHERE CARD_NO = @cardNo 
+        ORDER BY FAN_TIME_OUT DESC
+    `);
 
     if (cardResult.recordset.length === 0) {
       return res.status(404).json({ message: "Truck or Card not found" });
@@ -328,7 +354,7 @@ router.get('/api/fan-generation/truck/:inputValue', async (req, res) => {
 
     // Fetch truck info if TRUCK_REG_NO exists in dataMaster
     if (dataMaster.TRUCK_REG_NO) {
-      const truckResultByCard = await pool.request()
+     const truckResultByCard = await pool.request()
         .input('truckRegNo', sql.VarChar, dataMaster.TRUCK_REG_NO)
         .query('SELECT * FROM TRUCK_MASTER WHERE TRUCK_REG_NO = @truckRegNo');
 
@@ -342,7 +368,8 @@ router.get('/api/fan-generation/truck/:inputValue', async (req, res) => {
 res.json({
   ...dataMaster,
   ...truckData, // overwrite TRUCK_REG_NO from truckData
-  CARD_NO: dataMaster.CARD_NO
+  CARD_NO: dataMaster.CARD_NO,
+   PROCESS_TYPE: dataMaster.PROCESS_TYPE ?? "" // ✅ Add this
 });
 
 
@@ -403,7 +430,7 @@ res.json({
 
 // API route: Assign Card & Save to DATA_MASTER
 router.post('/api/assign-card', async (req, res) => {
-  const { truckRegNo, cardNo, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, ITEM_DESCRIPTION, FAN_TIME_OUT, WEIGHT_TO_FILLED } = req.body;
+  const { truckRegNo, cardNo, processType, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, ITEM_DESCRIPTION, FAN_TIME_OUT, WEIGHT_TO_FILLED } = req.body;
 
   if (!truckRegNo || !cardNo) 
     return res.status(400).json({ message: "Truck Reg No and Card No are required" });
@@ -421,10 +448,22 @@ router.post('/api/assign-card', async (req, res) => {
       return res.status(400).json({ message: `Truck ${truckRegNo} already has a card allocated (${existing.recordset[0].CARD_NO})` });
     }
 
+    // 2️⃣ Check if this CARD_NO is already assigned to another truck
+    const existingCard = await pool.request()
+      .input('cardNo', sql.VarChar, cardNo)
+      .query('SELECT TRUCK_REG_NO FROM DATA_MASTER WHERE CARD_NO = @cardNo');
+
+    if (existingCard.recordset.length > 0) {
+      return res.status(400).json({ 
+        message: `Card ${cardNo} is already assigned to Truck ${existingCard.recordset[0].TRUCK_REG_NO}`
+      });
+    }
+
     // Truck has no card → assign new card
     await pool.request()
       .input('TRUCK_REG_NO', sql.VarChar, truckRegNo)
       .input('CARD_NO', sql.VarChar, cardNo)
+      .input('PROCESS_TYPE', sql.Int, parseInt(processType)) // ✅ ADD THIS LINE
       .input('CUSTOMER_NAME', sql.VarChar, CUSTOMER_NAME || "")
       .input('ADDRESS_LINE_1', sql.VarChar, ADDRESS_LINE_1 || "")
       .input('ADDRESS_LINE_2', sql.VarChar, ADDRESS_LINE_2 || "")
@@ -432,8 +471,8 @@ router.post('/api/assign-card', async (req, res) => {
       .input('FAN_TIME_OUT', sql.Int, parseInt(FAN_TIME_OUT) || 0)
       .input('WEIGHT_TO_FILLED', sql.BigInt, parseInt(WEIGHT_TO_FILLED) || 0)
       .query(`INSERT INTO DATA_MASTER 
-              (TRUCK_REG_NO, CARD_NO, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, ITEM_DESCRIPTION, FAN_TIME_OUT, WEIGHT_TO_FILLED)
-              VALUES (@TRUCK_REG_NO, @CARD_NO, @CUSTOMER_NAME, @ADDRESS_LINE_1, @ADDRESS_LINE_2, @ITEM_DESCRIPTION, @FAN_TIME_OUT, @WEIGHT_TO_FILLED)`);
+              (TRUCK_REG_NO, CARD_NO, PROCESS_TYPE, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, ITEM_DESCRIPTION, FAN_TIME_OUT, WEIGHT_TO_FILLED)
+              VALUES (@TRUCK_REG_NO, @CARD_NO, @PROCESS_TYPE ,@CUSTOMER_NAME, @ADDRESS_LINE_1, @ADDRESS_LINE_2, @ITEM_DESCRIPTION, @FAN_TIME_OUT, @WEIGHT_TO_FILLED)`);
 
     res.json({ message: "Card assigned successfully" });
 
