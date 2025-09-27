@@ -65,9 +65,9 @@
   </div>
   </div>
 
-  <div class="top-actions1">
+ 
     <button type="button" id="assignCardBtn" class="btn">Assign Card</button>
-  </div>
+  
           <div class="form-container">
             <!-- LEFT: CARD_MASTER from Truck Master -->
             <div>
@@ -109,7 +109,14 @@
               <div class="form-group"><label>Customer Name :</label><input id="CUSTOMER_NAME" name="CUSTOMER_NAME" type="text"></div>
               <div class="form-group"><label>Address Line 1 :</label><input id="ADDRESS_LINE_1" name="ADDRESS_LINE_1" type="text"></div>
               <div class="form-group"><label>Address Line 2 :</label><input id="ADDRESS_LINE_2" name="ADDRESS_LINE_2" type="text"></div>
-              <div class="form-group"><label>Item Description :</label><input id="ITEM_DESCRIPTION" name="ITEM_DESCRIPTION" type="text"></div>
+              <div class="form-group">
+  <label for="ITEM_DESCRIPTION">Item Description :</label>
+  <select id="ITEM_DESCRIPTION" name="ITEM_DESCRIPTION">
+    <option value="">-- Select --</option>
+    <option value="Petrol">Petrol</option>
+    <option value="Diesel">Diesel</option>
+  </select>
+</div>
               <div class="form-group"><label>Fan Time Out :</label><input id="FAN_TIME_OUT" name="FAN_TIME_OUT" type="time"></div>
               <div class="form-group"><label>Weight to Fill :</label><input id="WEIGHT_TO_FILLED" name="WEIGHT_TO_FILLED" type="number"></div>
             </div>

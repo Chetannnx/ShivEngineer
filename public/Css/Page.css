@@ -77,10 +77,6 @@ table {
   font-weight: bold;
   border-radius: 12px; /* ✅ rounded corners */
   overflow: hidden; /* ✅ ensures corners look clean */
-  transition: transform 450ms;
-}
-table:hover{
-  transform: translateY(-1.5px);
 }
 
 th, td {
@@ -427,6 +423,7 @@ nav ul li a.active::after {
   left: 340px;
   font-size: 20px;
   color: white;
+
 }
 .DeleteCard{
   position: absolute;

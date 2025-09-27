@@ -163,6 +163,7 @@ nav ul li a.active::after {
   }
 
 .input-group select {
+  font-weight: bold;
   padding: 8px 15px;
   font-family: 'DM Sans', sans-serif;
   border: 1px solid #ccc;
@@ -199,7 +200,17 @@ nav ul li a.active::after {
   transition: background 0.2s ease, transform 0.2s ease;
 }
 
-.top-actions1 {
-  display: flex;
-  justify-content: center;
+button[type="button"] {
+  position: absolute;
+  top: 250px; /* distance from top */
+  right:200px; /* distance from right */
+  background-color: #6366f1;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  cursor: pointer;
 }
+
+

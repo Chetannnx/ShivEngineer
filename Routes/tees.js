@@ -178,7 +178,8 @@ const totalCardHTML = `
 <div style="width:1850px; max-width:1850px;  display:flex; justify-content:space-between; align-items:center;">
   <form method="GET" action="/tees" style="display:flex; align-items:center; gap:8px;">
   
-    <input type="text" name="search" value="${escapeHtml(search)}" placeholder="Search Card No" style="padding:6px; font-family:'DM Sans', sans-serif; border-radius:10px; border:1px solid #ccc;">
+
+    <input type="text" name="search" value="${escapeHtml(search)}" placeholder="Search Card No" style="padding:6px;font-weight:bold; font-family:'DM Sans', sans-serif;height:22px; border-radius:10px; border:1px solid #ccc;">
     <button 
   type="submit" 
   class="btn btn-add" 
