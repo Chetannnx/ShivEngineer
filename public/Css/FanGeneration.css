@@ -111,8 +111,6 @@ nav ul li a.active::after {
   font-size: 14px;
   background: #fdfdfd;
   transition: border-color 0.3s ease;
-  
-  
 }
 .form-group input{
   height: 20px;
@@ -209,8 +207,12 @@ nav ul li a.active::after {
   border-radius: 10px;
   font-size: 16px;
   cursor: pointer;
-}
+  transition: all 0.3s ease;
 
+}
+.btn:active {
+  transform: translateY(2px); /* Moves button down a bit */
+}
 
 #assignCardBtn {
   top: 250px;
@@ -221,3 +223,5 @@ nav ul li a.active::after {
   right: 177px; /* different position */
   background-color: #16a34a; /* optional different color */
 }
+
+

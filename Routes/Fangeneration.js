@@ -119,7 +119,12 @@
   </select>
 </div>
               <div class="form-group"><label>Fan Time Out :</label><input id="FAN_TIME_OUT" name="FAN_TIME_OUT" type="time"></div>
-              <div class="form-group"><label>Weight to Fill :</label><input id="WEIGHT_TO_FILLED" name="WEIGHT_TO_FILLED" type="number"></div>
+              <div class="form-group three-inputs">
+  <label>Weight Filled:</label>
+  <input type="text" id="MIN" name="MAX1" placeholder="Min" readonly>
+  <input type="text" id="WEIGHT_TO_FILLED" name="WEIGHT_TO_FILLED" placeholder="Weight to Fill">
+  <input type="text" id="MAX" name="MAX2" placeholder="Max">
+</div>
             </div>
           </div>
 
@@ -127,6 +132,13 @@
 
           <!-- Inline Script -->
           <script>
+
+           // ✅ Disable Reassign button initially
+  window.addEventListener('DOMContentLoaded', () => {
+      const reassignBtn = document.getElementById("ReassignCardBtn");
+      if (reassignBtn) reassignBtn.disabled = true; // start disabled
+  });
+
     // Define the fetch function
 
   async function fetchTruckData() {
@@ -192,6 +204,37 @@ document.getElementById("truckRegInput").value = data.TRUCK_REG_NO || "";
 
       // After filling all fields:
   document.getElementById("truckStatus").value = data.PROCESS_STATUS ?? "-1";
+
+  // Enable or disable Reassign button based on CARD_NO presence
+const reassignBtn = document.getElementById("ReassignCardBtn");
+if (reassignBtn) {
+    if (data.CARD_NO) {
+        reassignBtn.disabled = false;  // enable if truck already has card
+    } else {
+        reassignBtn.disabled = true;   // disable if no card
+    }
+}
+
+// Set Min = 0 and Max = MAX_FUEL_CAPACITY
+const minField = document.getElementById("MIN");
+const maxField = document.getElementById("MAX");
+const weightField = document.getElementById("WEIGHT_TO_FILLED");
+
+if (minField) minField.value = 0;
+if (maxField) maxField.value = data.MAX_FUEL_CAPACITY ?? 0;
+
+// Enforce max validation when user types
+if (weightField) {
+  weightField.max = data.MAX_FUEL_CAPACITY ?? 0;
+
+  weightField.addEventListener("input", function() {
+    const maxVal = parseFloat(this.max);
+    let val = parseFloat(this.value) || 0;
+    if (val > maxVal) this.value = maxVal;
+    if (val < 0) this.value = 0;
+  });
+}
+
 
 
     } catch (err) {
