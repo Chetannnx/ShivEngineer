@@ -129,10 +129,12 @@
             </div>
           </div>
 
-          
+        
 
           <!-- Inline Script -->
           <script>
+
+          
 
            // ✅ Disable Reassign button initially
   window.addEventListener('DOMContentLoaded', () => {
@@ -404,8 +406,9 @@ if (reassignBtn) {
   });
 }
 
+  
+</script>
 
-  </script>
 
         </body>
         </html>
