@@ -67,6 +67,7 @@
 
  
     <button type="button" id="assignCardBtn" class="btn">Assign Card</button>
+    <button type="button" id="ReassignCardBtn" class="btn">Re Assign Card</button>
   
           <div class="form-container">
             <!-- LEFT: CARD_MASTER from Truck Master -->
@@ -305,6 +306,61 @@ document.getElementById("truckRegInput").value = data.TRUCK_REG_NO || "";
     }
   })();
 
+
+  // Handle Reassign Button Click
+const reassignBtn = document.getElementById("ReassignCardBtn");
+if (reassignBtn) {
+  reassignBtn.addEventListener("click", async () => {
+    const truckRegNo = document.getElementById("truckRegInput").value.trim();
+    const cardNo = document.getElementById("CARD_NO").value.trim();
+    if (!truckRegNo) return alert("Enter Truck Reg No");
+    if (!cardNo) return alert("Enter New Card Allocated");
+
+    // Collect other fields (just like assign)
+    const customerName = document.getElementById("CUSTOMER_NAME").value.trim();
+    const address1 = document.getElementById("ADDRESS_LINE_1").value.trim();
+    const address2 = document.getElementById("ADDRESS_LINE_2").value.trim();
+    const itemDesc = document.getElementById("ITEM_DESCRIPTION").value.trim();
+    const fanTimeOut = document.getElementById("FAN_TIME_OUT").value.trim();
+    const weightToFill = document.getElementById("WEIGHT_TO_FILLED").value.trim();
+    const processType = document.getElementById("processType").value;
+
+    try {
+      const res = await fetch('/Fan-Generation/api/reassign-card', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          truckRegNo, cardNo, processType,
+          CUSTOMER_NAME: customerName,
+          ADDRESS_LINE_1: address1,
+          ADDRESS_LINE_2: address2,
+          ITEM_DESCRIPTION: itemDesc,
+          FAN_TIME_OUT: fanTimeOut,
+          WEIGHT_TO_FILLED: weightToFill
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        alert("Card Reassigned Successfully!");
+        fetchTruckData(); // refresh UI after update
+      } else {
+        if (res.ok) {
+  alert("Card Assigned Successfully!");
+} else {
+  // Show friendly backend message (400 means logical validation fail)
+  alert(data.message || "Unknown Error");
+}
+
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Server Error");
+    }
+  });
+}
+
+
   </script>
 
         </body>
@@ -463,10 +519,7 @@ const truckStatusText = processStatus === 1 ? "Reported" : "Registered";
   // });
 
 
-
-
-
-  // API route: Assign Card & Save to DATA_MASTER
+ // API route: Assign Card & Save to DATA_MASTER
   router.post('/api/assign-card', async (req, res) => {
     const { truckRegNo, cardNo, processType, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, ITEM_DESCRIPTION, FAN_TIME_OUT, WEIGHT_TO_FILLED } = req.body;
 
@@ -522,5 +575,78 @@ const truckStatusText = processStatus === 1 ? "Reported" : "Registered";
   });
 
 
+
+ // API route: Reassign Card (Update existing record)
+router.put('/api/reassign-card', async (req, res) => {
+  const { truckRegNo, cardNo, processType, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, ITEM_DESCRIPTION, FAN_TIME_OUT, WEIGHT_TO_FILLED } = req.body;
+
+  if (!truckRegNo || !cardNo)
+    return res.status(400).json({ message: "Truck Reg No and Card No are required" });
+
+  try {
+    const pool = await sql.connect(dbConfig);
+
+    // 1️⃣ Check if truck exists
+    const existing = await pool.request()
+      .input('truckRegNo', sql.VarChar, truckRegNo)
+      .query('SELECT CARD_NO FROM DATA_MASTER WHERE TRUCK_REG_NO = @truckRegNo');
+
+    if (existing.recordset.length === 0) {
+      return res.status(404).json({ message: `Truck ${truckRegNo} not found. Please assign a card first.` });
+    }
+
+    // ✅ If truck already has the same card, no need to reassign
+    if (existing.recordset[0].CARD_NO === cardNo) {
+      return res.status(400).json({ 
+        message: `Truck ${truckRegNo} already has this card (${cardNo}) assigned`
+      });
+    }
+
+    // 2️⃣ Check if this CARD_NO is already assigned to another truck
+    const existingCard = await pool.request()
+      .input('cardNo', sql.VarChar, cardNo)
+      .query('SELECT TRUCK_REG_NO FROM DATA_MASTER WHERE CARD_NO = @cardNo');
+
+    if (existingCard.recordset.length > 0 && existingCard.recordset[0].TRUCK_REG_NO !== truckRegNo) {
+      return res.status(400).json({ 
+        message: `Card ${cardNo} is already assigned to Truck ${existingCard.recordset[0].TRUCK_REG_NO}`
+      });
+    }
+
+    // 3️⃣ Safe to update
+    const updateResult = await pool.request()
+      .input('TRUCK_REG_NO', sql.VarChar, truckRegNo)
+      .input('CARD_NO', sql.VarChar, cardNo)
+      .input('PROCESS_TYPE', sql.Int, parseInt(processType) || 0)
+      .input('CUSTOMER_NAME', sql.VarChar, CUSTOMER_NAME || "")
+      .input('ADDRESS_LINE_1', sql.VarChar, ADDRESS_LINE_1 || "")
+      .input('ADDRESS_LINE_2', sql.VarChar, ADDRESS_LINE_2 || "")
+      .input('ITEM_DESCRIPTION', sql.VarChar, ITEM_DESCRIPTION || "")
+      .input('FAN_TIME_OUT', sql.Int, parseInt(FAN_TIME_OUT) || 0)
+      .input('WEIGHT_TO_FILLED', sql.BigInt, parseInt(WEIGHT_TO_FILLED) || 0)
+      .query(`
+        UPDATE DATA_MASTER
+        SET CARD_NO = @CARD_NO,
+            PROCESS_TYPE = @PROCESS_TYPE,
+            CUSTOMER_NAME = @CUSTOMER_NAME,
+            ADDRESS_LINE_1 = @ADDRESS_LINE_1,
+            ADDRESS_LINE_2 = @ADDRESS_LINE_2,
+            ITEM_DESCRIPTION = @ITEM_DESCRIPTION,
+            FAN_TIME_OUT = @FAN_TIME_OUT,
+            WEIGHT_TO_FILLED = @WEIGHT_TO_FILLED
+        WHERE TRUCK_REG_NO = @TRUCK_REG_NO
+      `);
+
+    if (updateResult.rowsAffected[0] === 0) {
+      return res.status(500).json({ message: "Reassign failed, no rows were updated." });
+    }
+
+    res.json({ message: "Card re-assigned successfully" });
+
+  } catch (err) {
+    console.error("Reassign Card Error:", err);
+    res.status(500).json({ message: "Database Error: " + err.message });
+  }
+});
 
   module.exports = router;

@@ -200,10 +200,8 @@ nav ul li a.active::after {
   transition: background 0.2s ease, transform 0.2s ease;
 }
 
-button[type="button"] {
+.btn{
   position: absolute;
-  top: 250px; /* distance from top */
-  right:200px; /* distance from right */
   background-color: #6366f1;
   color: white;
   padding: 10px 20px;
@@ -214,3 +212,12 @@ button[type="button"] {
 }
 
 
+#assignCardBtn {
+  top: 250px;
+  right: 200px;
+}
+#ReassignCardBtn {
+  top: 310px;
+  right: 177px; /* different position */
+  background-color: #16a34a; /* optional different color */
+}
