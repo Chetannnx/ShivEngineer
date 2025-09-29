@@ -68,6 +68,7 @@
  
     <button type="button" id="assignCardBtn" class="btn">Assign Card</button>
     <button type="button" id="ReassignCardBtn" class="btn">Re Assign Card</button>
+    <button type="button" id="FanGeneration" class="btn">Fan Generation</button>
   
           <div class="form-container">
             <!-- LEFT: CARD_MASTER from Truck Master -->
@@ -118,11 +119,11 @@
     <option value="Diesel">Diesel</option>
   </select>
 </div>
-              <div class="form-group"><label>Fan Time Out :</label><input id="FAN_TIME_OUT" name="FAN_TIME_OUT" type="time"></div>
+              <div class="form-group"><label>Fan Time Out :</label><input id="FAN_TIME_OUT" name="FAN_TIME_OUT" type="text"></div>
               <div class="form-group three-inputs">
   <label>Weight Filled:</label>
   <input type="text" id="MIN" name="MAX1" placeholder="Min" readonly>
-  <input type="text" id="WEIGHT_TO_FILLED" name="WEIGHT_TO_FILLED" placeholder="Weight to Fill">
+  <input type="number" id="WEIGHT_TO_FILLED" name="WEIGHT_TO_FILLED" placeholder="Weight to Fill">
   <input type="text" id="MAX" name="MAX2" placeholder="Max">
 </div>
             </div>
