@@ -122,8 +122,11 @@ router.get('/', (req, res) => {
   </select>
 </div>
       <div class="form-group"><label>Reason For Blacklist :</label><input name="REASON_FOR_BLACKLIST" type="text" value="${truckData.REASON_FOR_BLACKLIST ?? ''}" readonly></div>
-      <div class="form-group"><label>Safety Cer. Valid Upto :</label><input name="SAFETY_CERTIFICATION_NO" type="text" value="${truckData.SAFETY_CERTIFICATION_NO ?? ''}" readonly></div>
-      <div class="form-group"><label>Calibration Cer. Valid Upto :</label><input name="CALIBRATION_CERTIFICATION_NO" type="text" value="${truckData.CALIBRATION_CERTIFICATION_NO ?? ''}" readonly></div>
+      <div class="form-group"><label>Safety Cer. Valid Upto :</label><input name="SAFETY_CERTIFICATION_NO" type="date" 
+  value="${truckData.SAFETY_CERTIFICATION_NO ? new Date(truckData.SAFETY_CERTIFICATION_NO).toISOString().split('T')[0] : ''}" readonly>
+</div>
+      <div class="form-group"><label>Calibration Cer. Valid Upto :</label><input name="CALIBRATION_CERTIFICATION_NO" type="date" 
+  value="${truckData.CALIBRATION_CERTIFICATION_NO ? new Date(truckData.CALIBRATION_CERTIFICATION_NO).toISOString().split('T')[0] : ''}" readonly></div>
       <div class="form-group"><label>Tare Weight :</label><input id="tareWeight" name="TARE_WEIGHT" type="text" value="${truckData.TARE_WEIGHT ?? ''}" readonly></div>
       <div class="form-group"><label>Max Weight :</label><input id="maxWeight" name="MAX_WEIGHT" type="text" value="${truckData.MAX_WEIGHT ?? ''}" readonly></div>
       <div class="form-group"><label>Max Fuel Capacity :</label><input id="maxFuel" name="MAX_FUEL_CAPACITY" type="text" value="${truckData.MAX_FUEL_CAPACITY ?? ''}" readonly></div>
