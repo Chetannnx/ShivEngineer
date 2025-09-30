@@ -160,6 +160,13 @@ nav ul li a.active::after {
     font-weight: bold;
   }
 
+  .top-actionss{
+    display: flex;
+    justify-content: center;
+    gap: 35px;
+    margin-left: 0.3%;
+  }
+
 .input-group select {
   font-weight: bold;
   padding: 8px 15px;
@@ -168,7 +175,7 @@ nav ul li a.active::after {
   border-radius: 8px;
   gap:19px;
   font-size: 14px;
-  width: 315px;  /* fixed width for balance */
+  width: 307px;  /* fixed width for balance */
 }
 .input-group select:focus{
 border-color: #007bff;

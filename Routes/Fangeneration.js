@@ -44,10 +44,10 @@
     </div>
   </div>
 
-  <div class="top-actions">
+  <div class="top-actionss">
     <div class="input-group">
       <label for="truckStatus">Truck Status:</label>
-      <select id="truckStatus">
+      <select id="truckStatus" disabled>
         <option value="">-- Select --</option>
         <option value="-1">Registered</option>
         <option value="1">Reported</option>
@@ -222,6 +222,8 @@ allFields.forEach(id => {
     field.value = data[id] ?? "";
   }
 });
+
+
       
 
       // Set the Process Type select value
