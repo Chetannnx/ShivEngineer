@@ -129,6 +129,29 @@
             </div>
           </div>
 
+
+          <!-- Fan Generation Popup -->
+<div id="fanPopup" class="popup-overlay" style="display:none;">
+  <div class="popup-content">
+    <h3>Fan Generation</h3>
+    <table id="fanTable">
+      <tr><th>FAN NO</th><td id="FAN_NO"></td></tr>
+      <tr><th>Card No</th><td id="POP_CARD_NO"></td></tr>
+      <tr><th>Date Time</th><td id="DATE_TIME"></td></tr>
+      <tr><th>Expiry</th><td id="FAN_EXPIRY"></td></tr>
+      <tr><th>Truck Reg No</th><td id="POP_TRUCK_REG_NO"></td></tr>
+      <tr><th>Customer</th><td id="POP_CUSTOMER_NAME"></td></tr>
+      <tr><th>Carrier</th><td id="POP_CARRIER_COMPANY"></td></tr>
+      <tr><th>Item</th><td id="POP_ITEM_DESCRIPTION"></td></tr>
+      <tr><th>Process</th><td id="POP_PROCESS_TYPE"></td></tr>
+      <tr><th>Weight</th><td id="POP_WEIGHT_TO_FILLED"></td></tr>
+    </table>
+
+    <button id="savePdfBtn">Save PDF</button>
+    <button onclick="closePopup()">Close</button>
+  </div>
+</div>
+
   
           <!-- Inline Script -->
           <script>
@@ -180,10 +203,26 @@
         "CUSTOMER_NAME", "ADDRESS_LINE_1", "ADDRESS_LINE_2", "ITEM_DESCRIPTION",
         "FAN_TIME_OUT", "WEIGHT_TO_FILLED", "CARD_NO"
       ];
-      allFields.forEach(id => {
-        const field = document.getElementById(id);
-        if (field) field.value = data[id] ?? "";
-      });
+      // First, format the date fields
+function formatDate(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d)) return dateStr;
+  return d.toLocaleDateString("en-GB"); // DD/MM/YYYY
+}
+      
+// Fill fields
+allFields.forEach(id => {
+  const field = document.getElementById(id);
+  if (!field) return;
+
+  if (id === "SAFETY_CERTIFICATION_NO" || id === "CALIBRATION_CERTIFICATION_NO") {
+    field.value = formatDate(data[id]);
+  } else {
+    field.value = data[id] ?? "";
+  }
+});
+      
 
       // Set the Process Type select value
   const processTypeField = document.getElementById("processType");
@@ -407,6 +446,101 @@ if (reassignBtn) {
 
 
   
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+function closePopup() {
+  document.getElementById("fanPopup").style.display = "none";
+}
+
+document.getElementById("FanGeneration").addEventListener("click", function () {
+  var truckRegNo = document.getElementById("truckRegInput").value.trim();
+  if (!truckRegNo) {
+    alert("Enter Truck No first!");
+    return;
+  }
+
+  // Fetch truck data (using .then instead of async/await)
+  fetch('/Fan-Generation/api/fan-generation/truck/' + truckRegNo)
+    .then(function (res) {
+      if (!res.ok) throw new Error("Truck not found");
+      return res.json();
+    })
+    .then(function (data) {
+      // Generate FAN_NO and DATE_TIME
+      var now = new Date();
+      var fanNo = now.getFullYear() + (now.getMonth() + 1) + now.getDate() + "-" +
+                  now.getHours() + now.getMinutes() + now.getSeconds();
+      var dateTime = now.toLocaleString();
+      var expiry = new Date(now.getTime() + (24 * 60 * 60 * 1000)).toLocaleString(); // +1 day expiry
+
+      // Fill popup values
+      document.getElementById("FAN_NO").textContent = fanNo;
+      document.getElementById("POP_CARD_NO").textContent = data.CARD_NO || "";
+      document.getElementById("DATE_TIME").textContent = dateTime;
+      document.getElementById("FAN_EXPIRY").textContent = expiry;
+      document.getElementById("POP_TRUCK_REG_NO").textContent = data.TRUCK_REG_NO || "";
+      document.getElementById("POP_CUSTOMER_NAME").textContent = data.CUSTOMER_NAME || "";
+      document.getElementById("POP_CARRIER_COMPANY").textContent = data.CARRIER_COMPANY || "";
+      document.getElementById("POP_ITEM_DESCRIPTION").textContent = data.ITEM_DESCRIPTION || "";
+      document.getElementById("POP_PROCESS_TYPE").textContent = data.PROCESS_TYPE == 1 ? "Loading" : "Unloading";
+      document.getElementById("POP_WEIGHT_TO_FILLED").textContent = data.WEIGHT_TO_FILLED || "";
+
+      // Show popup
+      document.getElementById("fanPopup").style.display = "flex";
+    })
+    .catch(function (err) {
+      alert("Error: " + err.message);
+    });
+});
+
+document.getElementById("savePdfBtn").addEventListener("click", function () {
+  var jsPDFObj = window.jspdf;
+  var doc = new jsPDFObj.jsPDF();
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.text("Fan Generation Report", 14, 20);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+
+  var y = 40;
+  var rows = document.querySelectorAll("#fanTable tr");
+  for (var i = 0; i < rows.length; i++) {
+    var cells = rows[i].querySelectorAll("th, td");
+    if (cells.length === 2) {
+      doc.text(cells[0].innerText + ": " + cells[1].innerText, 14, y);
+      y += 10;
+    }
+  }
+
+  // Open print dialog directly
+  var pdfBlob = doc.output("blob");
+  var pdfUrl = URL.createObjectURL(pdfBlob);
+  var printWindow = window.open(pdfUrl);
+  printWindow.addEventListener("load", function () {
+    printWindow.print();
+  });
+});
+
+document.getElementById("FanGeneration").addEventListener("click", async () => {
+  try {
+    const truckRegNo = document.getElementById("truckRegInput").value.trim();
+    if (!truckRegNo) return alert("Enter Truck No first!");
+
+    // Fetch data from your API
+    const res = await fetch('/Fan-Generation/api/fan-generation/truck/' + truckRegNo);
+    if (!res.ok) throw new Error("Truck not found");
+    const data = await res.json();
+
+    // ...fill popup values and show it
+  } catch(err) {
+    alert("Error: " + err.message);
+  }
+});
+
 </script>
 
 

@@ -292,3 +292,29 @@ border-color: #007bff;
   cursor: pointer;
   font-size: 20px;
 }
+
+
+.popup-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5);
+  display:flex; justify-content:center; align-items:center;
+}
+.popup-content {
+  background:#fff;
+  padding:20px;
+  border-radius:10px;
+  width:400px;
+  font-family:'DM Sans',sans-serif;
+  box-shadow:0 5px 15px rgba(0,0,0,0.3);
+}
+#fanTable {
+  width:100%; border-collapse:collapse;
+  margin-bottom:15px;
+}
+#fanTable th, #fanTable td {
+  text-align:left;
+  padding:5px;
+  border-bottom:1px solid #ddd;
+}

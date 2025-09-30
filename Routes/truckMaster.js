@@ -378,6 +378,8 @@ if (deleteBtn) {
 }
 </script>
 
+
+
 </body>
 </html>`;
       res.send(html);
