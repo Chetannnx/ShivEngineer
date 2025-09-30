@@ -472,10 +472,21 @@ document.getElementById("FanGeneration").addEventListener("click", function () {
     .then(function (data) {
       // Generate FAN_NO and DATE_TIME
       var now = new Date();
-      var fanNo = now.getFullYear() + (now.getMonth() + 1) + now.getDate() + "-" +
-                  now.getHours() + now.getMinutes() + now.getSeconds();
+
+      function pad(n) {
+        return n < 10 ? '0' + n : n;
+      }
+
+      var fanNo = pad(now.getDate()) + 
+                  pad(now.getMonth() + 1) +  // months start from 0
+                  now.getFullYear() +
+                  pad(now.getHours()) +
+                  pad(now.getMinutes()) +
+                  pad(now.getSeconds());
+
       var dateTime = now.toLocaleString();
       var expiry = new Date(now.getTime() + (24 * 60 * 60 * 1000)).toLocaleString(); // +1 day expiry
+
 
       // Fill popup values
       document.getElementById("FAN_NO").textContent = fanNo;
