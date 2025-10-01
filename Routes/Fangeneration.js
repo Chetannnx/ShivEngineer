@@ -164,64 +164,66 @@
       if (reassignBtn) reassignBtn.disabled = true; // start disabled
   });
 
-    // Define the fetch function
 
-  async function fetchTruckData() {
+
+    // Define the fetch function
+   async function fetchTruckData() {
     const truckRegNo = document.getElementById("truckRegInput").value.trim();
     const cardNo = document.getElementById("CARD_NO").value.trim();
 
-    if (!truckRegNo && !cardNo) return alert("Please enter Truck No or Card Allocated No");
+    // ✅ Determine correct API endpoint
+    let url = "";
+    if (truckRegNo) {
+        url = "/Fan-Generation/api/fan-generation/truck/" + encodeURIComponent(truckRegNo);
+    } else if (cardNo) {
+        url = "/Fan-Generation/api/fan-generation/card/" + encodeURIComponent(cardNo);
+    } else {
+        return alert("Please enter Truck No or Card Allocated No");
+    }
 
     try {
-      // ✅ Use unified route for both
-      const inputValue = truckRegNo || cardNo;
-      const url = '/Fan-Generation/api/fan-generation/truck/' + inputValue;
+        const res = await fetch(url);
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
 
-      const res = await fetch(url);
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
+            // Special handling for card already assigned
+            if (res.status === 400 && errorData.truckRegNo) {
+                alert("This Card (" + (truckRegNo || cardNo) + ") is already registered with Truck " + errorData.truckRegNo);
+                return;
+            }
 
-        // 🆕 Special handling for card already assigned
-    if (res.status === 400 && errorData.truckRegNo) {
-    alert("This Card (" + inputValue + ") is already registered with Truck " + errorData.truckRegNo);
-    return;
-  }
-        throw new Error(errorData.message || "Truck or Card not found");
-      }
+            throw new Error(errorData.message || "Truck or Card not found");
+        }
 
-      const data = await res.json();
+        const data = await res.json();
 
-      // Map CARD_NO to CARD_NO
-      if (data.CARD_NO) data.CARD_NO = data.CARD_NO;
+        // Fill all fields
+        const allFields = [
+            "TRUCK_REG_NO", "TRAILER_NO", "OWNER_NAME", "DRIVER_NAME", "HELPER_NAME", "CARRIER_COMPANY",
+            "TRUCK_SEALING_REQUIREMENT", "BLACKLIST_STATUS", "REASON_FOR_BLACKLIST",
+            "SAFETY_CERTIFICATION_NO", "CALIBRATION_CERTIFICATION_NO",
+            "TARE_WEIGHT", "MAX_WEIGHT", "MAX_FUEL_CAPACITY",
+            "CUSTOMER_NAME", "ADDRESS_LINE_1", "ADDRESS_LINE_2", "ITEM_DESCRIPTION",
+            "FAN_TIME_OUT", "WEIGHT_TO_FILLED", "CARD_NO"
+        ];
 
-      // Fill all fields
-      const allFields = [
-        "TRUCK_REG_NO", "TRAILER_NO", "OWNER_NAME", "DRIVER_NAME", "HELPER_NAME", "CARRIER_COMPANY",
-        "TRUCK_SEALING_REQUIREMENT", "BLACKLIST_STATUS", "REASON_FOR_BLACKLIST",
-        "SAFETY_CERTIFICATION_NO", "CALIBRATION_CERTIFICATION_NO",
-        "TARE_WEIGHT", "MAX_WEIGHT", "MAX_FUEL_CAPACITY",
-        "CUSTOMER_NAME", "ADDRESS_LINE_1", "ADDRESS_LINE_2", "ITEM_DESCRIPTION",
-        "FAN_TIME_OUT", "WEIGHT_TO_FILLED", "CARD_NO"
-      ];
-      // First, format the date fields
-function formatDate(dateStr) {
-  if (!dateStr) return "";
-  const d = new Date(dateStr);
-  if (isNaN(d)) return dateStr;
-  return d.toLocaleDateString("en-GB"); // DD/MM/YYYY
-}
-      
-// Fill fields
-allFields.forEach(id => {
-  const field = document.getElementById(id);
-  if (!field) return;
+        // Format date fields
+        function formatDate(dateStr) {
+            if (!dateStr) return "";
+            const d = new Date(dateStr);
+            if (isNaN(d)) return dateStr;
+            return d.toLocaleDateString("en-GB"); // DD/MM/YYYY
+        }
 
-  if (id === "SAFETY_CERTIFICATION_NO" || id === "CALIBRATION_CERTIFICATION_NO") {
-    field.value = formatDate(data[id]);
-  } else {
-    field.value = data[id] ?? "";
-  }
-});
+        allFields.forEach(id => {
+            const field = document.getElementById(id);
+            if (!field) return;
+            if (id === "SAFETY_CERTIFICATION_NO" || id === "CALIBRATION_CERTIFICATION_NO") {
+                field.value = formatDate(data[id]);
+            } else {
+                field.value = data[id] ?? "";
+            }
+        });
 
 
       
@@ -257,6 +259,7 @@ if (reassignBtn) {
         reassignBtn.disabled = true;   // disable if no card
     }
 }
+
 
 // Set Min = 0 and Max = MAX_FUEL_CAPACITY
 const minField = document.getElementById("MIN");
@@ -569,103 +572,121 @@ document.getElementById("FanGeneration").addEventListener("click", async () => {
 
 
   // Unified API: Fetch by Truck No OR Card Allocated No
-  router.get('/api/fan-generation/truck/:inputValue', async (req, res) => {
-    const inputValue = req.params.inputValue?.trim();
-    try {
-      const pool = await sql.connect(dbConfig);
+ // =========================
+// 🔹 1. Search by Truck Reg No
+// =========================
+router.get('/api/fan-generation/truck/:truckRegNo', async (req, res) => {
+  const truckRegNo = req.params.truckRegNo?.trim();
 
-      let truckData = {};
-      let dataMaster = {};
+  try {
+    const pool = await sql.connect(dbConfig);
 
-      // 1️⃣ Try fetching as Truck No first
+    // Fetch Truck info
+    const truckResult = await pool.request()
+      .input('truckRegNo', sql.VarChar, truckRegNo)
+      .query('SELECT * FROM TRUCK_MASTER WHERE TRUCK_REG_NO = @truckRegNo');
+
+    if (truckResult.recordset.length === 0) {
+      return res.status(404).json({ message: "Truck not found" });
+    }
+
+    const truckData = truckResult.recordset[0];
+    let dataMaster = {};
+
+    // Fetch latest DATA_MASTER for this truck
+    const dataResult = await pool.request()
+      .input('truckRegNo', sql.VarChar, truckRegNo)
+      .query(`
+        SELECT TOP 1 
+            TRUCK_REG_NO, CARD_NO, PROCESS_TYPE, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, 
+            ITEM_DESCRIPTION, FAN_TIME_OUT, WEIGHT_TO_FILLED 
+        FROM DATA_MASTER 
+        WHERE TRUCK_REG_NO = @truckRegNo 
+        ORDER BY FAN_TIME_OUT DESC
+      `);
+
+    if (dataResult.recordset.length > 0) {
+      dataMaster = dataResult.recordset[0];
+    }
+
+    // ✅ Calculate Truck Status
+    const processStatus = dataMaster.CARD_NO ? 1 : -1;  
+    const truckStatusText = processStatus === 1 ? "Reported" : "Registered";
+
+    res.json({
+      ...dataMaster,
+      ...truckData,
+      CARD_NO: dataMaster.CARD_NO,
+      PROCESS_TYPE: dataMaster.PROCESS_TYPE ?? "",
+      PROCESS_STATUS: processStatus,
+      TRUCK_STATUS_TEXT: truckStatusText
+    });
+
+  } catch (err) {
+    console.error("Database Error:", err);
+    res.status(500).json({ message: "Database Error" });
+  }
+});
+
+
+// =========================
+// 🔹 2. Search by Card No
+// =========================
+router.get('/api/fan-generation/card/:cardNo', async (req, res) => {
+  const cardNo = req.params.cardNo?.trim();
+
+  try {
+    const pool = await sql.connect(dbConfig);
+
+    // Fetch latest data by Card No
+    const cardResult = await pool.request()
+      .input('cardNo', sql.VarChar, cardNo)
+      .query(`
+        SELECT TOP 1 
+            TRUCK_REG_NO, CARD_NO, PROCESS_TYPE, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, 
+            ITEM_DESCRIPTION, FAN_TIME_OUT, WEIGHT_TO_FILLED 
+        FROM DATA_MASTER 
+        WHERE CARD_NO = @cardNo 
+        ORDER BY FAN_TIME_OUT DESC
+      `);
+
+    if (cardResult.recordset.length === 0) {
+      return res.status(404).json({ message: "Card not found" });
+    }
+
+    const dataMaster = cardResult.recordset[0];
+    let truckData = {};
+
+    // Fetch truck info linked to this card
+    if (dataMaster.TRUCK_REG_NO) {
       const truckResult = await pool.request()
-        .input('truckRegNo', sql.VarChar, inputValue)
+        .input('truckRegNo', sql.VarChar, dataMaster.TRUCK_REG_NO)
         .query('SELECT * FROM TRUCK_MASTER WHERE TRUCK_REG_NO = @truckRegNo');
 
       if (truckResult.recordset.length > 0) {
         truckData = truckResult.recordset[0];
-
-        // Fetch latest DATA_MASTER for this truck
-        const dataResult = await pool.request()
-          .input('truckRegNo', sql.VarChar, truckData.TRUCK_REG_NO)
-          .query(`
-          SELECT TOP 1 
-              TRUCK_REG_NO, CARD_NO, PROCESS_TYPE, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, 
-              ITEM_DESCRIPTION, FAN_TIME_OUT, WEIGHT_TO_FILLED 
-          FROM DATA_MASTER 
-          WHERE TRUCK_REG_NO = @truckRegNo 
-          ORDER BY FAN_TIME_OUT DESC
-      `);
-
-        if (dataResult.recordset.length > 0) {
-          dataMaster = dataResult.recordset[0];
-        }
-
-        
-        // ✅ Calculate Truck Status based on CARD_NO presence
-const processStatus = dataMaster.CARD_NO ? 1 : -1;  // 1 = Reported, -1 = Registered
-const truckStatusText = processStatus === 1 ? "Reported" : "Registered";
-
-        return res.json({
-    ...dataMaster,
-    ...truckData, // overwrite TRUCK_REG_NO from truckData
-    CARD_NO: dataMaster.CARD_NO,
-    PROCESS_TYPE: dataMaster.PROCESS_TYPE ?? "", // ✅ Add this
-    PROCESS_STATUS: processStatus,  // ✅ use this for dropdown
-    TRUCK_STATUS_TEXT: truckStatusText
-  });
       }
-
-      // 2️⃣ If not found as Truck, try Card No
-      const cardResult = await pool.request()
-        .input('cardNo', sql.VarChar, inputValue)
-        .query(`
-          SELECT TOP 1 
-              TRUCK_REG_NO, CARD_NO, PROCESS_TYPE, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, 
-              ITEM_DESCRIPTION, FAN_TIME_OUT, WEIGHT_TO_FILLED 
-          FROM DATA_MASTER 
-          WHERE CARD_NO = @cardNo 
-          ORDER BY FAN_TIME_OUT DESC
-      `);
-
-      if (cardResult.recordset.length === 0) {
-        return res.status(404).json({ message: "Truck or Card not found" });
-      }
-
-      dataMaster = cardResult.recordset[0];
-
-      // Fetch truck info if TRUCK_REG_NO exists in dataMaster
-      if (dataMaster.TRUCK_REG_NO) {
-      const truckResultByCard = await pool.request()
-          .input('truckRegNo', sql.VarChar, dataMaster.TRUCK_REG_NO)
-          .query('SELECT * FROM TRUCK_MASTER WHERE TRUCK_REG_NO = @truckRegNo');
-
-        if (truckResultByCard.recordset.length > 0) {
-          truckData = truckResultByCard.recordset[0];
-        }
-      }
-
-     // ✅ Calculate Truck Status here (based on CARD_NO presence)
-const processStatus = dataMaster.CARD_NO ? 1 : -1;  // 1=Reported, -1=Registered
-const truckStatusText = processStatus === 1 ? "Reported" : "Registered";
-
-      // Merge truck info + dataMaster
-    // Merge truck info + dataMaster, but ensure TRUCK_REG_NO is filled
-  res.json({
-    ...dataMaster,
-    ...truckData, // overwrite TRUCK_REG_NO from truckData
-    CARD_NO: dataMaster.CARD_NO,
-    PROCESS_TYPE: dataMaster.PROCESS_TYPE ?? "", // ✅ Add this
-     PROCESS_STATUS: processStatus, // ✅ send this separately
-    TRUCK_STATUS_TEXT: truckStatusText
-  });
-
-
-    } catch (err) {
-      console.error("Database Error:", err);
-      res.status(500).json({ message: "Database Error" });
     }
-  });
+
+    // ✅ Calculate Truck Status
+    const processStatus = dataMaster.CARD_NO ? 1 : -1;
+    const truckStatusText = processStatus === 1 ? "Reported" : "Registered";
+
+    res.json({
+      ...dataMaster,
+      ...truckData,
+      CARD_NO: dataMaster.CARD_NO,
+      PROCESS_TYPE: dataMaster.PROCESS_TYPE ?? "",
+      PROCESS_STATUS: processStatus,
+      TRUCK_STATUS_TEXT: truckStatusText
+    });
+
+  } catch (err) {
+    console.error("Database Error:", err);
+    res.status(500).json({ message: "Database Error" });
+  }
+});
+
 
 
 
