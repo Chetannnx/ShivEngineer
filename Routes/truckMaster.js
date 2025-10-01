@@ -168,7 +168,7 @@ router.get('/', (req, res) => {
       <div class="form-group"><label>Helper Name:</label><input name="HELPER_NAME" required></div>
       <div class="form-group"><label>Calibration Cert. Valid Upto:</label><input type="date" name="CALIBRATION_CERTIFICATION_NO" required></div>
       <div class="form-group"><label>Carrier Company:</label><input name="CARRIER_COMPANY" required></div>
-      <div class="form-group"><label>Tare Weight:</label><input name="TARE_WEIGHT" id="tareWeight" required></div>
+      <div class="form-group"><label>Tare Weight:</label><input name="TARE_WEIGHT" id="inserttareWeight" required></div>
       <div class="form-group">
   <label for="truckSealingReq">Truck Sealing Requirement:</label>
   <select name="TRUCK_SEALING_REQUIREMENT" id="truckSealingReq" required>
@@ -177,8 +177,8 @@ router.get('/', (req, res) => {
     <option value="0">No</option>
   </select>
 </div> 
-      <div class="form-group"><label>Max Weight:</label><input name="MAX_WEIGHT" id="maxWeight" required></div>
-      <div class="form-group"><label>Max Fuel Capacity:</label><input name="MAX_FUEL_CAPACITY" id="maxFuel" required></div>
+      <div class="form-group"><label>Max Weight:</label><input name="MAX_WEIGHT" id="insertmaxWeight" required></div>
+      <div class="form-group"><label>Max Fuel Capacity:</label><input name="MAX_FUEL_CAPACITY" id="insertmaxFuel" required></div>
       <button style="font-family: 'DM Sans', sans-serif;" type="submit" class="submit-btn">Insert</button>
     </form>
   </div>
@@ -224,21 +224,37 @@ router.get('/', (req, res) => {
         }
       });
     }
+      
   </script>
 
   <script>
-   const tareInput = document.getElementById('tareWeight');
-   const maxInput = document.getElementById('maxWeight');
-   const fuelInput = document.getElementById('maxFuel');
-   function calculateFuel() {
-     const tare = parseFloat(tareInput.value) || 0;
-     const max = parseFloat(maxInput.value) || 0;
-     fuelInput.value = max - tare;
-   }
-   if(tareInput && maxInput && fuelInput){
-     tareInput.addEventListener('input', calculateFuel);
-     maxInput.addEventListener('input', calculateFuel);
-   }
+   function attachFuelCalculation(tareInput, maxInput, fuelInput) {
+  if(!tareInput || !maxInput || !fuelInput) return;
+  
+  function calculate() {
+    const tare = parseFloat(tareInput.value) || 0;
+    const max = parseFloat(maxInput.value) || 0;
+    fuelInput.value = max - tare; // optional: 2 decimals
+  }
+
+  tareInput.addEventListener('input', calculate);
+  maxInput.addEventListener('input', calculate);
+}
+
+// Attach for Edit form
+attachFuelCalculation(
+  document.getElementById('tareWeight'),
+  document.getElementById('maxWeight'),
+  document.getElementById('maxFuel')
+);
+
+// Attach for Insert form
+attachFuelCalculation(
+  document.getElementById('inserttareWeight'),
+  document.getElementById('insertmaxWeight'),
+  document.getElementById('insertmaxFuel')
+);
+
   </script>
 
   

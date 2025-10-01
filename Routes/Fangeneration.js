@@ -488,14 +488,28 @@ document.getElementById("FanGeneration").addEventListener("click", function () {
                   pad(now.getSeconds());
 
       var dateTime = now.toLocaleString();
-      var expiry = new Date(now.getTime() + (24 * 60 * 60 * 1000)).toLocaleString(); // +1 day expiry
+      //var expiry = new Date(now.getTime() + (24 * 60 * 60 * 1000)).toLocaleString(); // +1 day expiry
 
 
       // Fill popup values
       document.getElementById("FAN_NO").textContent = fanNo;
       document.getElementById("POP_CARD_NO").textContent = data.CARD_NO || "";
       document.getElementById("DATE_TIME").textContent = dateTime;
-      document.getElementById("FAN_EXPIRY").textContent = expiry;
+
+      // <-- Correct: format FAN_EXPIRY to HH:MM
+      if (data.FAN_EXPIRY) {
+    var dt = new Date(data.FAN_EXPIRY);
+    var day = String(dt.getUTCDate()).padStart(2, '0');
+    var month = String(dt.getUTCMonth() + 1).padStart(2, '0');
+    var year = dt.getUTCFullYear();
+    var hours = String(dt.getUTCHours()).padStart(2, '0');
+    var minutes = String(dt.getUTCMinutes()).padStart(2, '0');
+
+    document.getElementById("FAN_EXPIRY").textContent = day + "/" + month + "/" + year + " " + hours + ":" + minutes;
+} else {
+    document.getElementById("FAN_EXPIRY").textContent = "";
+}
+
       document.getElementById("POP_TRUCK_REG_NO").textContent = data.TRUCK_REG_NO || "";
       document.getElementById("POP_CUSTOMER_NAME").textContent = data.CUSTOMER_NAME || "";
       document.getElementById("POP_CARRIER_COMPANY").textContent = data.CARRIER_COMPANY || "";
@@ -599,7 +613,7 @@ router.get('/api/fan-generation/truck/:truckRegNo', async (req, res) => {
       .query(`
         SELECT TOP 1 
             TRUCK_REG_NO, CARD_NO, PROCESS_TYPE, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, 
-            ITEM_DESCRIPTION, FAN_TIME_OUT, WEIGHT_TO_FILLED 
+            ITEM_DESCRIPTION, FAN_TIME_OUT, FAN_EXPIRY, WEIGHT_TO_FILLED 
         FROM DATA_MASTER 
         WHERE TRUCK_REG_NO = @truckRegNo 
         ORDER BY FAN_TIME_OUT DESC
@@ -644,7 +658,7 @@ router.get('/api/fan-generation/card/:cardNo', async (req, res) => {
       .query(`
         SELECT TOP 1 
             TRUCK_REG_NO, CARD_NO, PROCESS_TYPE, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, 
-            ITEM_DESCRIPTION, FAN_TIME_OUT, WEIGHT_TO_FILLED 
+            ITEM_DESCRIPTION, FAN_TIME_OUT,FAN_EXPIRY, WEIGHT_TO_FILLED 
         FROM DATA_MASTER 
         WHERE CARD_NO = @cardNo 
         ORDER BY FAN_TIME_OUT DESC
@@ -764,6 +778,11 @@ router.get('/api/fan-generation/card/:cardNo', async (req, res) => {
           message: `Card ${cardNo} is already assigned to Truck ${existingCard.recordset[0].TRUCK_REG_NO}`
         });
       }
+       // --- Calculate FAN_EXPIRY in UTC ---
+    const now = new Date();
+    const fanTimeOutMinutes = parseInt(FAN_TIME_OUT) || 0;
+    const fanExpiryLocal = new Date(now.getTime() + fanTimeOutMinutes * 60000); // add timeout in minutes
+    const fanExpiryUTC = new Date(fanExpiryLocal.getTime() - fanExpiryLocal.getTimezoneOffset() * 60000);
 
       // Truck has no card → assign new card
       await pool.request()
@@ -776,10 +795,11 @@ router.get('/api/fan-generation/card/:cardNo', async (req, res) => {
         .input('ADDRESS_LINE_2', sql.VarChar, ADDRESS_LINE_2 || "")
         .input('ITEM_DESCRIPTION', sql.VarChar, ITEM_DESCRIPTION || "")
         .input('FAN_TIME_OUT', sql.Int, parseInt(FAN_TIME_OUT) || 0)
+        .input('FAN_EXPIRY', sql.DateTime, fanExpiryUTC)  // store UTC
         .input('WEIGHT_TO_FILLED', sql.BigInt, parseInt(WEIGHT_TO_FILLED) || 0)
         .query(`INSERT INTO DATA_MASTER 
-                (TRUCK_REG_NO, CARD_NO, PROCESS_TYPE, PROCESS_STATUS, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, ITEM_DESCRIPTION, FAN_TIME_OUT, WEIGHT_TO_FILLED)
-                VALUES (@TRUCK_REG_NO, @CARD_NO, @PROCESS_TYPE, @PROCESS_STATUS ,@CUSTOMER_NAME, @ADDRESS_LINE_1, @ADDRESS_LINE_2, @ITEM_DESCRIPTION, @FAN_TIME_OUT, @WEIGHT_TO_FILLED)`);
+                (TRUCK_REG_NO, CARD_NO, PROCESS_TYPE, PROCESS_STATUS, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, ITEM_DESCRIPTION, FAN_TIME_OUT, FAN_EXPIRY,WEIGHT_TO_FILLED)
+                VALUES (@TRUCK_REG_NO, @CARD_NO, @PROCESS_TYPE, @PROCESS_STATUS ,@CUSTOMER_NAME, @ADDRESS_LINE_1, @ADDRESS_LINE_2, @ITEM_DESCRIPTION, @FAN_TIME_OUT, @FAN_EXPIRY, @WEIGHT_TO_FILLED)`);
 
       res.json({ message: "Card assigned successfully" });
 
