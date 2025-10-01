@@ -480,19 +480,19 @@ document.getElementById("FanGeneration").addEventListener("click", function () {
         return n < 10 ? '0' + n : n;
       }
 
-      var fanNo = pad(now.getDate()) + 
-                  pad(now.getMonth() + 1) +  // months start from 0
-                  now.getFullYear() +
-                  pad(now.getHours()) +
-                  pad(now.getMinutes()) +
-                  pad(now.getSeconds());
+      // var fanNo = pad(now.getDate()) + 
+      //             pad(now.getMonth() + 1) +  // months start from 0
+      //             now.getFullYear() +
+      //             pad(now.getHours()) +
+      //             pad(now.getMinutes()) +
+      //             pad(now.getSeconds());
 
       var dateTime = now.toLocaleString();
       //var expiry = new Date(now.getTime() + (24 * 60 * 60 * 1000)).toLocaleString(); // +1 day expiry
 
 
       // Fill popup values
-      document.getElementById("FAN_NO").textContent = fanNo;
+       document.getElementById("FAN_NO").textContent = data.FAN_NO || "";
       document.getElementById("POP_CARD_NO").textContent = data.CARD_NO || "";
       document.getElementById("DATE_TIME").textContent = dateTime;
 
@@ -612,7 +612,7 @@ router.get('/api/fan-generation/truck/:truckRegNo', async (req, res) => {
       .input('truckRegNo', sql.VarChar, truckRegNo)
       .query(`
         SELECT TOP 1 
-            TRUCK_REG_NO, CARD_NO, PROCESS_TYPE, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, 
+            FAN_NO,TRUCK_REG_NO, CARD_NO, PROCESS_TYPE, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, 
             ITEM_DESCRIPTION, FAN_TIME_OUT, FAN_EXPIRY, WEIGHT_TO_FILLED 
         FROM DATA_MASTER 
         WHERE TRUCK_REG_NO = @truckRegNo 
@@ -657,7 +657,7 @@ router.get('/api/fan-generation/card/:cardNo', async (req, res) => {
       .input('cardNo', sql.VarChar, cardNo)
       .query(`
         SELECT TOP 1 
-            TRUCK_REG_NO, CARD_NO, PROCESS_TYPE, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, 
+            FAN_NO,TRUCK_REG_NO, CARD_NO, PROCESS_TYPE, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, 
             ITEM_DESCRIPTION, FAN_TIME_OUT,FAN_EXPIRY, WEIGHT_TO_FILLED 
         FROM DATA_MASTER 
         WHERE CARD_NO = @cardNo 
@@ -778,8 +778,15 @@ router.get('/api/fan-generation/card/:cardNo', async (req, res) => {
           message: `Card ${cardNo} is already assigned to Truck ${existingCard.recordset[0].TRUCK_REG_NO}`
         });
       }
-       // --- Calculate FAN_EXPIRY in UTC ---
+
+      // 3️⃣ Generate FAN_NO in format ddMMyyyyHHmmss
+    function pad(n) { return n < 10 ? '0' + n : n; }
     const now = new Date();
+    const fanNo = pad(now.getDate()) + pad(now.getMonth() + 1) + now.getFullYear() +
+                  pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());
+
+       // --- Calculate FAN_EXPIRY in UTC ---
+    
     const fanTimeOutMinutes = parseInt(FAN_TIME_OUT) || 0;
     const fanExpiryLocal = new Date(now.getTime() + fanTimeOutMinutes * 60000); // add timeout in minutes
     const fanExpiryUTC = new Date(fanExpiryLocal.getTime() - fanExpiryLocal.getTimezoneOffset() * 60000);
@@ -794,12 +801,13 @@ router.get('/api/fan-generation/card/:cardNo', async (req, res) => {
         .input('ADDRESS_LINE_1', sql.VarChar, ADDRESS_LINE_1 || "")
         .input('ADDRESS_LINE_2', sql.VarChar, ADDRESS_LINE_2 || "")
         .input('ITEM_DESCRIPTION', sql.VarChar, ITEM_DESCRIPTION || "")
+        .input('FAN_NO', sql.VarChar, fanNo)
         .input('FAN_TIME_OUT', sql.Int, parseInt(FAN_TIME_OUT) || 0)
         .input('FAN_EXPIRY', sql.DateTime, fanExpiryUTC)  // store UTC
         .input('WEIGHT_TO_FILLED', sql.BigInt, parseInt(WEIGHT_TO_FILLED) || 0)
         .query(`INSERT INTO DATA_MASTER 
-                (TRUCK_REG_NO, CARD_NO, PROCESS_TYPE, PROCESS_STATUS, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, ITEM_DESCRIPTION, FAN_TIME_OUT, FAN_EXPIRY,WEIGHT_TO_FILLED)
-                VALUES (@TRUCK_REG_NO, @CARD_NO, @PROCESS_TYPE, @PROCESS_STATUS ,@CUSTOMER_NAME, @ADDRESS_LINE_1, @ADDRESS_LINE_2, @ITEM_DESCRIPTION, @FAN_TIME_OUT, @FAN_EXPIRY, @WEIGHT_TO_FILLED)`);
+                (TRUCK_REG_NO, CARD_NO, PROCESS_TYPE, PROCESS_STATUS, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, ITEM_DESCRIPTION, FAN_NO, FAN_TIME_OUT, FAN_EXPIRY,WEIGHT_TO_FILLED)
+                VALUES (@TRUCK_REG_NO, @CARD_NO, @PROCESS_TYPE, @PROCESS_STATUS ,@CUSTOMER_NAME, @ADDRESS_LINE_1, @ADDRESS_LINE_2, @ITEM_DESCRIPTION, @FAN_NO, @FAN_TIME_OUT, @FAN_EXPIRY, @WEIGHT_TO_FILLED)`);
 
       res.json({ message: "Card assigned successfully" });
 
