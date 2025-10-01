@@ -138,13 +138,13 @@
       <tr><th>FAN NO</th><td id="FAN_NO"></td></tr>
       <tr><th>Card No</th><td id="POP_CARD_NO"></td></tr>
       <tr><th>Date Time</th><td id="DATE_TIME"></td></tr>
-      <tr><th>Expiry</th><td id="FAN_EXPIRY"></td></tr>
+      <tr><th>Fan Expiry</th><td id="FAN_EXPIRY"></td></tr>
       <tr><th>Truck Reg No</th><td id="POP_TRUCK_REG_NO"></td></tr>
-      <tr><th>Customer</th><td id="POP_CUSTOMER_NAME"></td></tr>
-      <tr><th>Carrier</th><td id="POP_CARRIER_COMPANY"></td></tr>
-      <tr><th>Item</th><td id="POP_ITEM_DESCRIPTION"></td></tr>
-      <tr><th>Process</th><td id="POP_PROCESS_TYPE"></td></tr>
-      <tr><th>Weight</th><td id="POP_WEIGHT_TO_FILLED"></td></tr>
+      <tr><th>Customer Name</th><td id="POP_CUSTOMER_NAME"></td></tr>
+      <tr><th>Carrier Company</th><td id="POP_CARRIER_COMPANY"></td></tr>
+      <tr><th>Item Description</th><td id="POP_ITEM_DESCRIPTION"></td></tr>
+      <tr><th>Process Type</th><td id="POP_PROCESS_TYPE"></td></tr>
+      <tr><th>Weight Filled</th><td id="POP_WEIGHT_TO_FILLED"></td></tr>
     </table>
 
     <button id="savePdfBtn">Save PDF</button>

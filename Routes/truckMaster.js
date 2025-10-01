@@ -486,21 +486,27 @@ router.put('/update-truck', async (req, res) => {
 });
 
 
-// ====== DELETE TRUCK API ======
+// ====== DELETE TRUCK API (delete from DATA_MASTER + TRUCK_MASTER) ======
 router.delete('/delete-truck/:truckRegNo', async (req, res) => {
   try {
     const pool = await sql.connect(dbConfig);
-    const truckRegNo = req.params.truckRegNo;
+    const truckRegNo = req.params.truckRegNo.trim();
 
+    // 1. Delete related records in DATA_MASTER
+    await pool.request()
+      .input('truckRegNo', sql.VarChar, truckRegNo)
+      .query('DELETE FROM DATA_MASTER WHERE TRUCK_REG_NO = @truckRegNo');
+
+    // 2. Delete from TRUCK_MASTER
     const result = await pool.request()
-      .input('TRUCK_REG_NO', sql.VarChar, truckRegNo)
-      .query(`DELETE FROM TRUCK_MASTER WHERE TRUCK_REG_NO = @TRUCK_REG_NO`);
+      .input('truckRegNo', sql.VarChar, truckRegNo)
+      .query('DELETE FROM TRUCK_MASTER WHERE TRUCK_REG_NO = @truckRegNo');
 
     if (result.rowsAffected[0] === 0) {
       return res.status(404).send('Truck not found');
     }
 
-    res.status(200).send('Deleted successfully');
+    res.status(200).send('Truck and related records deleted successfully');
   } catch (err) {
     console.error('❌ Error deleting truck:', err);
     res.status(500).send('Error deleting data: ' + err.message);
