@@ -51,6 +51,7 @@
         <option value="">-- Select --</option>
         <option value="-1">Registered</option>
         <option value="1">Reported</option>
+        <option value="2">Fan Generation</option>
       </select>
     </div>
 
@@ -226,7 +227,7 @@
         });
 
 
-      
+       if(document.getElementById("truckStatus")) document.getElementById("truckStatus").value = data.PROCESS_STATUS||"";
 
       // Set the Process Type select value
   const processTypeField = document.getElementById("processType");
@@ -459,118 +460,70 @@ function closePopup() {
   document.getElementById("fanPopup").style.display = "none";
 }
 
-document.getElementById("FanGeneration").addEventListener("click", function () {
-  var truckRegNo = document.getElementById("truckRegInput").value.trim();
-  if (!truckRegNo) {
-    alert("Enter Truck No first!");
-    return;
-  }
+  // Fan Generation button
+    document.getElementById("FanGeneration").addEventListener("click", async () => {
+      try {
+        const truckRegNo = document.getElementById("truckRegInput").value.trim();
+        if(!truckRegNo) return alert("Enter Truck No first!");
 
-  // Fetch truck data (using .then instead of async/await)
-  fetch('/Fan-Generation/api/fan-generation/truck/' + truckRegNo)
-    .then(function (res) {
-      if (!res.ok) throw new Error("Truck not found");
-      return res.json();
-    })
-    .then(function (data) {
-      // Generate FAN_NO and DATE_TIME
-      var now = new Date();
+        // 1️⃣ Update PROCESS_STATUS = 2
+        const updateRes = await fetch('/Fan-Generation/api/fan-generation/update-status', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ truckRegNo })
+        });
+        const updateData = await updateRes.json();
+        if (!updateRes.ok) throw new Error(updateData.message || "Failed to update status");
 
-      function pad(n) {
-        return n < 10 ? '0' + n : n;
+        // 2️⃣ Update Truck Status dropdown
+        const truckStatusDropdown = document.getElementById("truckStatus");
+        if(truckStatusDropdown) truckStatusDropdown.value = 2;
+
+        // 3️⃣ Fetch truck data for popup
+        const res = await fetch('/Fan-Generation/api/fan-generation/truck/' + truckRegNo);
+        if(!res.ok) throw new Error("Truck not found");
+        const data = await res.json();
+
+        // 4️⃣ Generate FAN_NO and DATE_TIME
+        const now = new Date();
+        const pad = n => n<10?'0'+n:n;
+        // const fanNo = pad(now.getDate()) + pad(now.getMonth()+1) + now.getFullYear() + pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());
+        const dateTime = now.toLocaleString();
+
+
+
+        // 5️⃣ Fill popup values
+        document.getElementById("FAN_NO").textContent = data.FAN_NO || "";
+        document.getElementById("POP_CARD_NO").textContent = data.CARD_NO||"";
+        document.getElementById("DATE_TIME").textContent = dateTime;
+
+        if(data.FAN_EXPIRY){
+          const dt = new Date(data.FAN_EXPIRY);
+          document.getElementById("FAN_EXPIRY").textContent = pad(dt.getUTCDate())+'/'+pad(dt.getUTCMonth()+1)+'/'+dt.getUTCFullYear()+' '+pad(dt.getUTCHours())+':'+pad(dt.getUTCMinutes());
+        } else {
+          document.getElementById("FAN_EXPIRY").textContent = "";
+        }
+
+        document.getElementById("POP_TRUCK_REG_NO").textContent = data.TRUCK_REG_NO||"";
+        document.getElementById("POP_CUSTOMER_NAME").textContent = data.CUSTOMER_NAME||"";
+        document.getElementById("POP_CARRIER_COMPANY").textContent = data.CARRIER_COMPANY||"";
+        document.getElementById("POP_ITEM_DESCRIPTION").textContent = data.ITEM_DESCRIPTION||"";
+        document.getElementById("POP_PROCESS_TYPE").textContent = data.PROCESS_TYPE==1?"Loading":"Unloading";
+        document.getElementById("POP_WEIGHT_TO_FILLED").textContent = data.WEIGHT_TO_FILLED||"";
+
+        // 6️⃣ Show popup
+        document.getElementById("fanPopup").style.display = "flex";
+
+      } catch(err){
+        alert("Error: "+err.message);
       }
-
-      // var fanNo = pad(now.getDate()) + 
-      //             pad(now.getMonth() + 1) +  // months start from 0
-      //             now.getFullYear() +
-      //             pad(now.getHours()) +
-      //             pad(now.getMinutes()) +
-      //             pad(now.getSeconds());
-
-      var dateTime = now.toLocaleString();
-      //var expiry = new Date(now.getTime() + (24 * 60 * 60 * 1000)).toLocaleString(); // +1 day expiry
-
-
-      // Fill popup values
-       document.getElementById("FAN_NO").textContent = data.FAN_NO || "";
-      document.getElementById("POP_CARD_NO").textContent = data.CARD_NO || "";
-      document.getElementById("DATE_TIME").textContent = dateTime;
-
-      // <-- Correct: format FAN_EXPIRY to HH:MM
-      if (data.FAN_EXPIRY) {
-    var dt = new Date(data.FAN_EXPIRY);
-    var day = String(dt.getUTCDate()).padStart(2, '0');
-    var month = String(dt.getUTCMonth() + 1).padStart(2, '0');
-    var year = dt.getUTCFullYear();
-    var hours = String(dt.getUTCHours()).padStart(2, '0');
-    var minutes = String(dt.getUTCMinutes()).padStart(2, '0');
-
-    document.getElementById("FAN_EXPIRY").textContent = day + "/" + month + "/" + year + " " + hours + ":" + minutes;
-} else {
-    document.getElementById("FAN_EXPIRY").textContent = "";
-}
-
-      document.getElementById("POP_TRUCK_REG_NO").textContent = data.TRUCK_REG_NO || "";
-      document.getElementById("POP_CUSTOMER_NAME").textContent = data.CUSTOMER_NAME || "";
-      document.getElementById("POP_CARRIER_COMPANY").textContent = data.CARRIER_COMPANY || "";
-      document.getElementById("POP_ITEM_DESCRIPTION").textContent = data.ITEM_DESCRIPTION || "";
-      document.getElementById("POP_PROCESS_TYPE").textContent = data.PROCESS_TYPE == 1 ? "Loading" : "Unloading";
-      document.getElementById("POP_WEIGHT_TO_FILLED").textContent = data.WEIGHT_TO_FILLED || "";
-
-      // Show popup
-      document.getElementById("fanPopup").style.display = "flex";
-    })
-    .catch(function (err) {
-      alert("Error: " + err.message);
     });
-});
 
-document.getElementById("savePdfBtn").addEventListener("click", function () {
-  var jsPDFObj = window.jspdf;
-  var doc = new jsPDFObj.jsPDF();
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.text("Fan Generation Report", 14, 20);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-
-  var y = 40;
-  var rows = document.querySelectorAll("#fanTable tr");
-  for (var i = 0; i < rows.length; i++) {
-    var cells = rows[i].querySelectorAll("th, td");
-    if (cells.length === 2) {
-      doc.text(cells[0].innerText + ": " + cells[1].innerText, 14, y);
-      y += 10;
+    function closePopup() {
+      document.getElementById("fanPopup").style.display = "none";
     }
-  }
 
-  // Open print dialog directly
-  var pdfBlob = doc.output("blob");
-  var pdfUrl = URL.createObjectURL(pdfBlob);
-  var printWindow = window.open(pdfUrl);
-  printWindow.addEventListener("load", function () {
-    printWindow.print();
-  });
-});
-
-document.getElementById("FanGeneration").addEventListener("click", async () => {
-  try {
-    const truckRegNo = document.getElementById("truckRegInput").value.trim();
-    if (!truckRegNo) return alert("Enter Truck No first!");
-
-    // Fetch data from your API
-    const res = await fetch('/Fan-Generation/api/fan-generation/truck/' + truckRegNo);
-    if (!res.ok) throw new Error("Truck not found");
-    const data = await res.json();
-
-    // ...fill popup values and show it
-  } catch(err) {
-    alert("Error: " + err.message);
-  }
-});
-
+    
 </script>
 
 
@@ -613,7 +566,7 @@ router.get('/api/fan-generation/truck/:truckRegNo', async (req, res) => {
       .query(`
         SELECT TOP 1 
             FAN_NO,TRUCK_REG_NO, CARD_NO, PROCESS_TYPE, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, 
-            ITEM_DESCRIPTION, FAN_TIME_OUT, FAN_EXPIRY, WEIGHT_TO_FILLED 
+            ITEM_DESCRIPTION, FAN_TIME_OUT, FAN_EXPIRY, WEIGHT_TO_FILLED, PROCESS_STATUS
         FROM DATA_MASTER 
         WHERE TRUCK_REG_NO = @truckRegNo 
         ORDER BY FAN_TIME_OUT DESC
@@ -624,8 +577,12 @@ router.get('/api/fan-generation/truck/:truckRegNo', async (req, res) => {
     }
 
     // ✅ Calculate Truck Status
-    const processStatus = dataMaster.CARD_NO ? 1 : -1;  
-    const truckStatusText = processStatus === 1 ? "Reported" : "Registered";
+    let processStatus = dataMaster.PROCESS_STATUS ?? -1;
+let truckStatusText = "Registered";
+
+if (processStatus === 1) truckStatusText = "Reported";
+else if (processStatus === 2) truckStatusText = "Fan Generation";
+
 
     res.json({
       ...dataMaster,
@@ -658,7 +615,7 @@ router.get('/api/fan-generation/card/:cardNo', async (req, res) => {
       .query(`
         SELECT TOP 1 
             FAN_NO,TRUCK_REG_NO, CARD_NO, PROCESS_TYPE, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, 
-            ITEM_DESCRIPTION, FAN_TIME_OUT,FAN_EXPIRY, WEIGHT_TO_FILLED 
+            ITEM_DESCRIPTION, FAN_TIME_OUT,FAN_EXPIRY, WEIGHT_TO_FILLED, PROCESS_STATUS
         FROM DATA_MASTER 
         WHERE CARD_NO = @cardNo 
         ORDER BY FAN_TIME_OUT DESC
@@ -683,8 +640,11 @@ router.get('/api/fan-generation/card/:cardNo', async (req, res) => {
     }
 
     // ✅ Calculate Truck Status
-    const processStatus = dataMaster.CARD_NO ? 1 : -1;
-    const truckStatusText = processStatus === 1 ? "Reported" : "Registered";
+    let processStatus = dataMaster.PROCESS_STATUS ?? -1;
+let truckStatusText = "Registered";
+
+if (processStatus === 1) truckStatusText = "Reported";
+else if (processStatus === 2) truckStatusText = "Fan Generation";
 
     res.json({
       ...dataMaster,
@@ -934,6 +894,24 @@ router.put('/api/reassign-card', async (req, res) => {
   } catch (err) {
     console.error("Reassign Card Error:", err);
     res.status(500).json({ message: "Database Error: " + err.message });
+  }
+});
+
+// API: Update PROCESS_STATUS to 2
+router.put('/api/fan-generation/update-status', async (req,res)=>{
+  const { truckRegNo } = req.body;
+  if(!truckRegNo) return res.status(400).json({message:"Truck Reg No is required"});
+  try{
+    const pool = await sql.connect(dbConfig);
+    const result = await pool.request()
+      .input('truckRegNo', sql.VarChar, truckRegNo)
+      .input('processStatus', sql.Int, 2)
+      .query(`UPDATE DATA_MASTER SET PROCESS_STATUS=@processStatus WHERE TRUCK_REG_NO=@truckRegNo`);
+    if(result.rowsAffected[0]===0) return res.status(404).json({message:"Truck not found"});
+    res.json({message:"PROCESS_STATUS updated to Fan Generated"});
+  }catch(err){
+    console.error(err);
+    res.status(500).json({message:"Database Error"});
   }
 });
 
