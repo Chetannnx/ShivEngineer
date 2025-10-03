@@ -1,10 +1,10 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 
-router.get('/', (req, res) => {
+router.get("/", (req, res) => {
   const params = req.query;
   console.log(params);
-    const html = `<!DOCTYPE html>
+  const html = `<!DOCTYPE html>
 <html>
 <head>
   <title>Home</title>
@@ -25,7 +25,7 @@ router.get('/', (req, res) => {
   <h2 style="font-family: 'DM Sans', sans-serif;">SHIV ENGINEERING</h2>
 </body>
 </html>`;
-    res.send(html);
+  res.send(html);
 });
 
 module.exports = router;

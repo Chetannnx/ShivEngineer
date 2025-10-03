@@ -523,7 +523,35 @@ function closePopup() {
       document.getElementById("fanPopup").style.display = "none";
     }
 
-    
+    document.getElementById("savePdfBtn").addEventListener("click", function () {
+  var jsPDFObj = window.jspdf;
+  var doc = new jsPDFObj.jsPDF();
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.text("Fan Generation Report", 14, 20);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+
+  var y = 40;
+  var rows = document.querySelectorAll("#fanTable tr");
+  for (var i = 0; i < rows.length; i++) {
+    var cells = rows[i].querySelectorAll("th, td");
+    if (cells.length === 2) {
+      doc.text(cells[0].innerText + ": " + cells[1].innerText, 14, y);
+      y += 10;
+    }
+  }
+
+  // Open print dialog directly
+  var pdfBlob = doc.output("blob");
+  var pdfUrl = URL.createObjectURL(pdfBlob);
+  var printWindow = window.open(pdfUrl);
+  printWindow.addEventListener("load", function () {
+    printWindow.print();
+  });
+});
 </script>
 
 
