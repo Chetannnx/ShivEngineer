@@ -750,15 +750,40 @@ router.get('/api/fan-generation/card/:cardNo', async (req, res) => {
 
  // API route: Assign Card & Save to DATA_MASTER
   router.post('/api/assign-card', async (req, res) => {
-    const { truckRegNo, cardNo, processType, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, ITEM_DESCRIPTION, FAN_TIME_OUT, WEIGHT_TO_FILLED } = req.body;
+  const { 
+    truckRegNo, 
+    cardNo, 
+    processType, 
+    CUSTOMER_NAME, 
+    ADDRESS_LINE_1, 
+    ADDRESS_LINE_2, 
+    ITEM_DESCRIPTION, 
+    FAN_TIME_OUT, 
+    WEIGHT_TO_FILLED 
+  } = req.body;
 
-    if (!truckRegNo || !cardNo) 
-      return res.status(400).json({ message: "Truck Reg No and Card No are required" });
+  if (!truckRegNo || !cardNo) {
+    return res.status(400).json({ message: "Truck Reg No and Card No are required" });
+  }
 
-    try {
-      const pool = await sql.connect(dbConfig);
+  try {
+    const pool = await sql.connect(dbConfig);
 
-      // Check if this truck already has a card
+    // 1️⃣ Check if card exists in CARD_MASTER
+    const cardCheck = await pool.request()
+      .input('cardNo', sql.VarChar, cardNo)
+      .query('SELECT CARD_STATUS FROM CARD_MASTER WHERE CARD_NO = @cardNo');
+
+    if (cardCheck.recordset.length === 0) {
+      return res.status(401).json({ message: `Card ${cardNo} not found in Card Master (Unauthorized).` });
+    }
+
+    const cardStatus = cardCheck.recordset[0].CARD_STATUS;
+    if (cardStatus !== 1) { // assuming 1 = active, 0 = blocked
+      return res.status(400).json({ message: `Card ${cardNo} is BLOCKED or inactive.` });
+    }
+
+   // Check if this truck already has a card
       const existing = await pool.request()
         .input('truckRegNo', sql.VarChar, truckRegNo)
         .query('SELECT CARD_NO FROM DATA_MASTER WHERE TRUCK_REG_NO = @truckRegNo');
@@ -779,43 +804,49 @@ router.get('/api/fan-generation/card/:cardNo', async (req, res) => {
         });
       }
 
-      // 3️⃣ Generate FAN_NO in format ddMMyyyyHHmmss
+    // 4️⃣ Generate FAN_NO (ddMMyyyyHHmmss)
     function pad(n) { return n < 10 ? '0' + n : n; }
     const now = new Date();
     const fanNo = pad(now.getDate()) + pad(now.getMonth() + 1) + now.getFullYear() +
                   pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());
 
-       // --- Calculate FAN_EXPIRY in UTC ---
-    
+    // 5️⃣ Calculate FAN_EXPIRY (UTC)
     const fanTimeOutMinutes = parseInt(FAN_TIME_OUT) || 0;
-    const fanExpiryLocal = new Date(now.getTime() + fanTimeOutMinutes * 60000); // add timeout in minutes
+    const fanExpiryLocal = new Date(now.getTime() + fanTimeOutMinutes * 60000);
     const fanExpiryUTC = new Date(fanExpiryLocal.getTime() - fanExpiryLocal.getTimezoneOffset() * 60000);
 
-      // Truck has no card → assign new card
-      await pool.request()
-        .input('TRUCK_REG_NO', sql.VarChar, truckRegNo)
-        .input('CARD_NO', sql.VarChar, cardNo)
-        .input('PROCESS_TYPE', sql.Int, parseInt(processType)) // ✅ ADD THIS LINE
-        .input('PROCESS_STATUS', sql.Int, 1) // ✅ NEW column for Registered/Reported
-        .input('CUSTOMER_NAME', sql.VarChar, CUSTOMER_NAME || "")
-        .input('ADDRESS_LINE_1', sql.VarChar, ADDRESS_LINE_1 || "")
-        .input('ADDRESS_LINE_2', sql.VarChar, ADDRESS_LINE_2 || "")
-        .input('ITEM_DESCRIPTION', sql.VarChar, ITEM_DESCRIPTION || "")
-        .input('FAN_NO', sql.VarChar, fanNo)
-        .input('FAN_TIME_OUT', sql.Int, parseInt(FAN_TIME_OUT) || 0)
-        .input('FAN_EXPIRY', sql.DateTime, fanExpiryUTC)  // store UTC
-        .input('WEIGHT_TO_FILLED', sql.BigInt, parseInt(WEIGHT_TO_FILLED) || 0)
-        .query(`INSERT INTO DATA_MASTER 
-                (TRUCK_REG_NO, CARD_NO, PROCESS_TYPE, PROCESS_STATUS, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, ITEM_DESCRIPTION, FAN_NO, FAN_TIME_OUT, FAN_EXPIRY,WEIGHT_TO_FILLED)
-                VALUES (@TRUCK_REG_NO, @CARD_NO, @PROCESS_TYPE, @PROCESS_STATUS ,@CUSTOMER_NAME, @ADDRESS_LINE_1, @ADDRESS_LINE_2, @ITEM_DESCRIPTION, @FAN_NO, @FAN_TIME_OUT, @FAN_EXPIRY, @WEIGHT_TO_FILLED)`);
+    // 6️⃣ Insert new record into DATA_MASTER
+    await pool.request()
+      .input('TRUCK_REG_NO', sql.VarChar, truckRegNo)
+      .input('CARD_NO', sql.VarChar, cardNo)
+      .input('PROCESS_TYPE', sql.Int, parseInt(processType))
+      .input('PROCESS_STATUS', sql.Int, 1) // 1 = Reported
+      .input('CUSTOMER_NAME', sql.VarChar, CUSTOMER_NAME || "")
+      .input('ADDRESS_LINE_1', sql.VarChar, ADDRESS_LINE_1 || "")
+      .input('ADDRESS_LINE_2', sql.VarChar, ADDRESS_LINE_2 || "")
+      .input('ITEM_DESCRIPTION', sql.VarChar, ITEM_DESCRIPTION || "")
+      .input('FAN_NO', sql.VarChar, fanNo)
+      .input('FAN_TIME_OUT', sql.Int, fanTimeOutMinutes)
+      .input('FAN_EXPIRY', sql.DateTime, fanExpiryUTC)
+      .input('WEIGHT_TO_FILLED', sql.BigInt, parseInt(WEIGHT_TO_FILLED) || 0)
+      .query(`
+        INSERT INTO DATA_MASTER 
+          (TRUCK_REG_NO, CARD_NO, PROCESS_TYPE, PROCESS_STATUS, 
+           CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, ITEM_DESCRIPTION, 
+           FAN_NO, FAN_TIME_OUT, FAN_EXPIRY, WEIGHT_TO_FILLED)
+        VALUES 
+          (@TRUCK_REG_NO, @CARD_NO, @PROCESS_TYPE, @PROCESS_STATUS,
+           @CUSTOMER_NAME, @ADDRESS_LINE_1, @ADDRESS_LINE_2, @ITEM_DESCRIPTION,
+           @FAN_NO, @FAN_TIME_OUT, @FAN_EXPIRY, @WEIGHT_TO_FILLED)
+      `);
 
-      res.json({ message: "Card assigned successfully" });
+    res.json({ message: `Card ${cardNo} assigned to Truck ${truckRegNo} successfully` });
 
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ message: "Database Error" });
-    }
-  });
+  } catch (err) {
+    console.error("Error in /api/assign-card:", err);
+    res.status(500).json({ message: "Database Error" });
+  }
+});
 
 
 
@@ -828,6 +859,20 @@ router.put('/api/reassign-card', async (req, res) => {
 
   try {
     const pool = await sql.connect(dbConfig);
+
+    // 1️⃣ Check if card exists in CARD_MASTER
+    const cardCheck = await pool.request()
+      .input('cardNo', sql.VarChar, cardNo)
+      .query('SELECT CARD_STATUS FROM CARD_MASTER WHERE CARD_NO = @cardNo');
+
+    if (cardCheck.recordset.length === 0) {
+      return res.status(401).json({ message: `Card ${cardNo} not found in Card Master (Unauthorized).` });
+    }
+
+    const cardStatus = cardCheck.recordset[0].CARD_STATUS;
+    if (cardStatus !== 1) { // assuming 1 = active, 0 = blocked
+      return res.status(400).json({ message: `Card ${cardNo} is BLOCKED or inactive.` });
+    }
 
     // 1️⃣ Check if truck exists
     const existing = await pool.request()
