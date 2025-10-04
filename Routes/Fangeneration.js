@@ -153,6 +153,26 @@
   </div>
 </div>
 
+
+<!-- Bay Allocation Popup -->
+<div id="bayPopup" class="popup-overlay" style="display:none;">
+  <div class="popup-content">
+    <h3>FAN Number Successfully Generated</h3>
+    <p>How do you want to Allocate the Bay:</p>
+    <div>
+      <label><input type="radio" name="bayType" value="auto" checked> Auto</label>
+      <label><input type="radio" name="bayType" value="manual"> Manual</label>
+    </div>
+    <div class="form-group">
+      <label>Bay No:</label>
+      <input id="BAY_NO" type="text" placeholder="Enter Bay No">
+    </div>
+    <button id="assignBayBtn">Assign</button>
+    <button onclick="closeBayPopup()">Close</button>
+  </div>
+</div>
+
+
   
           <!-- Inline Script -->
           <script>
@@ -519,11 +539,14 @@ function closePopup() {
       }
     });
 
-    function closePopup() {
-      document.getElementById("fanPopup").style.display = "none";
-    }
 
-    document.getElementById("savePdfBtn").addEventListener("click", function () {
+   // Close Bay popup
+function closeBayPopup() {
+  document.getElementById("bayPopup").style.display = "none";
+}
+
+// After Save PDF, open Bay Allocation popup
+document.getElementById("savePdfBtn").addEventListener("click", async function () {
   var jsPDFObj = window.jspdf;
   var doc = new jsPDFObj.jsPDF();
 
@@ -544,13 +567,57 @@ function closePopup() {
     }
   }
 
-  // Open print dialog directly
-  var pdfBlob = doc.output("blob");
-  var pdfUrl = URL.createObjectURL(pdfBlob);
-  var printWindow = window.open(pdfUrl);
-  printWindow.addEventListener("load", function () {
-    printWindow.print();
-  });
+  // 1️⃣ Download PDF
+  doc.save("Fan_Generation_Report.pdf");
+
+  // 2️⃣ Close the Fan Generation popup
+  closePopup();
+
+  // 3️⃣ Prefill BAY_NO from backend
+  const truckRegNo = document.getElementById("truckRegInput").value.trim();
+  if (!truckRegNo) return;
+
+  try {
+    const res = await fetch('/Fan-Generation/api/get-bay/' + encodeURIComponent(truckRegNo));
+    if (!res.ok) throw new Error("Failed to fetch Bay No");
+    const data = await res.json();
+    document.getElementById("BAY_NO").value = data.BAY_NO || "";
+  } catch (err) {
+    console.error(err);
+    document.getElementById("BAY_NO").value = "";
+  }
+
+  // 4️⃣ Show Bay Allocation popup
+  document.getElementById("bayPopup").style.display = "flex";
+});
+
+// Assign Bay button
+document.getElementById("assignBayBtn").addEventListener("click", async function () {
+  const truckRegNo = document.getElementById("truckRegInput").value.trim();
+  const bayNo = document.getElementById("BAY_NO").value.trim();
+  const bayType = document.querySelector('input[name="bayType"]:checked').value;
+
+  if (!truckRegNo) return alert("Truck Reg No missing");
+  if (!bayNo) return alert("Enter Bay No");
+
+  try {
+    const res = await fetch('/Fan-Generation/api/assign-bay', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ truckRegNo, bayNo, bayType })
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      alert("Bay Assigned Successfully!");
+      closeBayPopup();
+    } else {
+      alert("Error: " + data.message);
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Server Error");
+  }
 });
 </script>
 
@@ -942,5 +1009,43 @@ router.put('/api/fan-generation/update-status', async (req,res)=>{
     res.status(500).json({message:"Database Error"});
   }
 });
+
+
+// Get BAY_NO for a truck
+router.get('/api/get-bay/:truckRegNo', async (req, res) => {
+  const truckRegNo = req.params.truckRegNo?.trim();
+  if (!truckRegNo) return res.status(400).json({ message: "Truck Reg No required" });
+  try {
+    const pool = await sql.connect(dbConfig);
+    const result = await pool.request()
+      .input('truckRegNo', sql.VarChar, truckRegNo)
+      .query('SELECT TOP 1 BAY_NO FROM DATA_MASTER WHERE TRUCK_REG_NO = @truckRegNo ORDER BY FAN_TIME_OUT DESC');
+
+    res.json({ BAY_NO: result.recordset[0]?.BAY_NO || "" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Database Error" });
+  }
+});
+
+// Assign Bay No to truck
+router.post('/api/assign-bay', async (req, res) => {
+  const { truckRegNo, bayNo, bayType } = req.body;
+  if (!truckRegNo || !bayNo) return res.status(400).json({ message: "Truck Reg No and Bay No required" });
+
+  try {
+    const pool = await sql.connect(dbConfig);
+    await pool.request()
+      .input('truckRegNo', sql.VarChar, truckRegNo)
+      .input('bayNo', sql.VarChar, bayNo)
+      .query('UPDATE DATA_MASTER SET BAY_NO=@bayNo WHERE TRUCK_REG_NO=@truckRegNo');
+
+    res.json({ message: `Bay ${bayNo} assigned to Truck ${truckRegNo}` });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Database Error" });
+  }
+});
+
 
   module.exports = router;
