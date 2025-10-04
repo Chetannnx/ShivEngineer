@@ -279,27 +279,244 @@ border-color: #007bff;
 }
 
 
+/* Overlay */
 .popup-overlay {
   position: fixed;
   top: 0; left: 0;
   width: 100%; height: 100%;
-  background: rgba(0,0,0,0.5);
-  display:flex; justify-content:center; align-items:center;
+  background: rgba(0,0,0,0.45);
+  display: flex; 
+  justify-content: center; 
+  align-items: center;
+  z-index: 9999;
 }
+
+/* Popup content */
 .popup-content {
-  background:#fff;
-  padding:20px;
-  border-radius:10px;
-  width:400px;
-  font-family:'DM Sans',sans-serif;
-  box-shadow:0 5px 15px rgba(0,0,0,0.3);
+  background: #ffffff;
+  padding: 25px 30px;
+  border-radius: 12px;
+  width: 420px;
+  font-family: 'DM Sans', sans-serif;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+  animation: popupFade 0.3s ease-out;
 }
+
+/* Heading */
+.popup-content h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #333;
+  text-align: center;
+  margin-bottom: 18px;
+  letter-spacing: 0.5px;
+}
+
+/* Table */
 #fanTable {
-  width:100%; border-collapse:collapse;
-  margin-bottom:15px;
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
 }
-#fanTable th, #fanTable td {
-  text-align:left;
-  padding:5px;
-  border-bottom:1px solid #ddd;
+
+#fanTable th, 
+#fanTable td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid #e5e5e5;
+  font-size: 14px;
+}
+
+#fanTable th {
+  color: #555;
+  font-weight: 600;
+  width: 40%;
+}
+
+#fanTable td {
+  color: #000;
+}
+
+/* Buttons */
+.popup-content button {
+  padding: 8px 16px;
+  margin: 5px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Save PDF button */
+#savePdfBtn {
+  background-color: #28a745;
+  color: #fff;
+}
+
+#savePdfBtn:hover {
+  background-color: #218838;
+  transform: scale(1.03);
+}
+
+/* Close button */
+.popup-content button[onclick="closePopup()"] {
+  background-color: #dc3545;
+  color: #fff;
+}
+
+.popup-content button[onclick="closePopup()"]:hover {
+  background-color: #c82333;
+  transform: scale(1.03);
+}
+
+/* Align buttons */
+.popup-content button {
+  display: inline-block;
+  min-width: 120px;
+}
+
+/* Center footer buttons */
+.popup-content {
+  text-align: center;
+}
+
+/* Animation */
+@keyframes popupFade {
+  from { opacity: 0; transform: translateY(-10px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+
+
+/* Overlay background */
+#bayPopup.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.25s ease-in;
+}
+
+/* Popup box */
+#bayPopup .popup-content {
+  background: #ffffff;
+  width: 400px;
+  padding: 25px 30px;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+  text-align: center;
+  font-family: "Segoe UI", Roboto, sans-serif;
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Heading and text */
+#bayPopup h3 {
+  font-size: 20px;
+  color: #333;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+#bayPopup p {
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 20px;
+}
+
+/* Radio buttons */
+#bayPopup label {
+  font-size: 15px;
+  color: #333;
+  margin: 0 10px;
+  cursor: pointer;
+}
+
+#bayPopup input[type="radio"] {
+  margin-right: 5px;
+  accent-color: #007bff; /* nice blue accent */
+}
+
+/* Input field */
+#bayPopup .form-group {
+  margin: 20px 0;
+  text-align: center;
+}
+
+#bayPopup .form-group label {
+  font-size: 15px;
+  font-weight: 600;
+  color: #444;
+  display: block;
+  margin-bottom: 5px;
+  text-align: center; /* ✅ center the label */
+}
+
+#bayPopup .form-group input {
+   width: 200px;
+  display: block;
+  margin: 0 auto; /* centers it */
+  padding: 8px 10px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+
+#bayPopup .form-group input:focus {
+  border-color: #007bff;
+}
+
+/* Buttons */
+#bayPopup button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin: 0 5px;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Assign button (primary) */
+#assignBayBtn {
+  background-color: #007bff;
+  color: #fff;
+}
+
+#assignBayBtn:hover {
+  background-color: #0056b3;
+  transform: scale(1.04);
+}
+
+/* Close button */
+#bayPopup button[onclick="closeBayPopup()"] {
+  background-color: #dc3545;
+  color: #fff;
+}
+
+#bayPopup button[onclick="closeBayPopup()"]:hover {
+  background-color: #b02a37;
+  transform: scale(1.04);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-15px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }

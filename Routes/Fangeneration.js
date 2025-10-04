@@ -164,7 +164,7 @@
       <label><input type="radio" name="bayType" value="manual"> Manual</label>
     </div>
     <div class="form-group">
-      <label>Bay No:</label>
+      <label>Assign Bay :</label>
       <input id="BAY_NO" type="text" placeholder="Enter Bay No">
     </div>
     <button id="assignBayBtn">Assign</button>
