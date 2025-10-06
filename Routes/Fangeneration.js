@@ -118,6 +118,8 @@
     <option value="">-- Select --</option>
     <option value="Petrol">Petrol</option>
     <option value="Diesel">Diesel</option>
+    <option value="Jetkero">Jetkero</option>
+    
   </select>
 </div>
               <div class="form-group"><label>Fan Time Out :</label><input id="FAN_TIME_OUT" name="FAN_TIME_OUT" type="text"></div>
@@ -592,19 +594,39 @@ document.getElementById("savePdfBtn").addEventListener("click", async function (
 });
 
 // Assign Bay button
+// ✅ Toggle Bay Input visibility (Auto / Manual)
+const bayTypeRadios = document.querySelectorAll('input[name="bayType"]');
+const bayFieldGroup = document.querySelector('#BAY_NO').closest('.form-group');
+
+function updateBayFieldVisibility() {
+  const selected = document.querySelector('input[name="bayType"]:checked')?.value;
+  if (selected === "auto") {
+    bayFieldGroup.style.display = "none";
+  } else {
+    bayFieldGroup.style.display = "block";
+  }
+}
+
+bayTypeRadios.forEach(radio => {
+  radio.addEventListener('change', updateBayFieldVisibility);
+});
+updateBayFieldVisibility();
+
+// ✅ Assign Bay logic
 document.getElementById("assignBayBtn").addEventListener("click", async function () {
   const truckRegNo = document.getElementById("truckRegInput").value.trim();
   const bayNo = document.getElementById("BAY_NO").value.trim();
   const bayType = document.querySelector('input[name="bayType"]:checked').value;
+  const itemDesc = document.getElementById("ITEM_DESCRIPTION").value.trim(); // Petrol / Diesel / Jetkero
 
   if (!truckRegNo) return alert("Truck Reg No missing");
-  if (!bayNo) return alert("Enter Bay No");
+  if (bayType === "manual" && !bayNo) return alert("Enter Bay No");
 
   try {
     const res = await fetch('/Fan-Generation/api/assign-bay', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ truckRegNo, bayNo, bayType })
+      body: JSON.stringify({ truckRegNo, bayNo, bayType, itemDesc })
     });
 
     const data = await res.json();
@@ -612,13 +634,14 @@ document.getElementById("assignBayBtn").addEventListener("click", async function
       alert("Bay Assigned Successfully!");
       closeBayPopup();
     } else {
-      alert("Error: " + data.message);
+      alert("Error: " + data.message); 
     }
   } catch (err) {
     console.error(err);
     alert("Server Error");
   }
 });
+
 </script>
 
 
@@ -1028,24 +1051,76 @@ router.get('/api/get-bay/:truckRegNo', async (req, res) => {
   }
 });
 
-// Assign Bay No to truck
+// ============================
+// 🔹 3. Assign Bay (Auto/Manual) using TRUCK_MASTER
+// ============================
 router.post('/api/assign-bay', async (req, res) => {
-  const { truckRegNo, bayNo, bayType } = req.body;
-  if (!truckRegNo || !bayNo) return res.status(400).json({ message: "Truck Reg No and Bay No required" });
+  const { truckRegNo, bayNo, bayType, itemDesc } = req.body; // itemDesc = "Petrol", "Jetkero", or "Diesel"
+
+  if (!truckRegNo) {
+    return res.status(400).json({ message: "Truck Registration No is required" });
+  }
 
   try {
     const pool = await sql.connect(dbConfig);
+    let finalBayNo = bayNo;
+
+    // ✅ Auto Allocation Logic
+    if (bayType === "auto") {
+      let bayGroup = [];
+
+      // Select bay group based on item description (fuel type)
+      if (itemDesc && itemDesc.toLowerCase() === "petrol") {
+        bayGroup = ["1", "2"];
+      } else if (itemDesc && itemDesc.toLowerCase() === "jetkero") {
+        bayGroup = ["3", "4"];
+      } else if (itemDesc && itemDesc.toLowerCase() === "diesel") {
+        bayGroup = ["1", "2", "3", "4"];
+      } else {
+        return res.status(400).json({ message: "Invalid or missing item type" });
+      }
+
+      // 1️⃣ Get truck count per bay from TRUCK_MASTER
+      const countQuery = `
+        SELECT BAY_NO, COUNT(*) AS TRUCK_COUNT
+        FROM DATA_MASTER
+        WHERE BAY_NO IN (${bayGroup.map(b => `'${b}'`).join(",")})
+        GROUP BY BAY_NO
+      `;
+      const result = await pool.request().query(countQuery);
+
+      // Initialize counts
+      const bayCount = {};
+      bayGroup.forEach(b => bayCount[b] = 0);
+
+      // Fill with database results
+      result.recordset.forEach(row => bayCount[row.BAY_NO] = row.TRUCK_COUNT);
+
+      // 2️⃣ Pick bay with least assigned trucks
+      finalBayNo = Object.keys(bayCount).reduce((a, b) =>
+        bayCount[a] <= bayCount[b] ? a : b
+      );
+
+      console.log(`Auto selected bay for ${itemDesc}: ${finalBayNo}`);
+    }
+
+    // 3️⃣ Update the TRUCK_MASTER with the selected bay
     await pool.request()
       .input('truckRegNo', sql.VarChar, truckRegNo)
-      .input('bayNo', sql.VarChar, bayNo)
-      .query('UPDATE DATA_MASTER SET BAY_NO=@bayNo WHERE TRUCK_REG_NO=@truckRegNo');
+      .input('bayNo', sql.VarChar, finalBayNo)
+      .query(`
+        UPDATE DATA_MASTER
+        SET BAY_NO = @bayNo
+        WHERE TRUCK_REG_NO = @truckRegNo
+      `);
 
-    res.json({ message: `Bay ${bayNo} assigned to Truck ${truckRegNo}` });
+    res.json({ message: "Bay assigned successfully", BAY_NO: finalBayNo });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Database Error" });
+    console.error("Error assigning bay:", err);
+    res.status(500).json({ message: "Database Error: " + err.message });
   }
 });
+
 
 
   module.exports = router;

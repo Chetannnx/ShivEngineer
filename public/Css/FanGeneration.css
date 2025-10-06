@@ -460,15 +460,17 @@ border-color: #007bff;
 }
 
 #bayPopup .form-group input {
-   width: 200px;
-  display: block;
-  margin: 0 auto; /* centers it */
-  padding: 8px 10px;
-  font-size: 14px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  outline: none;
-  transition: border-color 0.2s ease;
+  width: 200px;
+    display: block;
+    margin: 0 auto;
+    padding: 8px 10px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    outline: none;
+    transition: border-color 0.2s 
+ease;
+    text-align: center;
 }
 
 
