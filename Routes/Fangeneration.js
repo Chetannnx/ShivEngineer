@@ -631,7 +631,7 @@ document.getElementById("assignBayBtn").addEventListener("click", async function
 
     const data = await res.json();
     if (res.ok) {
-      alert("Bay Assigned Successfully!");
+      showCenterPopup("Bay Assigned Successfully!");
       closeBayPopup();
     } else {
       alert("Error: " + data.message); 
@@ -641,6 +641,48 @@ document.getElementById("assignBayBtn").addEventListener("click", async function
     alert("Server Error");
   }
 });
+
+// BAY ASSIGN SUCCESSFULL POPUP
+function showCenterPopup(message) {
+  // Create popup element
+  const popup = document.createElement('div');
+  popup.textContent = message;
+
+  // Style it
+  Object.assign(popup.style, {
+    position: 'fixed',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    backgroundColor: '#4CAF50',  // Green for success
+    color: 'white',
+    padding: '20px 40px',
+    borderRadius: '10px',
+    boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
+    fontSize: '18px',
+    zIndex: '2000',
+    textAlign: 'center',
+    opacity: '0',
+    transition: 'opacity 0.3s ease-in-out, visibility 0.3s ease-in-out'
+
+  // Add to screen
+  document.body.appendChild(popup);
+
+   // Fade in
+  setTimeout(() => {
+    popup.style.opacity = '1';
+    popup.style.visibility = 'visible';
+  }, 10);
+
+// Fade out and remove after 2.5 seconds
+  setTimeout(() => {
+    popup.style.opacity = '0';
+    popup.style.visibility = 'hidden';
+    setTimeout(() => popup.remove(), 300);
+  }, 2500);
+}
+
+
 
 </script>
 
@@ -656,9 +698,9 @@ document.getElementById("assignBayBtn").addEventListener("click", async function
   });
 
 
-  // Unified API: Fetch by Truck No OR Card Allocated No
- // =========================
-// 🔹 1. Search by Truck Reg No
+  
+// =========================
+// 🔹Search by Truck Reg No
 // =========================
 router.get('/api/fan-generation/truck/:truckRegNo', async (req, res) => {
   const truckRegNo = req.params.truckRegNo?.trim();
@@ -719,7 +761,7 @@ else if (processStatus === 2) truckStatusText = "Fan Generation";
 
 
 // =========================
-// 🔹 2. Search by Card No
+// 🔹Search by Card No
 // =========================
 router.get('/api/fan-generation/card/:cardNo', async (req, res) => {
   const cardNo = req.params.cardNo?.trim();
@@ -780,53 +822,9 @@ else if (processStatus === 2) truckStatusText = "Fan Generation";
 });
 
 
-
-
-  // Fetch by Card No (with Truck Master fallback)
-  // router.get('/api/fan-generation/card/:cardNo', async (req, res) => {
-  //   const cardNo = req.params.cardNo;
-  //   try {
-  //     const pool = await sql.connect(dbConfig);
-
-  //     // 1️⃣ Get Data Master by Card
-  //     const dataResult = await pool.request()
-  //       .input('cardNo', sql.VarChar, cardNo)
-  //       .query('SELECT TOP 1 * FROM DATA_MASTER WHERE CARD_NO = @cardNo ORDER BY FAN_TIME_OUT DESC');
-
-  //     if (dataResult.recordset.length === 0) {
-  //       return res.status(404).json({ message: "Card not found in DATA_MASTER" });
-  //     }
-
-  //     const dataMaster = dataResult.recordset[0];
-
-  //     // Safety: Trim Truck No before query (in case of spaces)
-  //     const truckRegNo = (dataMaster.TRUCK_REG_NO || "").trim();
-
-  //     // 2️⃣ Always try to get TRUCK_MASTER (if truckRegNo is available)
-  //     let truckData = {};
-  //     if (truckRegNo) {
-  //       const truckResult = await pool.request()
-  //         .input('truckRegNo', sql.VarChar, truckRegNo)
-  //         .query('SELECT * FROM TRUCK_MASTER WHERE TRUCK_REG_NO = @truckRegNo');
-
-  //       if (truckResult.recordset.length > 0) {
-  //         truckData = truckResult.recordset[0];
-  //       }
-  //     }
-
-  //     // 3️⃣ Merge truck master + data master
-  //     const mergedData = { ...truckData, ...dataMaster };
-
-  //     // If truck data missing, still return dataMaster to show CARD info
-  //     res.json(mergedData);
-  //   } catch (err) {
-  //     console.error(err);
-  //     res.status(500).json({ message: "Database Error" });
-  //   }
-  // });
-
-
- // API route: Assign Card & Save to DATA_MASTER
+// =========================
+// 🔹 API route: Assign Card & Save to DATA_MASTER
+// =========================
   router.post('/api/assign-card', async (req, res) => {
   const { 
     truckRegNo, 
@@ -927,8 +925,9 @@ else if (processStatus === 2) truckStatusText = "Fan Generation";
 });
 
 
-
- // API route: Reassign Card (Update existing record)
+// =========================
+// 🔹API route: Reassign Card (Update existing record)
+// =========================
 router.put('/api/reassign-card', async (req, res) => {
   const { truckRegNo, cardNo, processType, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, ITEM_DESCRIPTION, FAN_TIME_OUT, WEIGHT_TO_FILLED } = req.body;
 
@@ -1015,7 +1014,10 @@ router.put('/api/reassign-card', async (req, res) => {
   }
 });
 
-// API: Update PROCESS_STATUS to 2
+
+// =========================
+// 🔹API: Update PROCESS_STATUS to 2
+// =========================
 router.put('/api/fan-generation/update-status', async (req,res)=>{
   const { truckRegNo } = req.body;
   if(!truckRegNo) return res.status(400).json({message:"Truck Reg No is required"});
@@ -1034,7 +1036,9 @@ router.put('/api/fan-generation/update-status', async (req,res)=>{
 });
 
 
-// Get BAY_NO for a truck
+// =========================
+// 🔹Get BAY_NO for a truck
+// =========================
 router.get('/api/get-bay/:truckRegNo', async (req, res) => {
   const truckRegNo = req.params.truckRegNo?.trim();
   if (!truckRegNo) return res.status(400).json({ message: "Truck Reg No required" });
@@ -1051,8 +1055,9 @@ router.get('/api/get-bay/:truckRegNo', async (req, res) => {
   }
 });
 
+
 // ============================
-// 🔹 3. Assign Bay (Auto/Manual) using TRUCK_MASTER
+// 🔹Assign Bay (Auto/Manual) using TRUCK_MASTER
 // ============================
 router.post('/api/assign-bay', async (req, res) => {
   const { truckRegNo, bayNo, bayType, itemDesc } = req.body; // itemDesc = "Petrol", "Jetkero", or "Diesel"
@@ -1120,7 +1125,5 @@ router.post('/api/assign-bay', async (req, res) => {
     res.status(500).json({ message: "Database Error: " + err.message });
   }
 });
-
-
 
   module.exports = router;
