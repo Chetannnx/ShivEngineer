@@ -52,6 +52,8 @@
         <option value="-1">Registered</option>
         <option value="1">Reported</option>
         <option value="2">Fan Generation</option>
+        <option value="4">Re Authorized</option>
+
       </select>
     </div>
 
@@ -70,6 +72,9 @@
     <button type="button" id="assignCardBtn" class="btn">Assign Card</button>
     <button type="button" id="ReassignCardBtn" class="btn">Re Assign Card</button>
     <button type="button" id="FanGeneration" class="btn">Fan Generation</button>
+    <button type="button" id="FanAbortBtn" class="btn">Fan Abort</button>
+    <button type="button" id="ReAuthBtn" class="btn">Re Authorization</button>
+
   
           <div class="form-container">
             <!-- LEFT: CARD_MASTER from Truck Master -->
@@ -612,7 +617,9 @@ bayTypeRadios.forEach(radio => {
 });
 updateBayFieldVisibility();
 
+//=======================
 // ✅ Assign Bay logic
+//=======================
 document.getElementById("assignBayBtn").addEventListener("click", async function () {
   const truckRegNo = document.getElementById("truckRegInput").value.trim();
   const bayNo = document.getElementById("BAY_NO").value.trim();
@@ -641,6 +648,52 @@ document.getElementById("assignBayBtn").addEventListener("click", async function
     alert("Server Error");
   }
 });
+
+
+// =========================
+//  FAN ABORT BUTTON LOGIC
+// =========================
+document.getElementById("FanAbortBtn").addEventListener("click", async () => {
+  const truckRegNo = document.getElementById("truckRegInput").value.trim();
+  const cardNo = document.getElementById("CARD_NO").value.trim();
+
+  if (!truckRegNo && !cardNo) {
+    return alert("Enter Truck Reg No or Card No");
+  }
+
+  if (!confirm("Are you sure you want to abort this FAN?")) {
+    return;
+  }
+
+  try {
+    const res = await fetch('/Fan-Generation/api/fan-abort', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ truckRegNo, cardNo })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      // ✅ Clear all inputs
+      const inputs = document.querySelectorAll('input, select');
+      inputs.forEach(el => {
+        if (el.tagName === 'SELECT') el.selectedIndex = 0;
+        else el.value = '';
+      });
+
+      // ✅ Show success popup
+      showCenterPopup("Fan Abort Successfully!");
+
+    } else {
+      alert("Error: " + data.message);
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Server Error");
+  }
+});
+
 
 // BAY ASSIGN SUCCESSFULL POPUP
 function showCenterPopup(message) {
@@ -682,6 +735,62 @@ function showCenterPopup(message) {
     setTimeout(() => popup.remove(), 300);
   }, 2500);
 }
+
+
+
+// Re-Authorization Button
+document.getElementById("ReAuthBtn").addEventListener("click", async () => {
+  const truckRegNo = document.getElementById("truckRegInput").value.trim();
+  if (!truckRegNo) return alert("Enter Truck Reg No");
+
+  const processType = parseInt(document.getElementById("processType").value, 10);
+  if (isNaN(processType)) return alert("Select a valid Process Type");
+
+  const customerName = document.getElementById("CUSTOMER_NAME").value.trim();
+  const address1 = document.getElementById("ADDRESS_LINE_1").value.trim();
+  const address2 = document.getElementById("ADDRESS_LINE_2").value.trim();
+  const itemDesc = document.getElementById("ITEM_DESCRIPTION").value.trim();
+
+  const fanTimeOut = parseInt(document.getElementById("FAN_TIME_OUT").value, 10);
+  if (isNaN(fanTimeOut) || fanTimeOut < 0) return alert("Invalid FAN Time Out");
+
+  const weightToFill = parseInt(document.getElementById("WEIGHT_TO_FILLED").value, 10) || 0;
+
+  // Calculate FAN expiry as JS Date
+  const now = new Date();
+  const fanExpiry = new Date(now.getTime() + fanTimeOut * 60000); // minutes → ms
+
+  try {
+    const res = await fetch('/Fan-Generation/api/re-authorization', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        truckRegNo,
+        processType,
+        customerName,
+        address1,
+        address2,
+        itemDesc,
+        weightToFill,
+        fanTimeOut,
+        fanExpiry // pass JS Date object directly
+      })
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      alert("Re-Authorization done!");
+      document.getElementById("truckStatus").value = 4;
+      document.getElementById("FAN_EXPIRY").textContent = fanExpiry.toLocaleString();
+    } else {
+      alert("Error: " + data.message);
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Server Error");
+  }
+});
+
 
 
 
@@ -1163,5 +1272,92 @@ router.post('/api/assign-bay', async (req, res) => {
     res.status(500).json({ message: "Database Error: " + err.message });
   }
 });
+
+
+// =========================
+// 🔹 FAN ABORT API
+// =========================
+router.delete('/api/fan-abort', async (req, res) => {
+  const { truckRegNo, cardNo } = req.body;
+
+  if (!truckRegNo && !cardNo) {
+    return res.status(400).json({ message: "Truck No or Card No required" });
+  }
+
+  try {
+    const pool = await sql.connect(dbConfig);
+
+    // Delete the record from DATA_MASTER
+    const deleteQuery = `
+      DELETE FROM DATA_MASTER 
+      WHERE TRUCK_REG_NO = @truckRegNo OR CARD_NO = @cardNo
+    `;
+
+    await pool.request()
+      .input('truckRegNo', sql.VarChar, truckRegNo || '')
+      .input('cardNo', sql.VarChar, cardNo || '')
+      .query(deleteQuery);
+
+    res.json({ message: "Fan Abort Successful" });
+
+  } catch (err) {
+    console.error("Fan Abort Error:", err);
+    res.status(500).json({ message: "Database Error" });
+  }
+});
+
+
+router.put('/api/re-authorization', async (req, res) => { 
+  const { truckRegNo, processType, customerName, address1, address2, itemDesc, fanTimeOut, weightToFill } = req.body;
+
+  if (!truckRegNo) return res.status(400).json({ message: "Truck Reg No required" });
+
+  try {
+    const pool = await sql.connect(dbConfig);
+
+    // Calculate FAN_EXPIRY
+    const fanMinutes = parseInt(fanTimeOut) || 0;
+    const now = new Date();
+    const fanExpiry = new Date(now.getTime() + fanMinutes * 60000); // add minutes
+    const fanExpiryUTC = new Date(fanExpiry.getTime() - fanExpiry.getTimezoneOffset() * 60000);
+
+    // Update record
+    const result = await pool.request()
+      .input('TRUCK_REG_NO', sql.VarChar, truckRegNo)
+      .input('PROCESS_TYPE', sql.Int, parseInt(processType) || 0)
+      .input('PROCESS_STATUS', sql.Int, 4) // Re-Authorization
+      .input('CUSTOMER_NAME', sql.VarChar, customerName || "")
+      .input('ADDRESS_LINE_1', sql.VarChar, address1 || "")
+      .input('ADDRESS_LINE_2', sql.VarChar, address2 || "")
+      .input('ITEM_DESCRIPTION', sql.VarChar, itemDesc || "")
+      .input('FAN_TIME_OUT', sql.Int, fanMinutes)
+      .input('FAN_EXPIRY', sql.DateTime, fanExpiryUTC)
+      .input('WEIGHT_TO_FILLED', sql.BigInt, parseInt(weightToFill) || 0)
+      .query(`
+        UPDATE DATA_MASTER
+        SET PROCESS_TYPE = @PROCESS_TYPE,
+            PROCESS_STATUS = @PROCESS_STATUS,
+            CUSTOMER_NAME = @CUSTOMER_NAME,
+            ADDRESS_LINE_1 = @ADDRESS_LINE_1,
+            ADDRESS_LINE_2 = @ADDRESS_LINE_2,
+            ITEM_DESCRIPTION = @ITEM_DESCRIPTION,
+            FAN_TIME_OUT = @FAN_TIME_OUT,
+            FAN_EXPIRY = @FAN_EXPIRY,
+            WEIGHT_TO_FILLED = @WEIGHT_TO_FILLED
+        WHERE TRUCK_REG_NO = @TRUCK_REG_NO
+      `);
+
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({ message: "Truck record not found" });
+    }
+
+    res.json({ message: "Re-Authorization updated successfully" });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Database Error" });
+  }
+});
+
 
   module.exports = router;

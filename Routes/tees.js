@@ -175,7 +175,7 @@ const totalCardHTML = `
 
 
         const topControls = `
-<div style="width:1850px; max-width:1850px;  display:flex; justify-content:space-between; align-items:center;">
+<div style="left:50%;  display:flex; justify-content:space-between; align-items:center;">
   <form method="GET" action="/tees" style="display:flex; align-items:center; gap:8px;">
   
 

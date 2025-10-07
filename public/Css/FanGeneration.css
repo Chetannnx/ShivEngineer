@@ -244,12 +244,22 @@ border-color: #007bff;
 #ReassignCardBtn {
   top: 310px;
   right: 177px; /* different position */
-  background-color: #16a34a; /* optional different color */
+  background-color: #16a34a;
 }
 #FanGeneration{
   top: 370px;
   right: 177px; /* different position */
-  background-color: rgb(128, 122, 122); /* optional different color */
+  background-color: rgb(128, 122, 122); 
+}
+#FanAbortBtn{
+  top: 430px;
+  right: 177px; /* different position */
+  background-color:#b80b06;
+}
+#ReAuthBtn{
+  top: 490px;
+  right: 177px; /* different position */
+  background-color:#9c6866;
 }
 
 
