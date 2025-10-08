@@ -73,7 +73,8 @@
     <button type="button" id="ReassignCardBtn" class="btn">Re Assign Card</button>
     <button type="button" id="FanGeneration" class="btn">Fan Generation</button>
     <button type="button" id="FanAbortBtn" class="btn">Fan Abort</button>
-    <button type="button" id="ReAuthBtn" class="btn">Re Authorization</button>
+    <button type="button" id="ReAuthBtn" class="btn">ReAuthorization</button>
+    <button type="button" id="reAllocateBtn" class="btn" onclick="openReallocatePopup()">Re Allocate</button>
 
   
           <div class="form-container">
@@ -176,6 +177,25 @@
     </div>
     <button id="assignBayBtn">Assign</button>
     <button onclick="closeBayPopup()">Close</button>
+  </div>
+</div>
+
+
+<!-- Reallocate Bay Popup -->
+<div id="bayPopup1" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+     background:rgba(0,0,0,0.5); justify-content:center; align-items:center;">
+  <div style="background:#fff; padding:20px; border-radius:8px; width:300px; position:relative;">
+    <h3>How do you want to Reallocate Bay?</h3>
+    <div>
+      <label><input type="radio" name="bayType1" value="auto" checked> Auto</label>
+      <label><input type="radio" name="bayType1" value="manual"> Manual</label>
+    </div>
+    <div class="form-group">
+      <label>BAY_NO:</label>
+      <input type="text" id="BAY_NO1">
+    </div>
+    <button id="assignBayBtn1">Assign Bay</button>
+    <button onclick="closeBayPopup1()">Close</button>
   </div>
 </div>
 
@@ -792,6 +812,90 @@ document.getElementById("ReAuthBtn").addEventListener("click", async () => {
 });
 
 
+//================
+//BAY RE-ALLOCATE
+//================
+
+let currentTruckRegNo = "";
+let previousBayNo = "";
+
+// ✅ Close popup
+function closeBayPopup1() {
+  document.getElementById("bayPopup1").style.display = "none";
+}
+
+// ✅ Open popup + fetch current BAY_NO
+async function openReallocatePopup() {
+  try {
+    const truckRegNoInput = document.getElementById("truckRegInput");
+    if (!truckRegNoInput) return alert("Truck Reg Input not found in HTML!");
+    const truckRegNo = truckRegNoInput.value.trim();
+    if (!truckRegNo) return alert("Truck Reg No missing");
+
+    currentTruckRegNo = truckRegNo;
+
+    const res = await fetch('/Fan-Generation/api/get-bay/' + encodeURIComponent(truckRegNo));
+    if (!res.ok) throw new Error("Failed to fetch Bay No");
+
+    const data = await res.json();
+    previousBayNo = data.BAY_NO || "";
+    document.getElementById("BAY_NO1").value = previousBayNo;
+
+    document.getElementById("bayPopup1").style.display = "flex";
+  } catch (err) {
+    console.error("openReallocatePopup error:", err);
+    alert("Could not open popup. Check console for details.");
+  }
+}
+
+// ✅ Toggle BAY_NO field (Auto / Manual)
+function updateBayFieldVisibility() {
+  const selected = document.querySelector('input[name="bayType1"]:checked')?.value;
+  const bayFieldGroup = document.querySelector('#BAY_NO1').closest('.form-group');
+  if (!bayFieldGroup) return;
+
+  if (selected === "auto") {
+    bayFieldGroup.style.display = "none";
+  } else {
+    bayFieldGroup.style.display = "block";
+    document.getElementById("BAY_NO1").value = previousBayNo;
+  }
+}
+
+document.querySelectorAll('input[name="bayType1"]').forEach(radio => {
+  radio.addEventListener('change', updateBayFieldVisibility);
+});
+updateBayFieldVisibility();
+
+// ✅ Assign / Reallocate Bay
+document.getElementById("assignBayBtn1").addEventListener("click", async function () {
+  try {
+    const truckRegNo = currentTruckRegNo;
+    const bayNo = document.getElementById("BAY_NO1").value.trim();
+    const bayType = document.querySelector('input[name="bayType1"]:checked').value;
+    const itemDesc = document.getElementById("ITEM_DESCRIPTION")?.value?.trim() || "";
+
+    if (!truckRegNo) return alert("Truck Reg No missing");
+    if (bayType === "manual" && !bayNo) return alert("Enter Bay No");
+
+    const res = await fetch('/Fan-Generation/api/reallocate-bay', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ truckRegNo, bayNo, bayType, itemDesc })
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      alert("Bay Reallocated Successfully!");
+      closeBayPopup1();
+    } else {
+      alert("Error: " + data.message);
+    }
+  } catch (err) {
+    console.error("assignBayBtn1 error:", err);
+    alert("Server Error");
+  }
+});
 
 
 </script>
@@ -931,51 +1035,6 @@ else if (processStatus === 2) truckStatusText = "Fan Generation";
   }
 });
 
-
-
-
-  // Fetch by Card No (with Truck Master fallback)
-  // router.get('/api/fan-generation/card/:cardNo', async (req, res) => {
-  //   const cardNo = req.params.cardNo;
-  //   try {
-  //     const pool = await sql.connect(dbConfig);
-
-  //     // 1️⃣ Get Data Master by Card
-  //     const dataResult = await pool.request()
-  //       .input('cardNo', sql.VarChar, cardNo)
-  //       .query('SELECT TOP 1 * FROM DATA_MASTER WHERE CARD_NO = @cardNo ORDER BY FAN_TIME_OUT DESC');
-
-  //     if (dataResult.recordset.length === 0) {
-  //       return res.status(404).json({ message: "Card not found in DATA_MASTER" });
-  //     }
-
-  //     const dataMaster = dataResult.recordset[0];
-
-  //     // Safety: Trim Truck No before query (in case of spaces)
-  //     const truckRegNo = (dataMaster.TRUCK_REG_NO || "").trim();
-
-  //     // 2️⃣ Always try to get TRUCK_MASTER (if truckRegNo is available)
-  //     let truckData = {};
-  //     if (truckRegNo) {
-  //       const truckResult = await pool.request()
-  //         .input('truckRegNo', sql.VarChar, truckRegNo)
-  //         .query('SELECT * FROM TRUCK_MASTER WHERE TRUCK_REG_NO = @truckRegNo');
-
-  //       if (truckResult.recordset.length > 0) {
-  //         truckData = truckResult.recordset[0];
-  //       }
-  //     }
-
-  //     // 3️⃣ Merge truck master + data master
-  //     const mergedData = { ...truckData, ...dataMaster };
-
-  //     // If truck data missing, still return dataMaster to show CARD info
-  //     res.json(mergedData);
-  //   } catch (err) {
-  //     console.error(err);
-  //     res.status(500).json({ message: "Database Error" });
-  //   }
-  // });
 
 
  // API route: Assign Card & Save to DATA_MASTER
@@ -1203,6 +1262,8 @@ router.get('/api/get-bay/:truckRegNo', async (req, res) => {
   }
 });
 
+
+
 // ============================
 // 🔹 3. Assign Bay (Auto/Manual) using TRUCK_MASTER
 // ============================
@@ -1359,5 +1420,99 @@ router.put('/api/re-authorization', async (req, res) => {
   }
 });
 
+
+// ============================
+// 🔹 Re-Allocate Bay (Auto/Manual)
+// ============================
+router.post('/api/reallocate-bay', async (req, res) => {
+  const { truckRegNo, bayNo, bayType, itemDesc } = req.body; // itemDesc = "Petrol", "Jetkero", or "Diesel"
+
+  if (!truckRegNo) {
+    return res.status(400).json({ message: "Truck Registration No is required" });
+  }
+
+  try {
+    const pool = await sql.connect(dbConfig);
+    let finalBayNo = bayNo;
+
+    // ✅ Auto Allocation Logic
+    if (bayType === "auto") {
+      let bayGroup = [];
+
+      // Select bay group based on item description (fuel type)
+      if (itemDesc && itemDesc.toLowerCase() === "petrol") {
+        bayGroup = ["1", "2"];
+      } else if (itemDesc && itemDesc.toLowerCase() === "jetkero") {
+        bayGroup = ["3", "4"];
+      } else if (itemDesc && itemDesc.toLowerCase() === "diesel") {
+        bayGroup = ["1", "2", "3", "4"];
+      } else {
+        return res.status(400).json({ message: "Invalid or missing item type" });
+      }
+
+      // 1️⃣ Get truck count per bay from TRUCK_MASTER
+      const countQuery = `
+        SELECT BAY_NO, COUNT(*) AS TRUCK_COUNT
+        FROM DATA_MASTER
+        WHERE BAY_NO IN (${bayGroup.map(b => `'${b}'`).join(",")})
+        GROUP BY BAY_NO
+      `;
+      const result = await pool.request().query(countQuery);
+
+      // Initialize counts
+      const bayCount = {};
+      bayGroup.forEach(b => bayCount[b] = 0);
+
+      // Fill with database results
+      result.recordset.forEach(row => bayCount[row.BAY_NO] = row.TRUCK_COUNT);
+
+      // 2️⃣ Pick bay with least assigned trucks
+      finalBayNo = Object.keys(bayCount).reduce((a, b) =>
+        bayCount[a] <= bayCount[b] ? a : b
+      );
+
+      console.log(`Auto selected bay for ${itemDesc}: ${finalBayNo}`);
+    }
+
+    // 3️⃣ Update the TRUCK_MASTER with the selected bay
+    await pool.request()
+      .input('truckRegNo', sql.VarChar, truckRegNo)
+      .input('bayNo', sql.VarChar, finalBayNo)
+      .query(`
+        UPDATE DATA_MASTER
+        SET BAY_NO = @bayNo
+        WHERE TRUCK_REG_NO = @truckRegNo
+      `);
+
+    res.json({ message: "Bay assigned successfully", BAY_NO: finalBayNo });
+  } catch (err) {
+    console.error("Error assigning bay:", err);
+    res.status(500).json({ message: "Database Error: " + err.message });
+  }
+});
+
+
+
+
+
+
+
+
+
+router.get('/api/get-bay/:truckRegNo', async (req, res) => {
+  const truckRegNo = req.params.truckRegNo?.trim();
+  if (!truckRegNo) return res.status(400).json({ message: "Truck Reg No required" });
+  try {
+    const pool = await sql.connect(dbConfig);
+    const result = await pool.request()
+      .input('truckRegNo', sql.VarChar, truckRegNo)
+      .query('SELECT TOP 1 BAY_NO FROM DATA_MASTER WHERE TRUCK_REG_NO = @truckRegNo ORDER BY FAN_TIME_OUT DESC');
+
+    res.json({ BAY_NO: result.recordset[0]?.BAY_NO || "" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Database Error" });
+  }
+});
 
   module.exports = router;

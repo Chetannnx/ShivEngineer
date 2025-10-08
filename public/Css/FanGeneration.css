@@ -240,11 +240,12 @@ border-color: #007bff;
 #assignCardBtn {
   top: 250px;
   right: 177px;
+  background-color:  rgb(128, 122, 122);
 }
 #ReassignCardBtn {
   top: 310px;
   right: 177px; /* different position */
-  background-color: #16a34a;
+  background-color:  rgb(128, 122, 122);
 }
 #FanGeneration{
   top: 370px;
@@ -254,14 +255,18 @@ border-color: #007bff;
 #FanAbortBtn{
   top: 430px;
   right: 177px; /* different position */
-  background-color:#b80b06;
+  background-color: rgb(128, 122, 122);
 }
 #ReAuthBtn{
   top: 490px;
   right: 177px; /* different position */
-  background-color:#9c6866;
+  background-color: rgb(128, 122, 122);
 }
-
+#reAllocateBtn{
+  top: 550px;
+  right: 177px; /* different position */
+  background-color: rgb(128, 122, 122);
+}
 
 .three-inputs {
   display:flex;
