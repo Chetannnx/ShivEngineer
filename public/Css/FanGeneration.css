@@ -538,3 +538,132 @@ ease;
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+
+
+
+/* Bay Reallocate */
+#bayPopup1.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.25s ease-in;
+}
+
+/* Popup box */
+#bayPopup1.popup-content {
+  background: #ffffff;
+  width: 400px;
+  padding: 25px 30px;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+  text-align: center;
+  font-family: "Segoe UI", Roboto, sans-serif;
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Heading and text */
+#bayPopup1 h3 {
+  font-size: 20px;
+  color: #333;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+/* Radio buttons */
+#bayPopup1 label {
+  font-size: 15px;
+  color: #333;
+  margin: 0 10px;
+  cursor: pointer;
+}
+
+#bayPopup1 input[type="radio"] {
+  margin-right: 5px;
+  accent-color: #007bff; /* nice blue accent */
+}
+
+/* Input field */
+#bayPopup1 .form-group {
+  margin: 20px 0;
+  text-align: center;
+}
+
+#bayPopup1 .form-group label {
+  font-size: 15px;
+  font-weight: 600;
+  color: #444;
+  display: block;
+  margin-bottom: 5px;
+  text-align: center; /* ✅ center the label */
+}
+
+#bayPopup1 .form-group input {
+  width: 200px;
+    display: block;
+    margin: 0 auto;
+    padding: 8px 10px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    outline: none;
+    transition: border-color 0.2s 
+ease;
+    text-align: center;
+}
+
+
+#bayPopup1 .form-group input:focus {
+  border-color: #007bff;
+}
+
+/* Buttons */
+#bayPopup1 button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin: 0 5px;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Assign button (primary) */
+#assignBayBtn1 {
+  background-color: #007bff;
+  color: #fff;
+}
+
+#assignBayBtn1:hover {
+  background-color: #0056b3;
+  transform: scale(1.04);
+}
+
+/* Close button */
+#bayPopup1 button[onclick="closeBayPopup1()"] {
+  background-color: #dc3545;
+  color: #fff;
+}
+
+#bayPopup1 button[onclick="closeBayPopup1()"]:hover {
+  background-color: #b02a37;
+  transform: scale(1.04);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-15px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}

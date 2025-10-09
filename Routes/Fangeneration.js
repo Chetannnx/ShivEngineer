@@ -182,16 +182,15 @@
 
 
 <!-- Reallocate Bay Popup -->
-<div id="bayPopup1" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
-     background:rgba(0,0,0,0.5); justify-content:center; align-items:center;">
-  <div style="background:#fff; padding:20px; border-radius:8px; width:300px; position:relative;">
+<div id="bayPopup1" style="display:none;" class="popup-overlay">
+  <div class="popup-content">
     <h3>How do you want to Reallocate Bay?</h3>
     <div>
       <label><input type="radio" name="bayType1" value="auto" checked> Auto</label>
       <label><input type="radio" name="bayType1" value="manual"> Manual</label>
     </div>
     <div class="form-group">
-      <label>BAY_NO:</label>
+      <label>Assign Bay :</label>
       <input type="text" id="BAY_NO1">
     </div>
     <button id="assignBayBtn1">Assign Bay</button>
