@@ -94,7 +94,8 @@ nav ul li a.active::after {
 .form-group label {
   flex: 1;
   font-weight: 600;
-  text-align: right; /* <-- label exactly opposite to input */
+  text-align: right;
+  /* <-- label exactly opposite to input */
   margin-right: 15px;
   font-size: 14px;
   color: #333;
@@ -103,7 +104,7 @@ nav ul li a.active::after {
 /* Input and Select Styling */
 .form-group input,
 .form-group select {
-  font-family:'DM Sans', sans-serif ;
+  font-family: 'DM Sans', sans-serif;
   font-weight: bold;
   flex: 2;
   padding: 8px 10px;
@@ -113,7 +114,8 @@ nav ul li a.active::after {
   background: #fdfdfd;
   transition: border-color 0.3s ease;
 }
-.form-group input{
+
+.form-group input {
   height: 20px;
 }
 
@@ -139,35 +141,38 @@ nav ul li a.active::after {
 /* Responsive Design */
 @media (max-width: 900px) {
   .form-container {
-    grid-template-columns: 1fr; /* stack vertically on small screens */
+    grid-template-columns: 1fr;
+    /* stack vertically on small screens */
     height: auto;
   }
+
   .form-group label {
     text-align: left;
     margin-bottom: 5px;
   }
+
   .form-group {
     flex-direction: column;
     align-items: flex-start;
   }
 }
 
- .top-actions {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 19px;
-    margin-bottom: 5px;
-    font-family: 'DM Sans', sans-serif;
-    font-weight: bold;
-  }
+.top-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 19px;
+  margin-bottom: 5px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: bold;
+}
 
-  .top-actionss{
-    display: flex;
-    justify-content: center;
-    gap: 35px;
-    margin-left: 0.3%;
-  }
+.top-actionss {
+  display: flex;
+  justify-content: center;
+  gap: 35px;
+  margin-left: 0.3%;
+}
 
 .input-group select {
   font-weight: bold;
@@ -175,12 +180,14 @@ nav ul li a.active::after {
   font-family: 'DM Sans', sans-serif;
   border: 1px solid #ccc;
   border-radius: 8px;
-  gap:19px;
+  gap: 19px;
   font-size: 14px;
-  width: 307px;  /* fixed width for balance */
+  width: 307px;
+  /* fixed width for balance */
 }
-.input-group select:focus{
-border-color: #007bff;
+
+.input-group select:focus {
+  border-color: #007bff;
   outline: none;
   box-shadow: 0px 0px 5px rgba(0, 123, 255, 0.3);
 }
@@ -196,14 +203,14 @@ border-color: #007bff;
   transition: all 0.3s ease;
   height: 20px;
   border-radius: 10px;
-   transition: border-color 0.3s ease;
-  }
+  transition: border-color 0.3s ease;
+}
 
-  .top-actions input[type="text"]:focus{
-    border-color: #007bff;
+.top-actions input[type="text"]:focus {
+  border-color: #007bff;
   outline: none;
   box-shadow: 0px 0px 5px rgba(0, 123, 255, 0.3);
-  }
+}
 
 .btn {
   grid-column: span 2;
@@ -211,7 +218,7 @@ border-color: #007bff;
   color: white;
   border: none;
   padding: 10px;
-  border-radius:12px;
+  border-radius: 12px;
   cursor: pointer;
   font-size: 1rem;
   font-weight: bold;
@@ -219,7 +226,8 @@ border-color: #007bff;
   transition: background 0.2s ease, transform 0.2s ease;
 }
 
-.btn{
+
+.btn {
   position: absolute;
   background-color: #6366f1;
   color: white;
@@ -233,63 +241,72 @@ border-color: #007bff;
   text-align: center;
 
 }
+
 .btn:active {
-  transform: translateY(2px); /* Moves button down a bit */
+  transform: translateY(2px);
 }
 
 #assignCardBtn {
   top: 250px;
   right: 177px;
-  background-color:  rgb(128, 122, 122);
+  background-color: rgb(128, 122, 122);
 }
+
 #ReassignCardBtn {
   top: 310px;
-  right: 177px; /* different position */
-  background-color:  rgb(128, 122, 122);
+  right: 177px;
+  background-color: rgb(128, 122, 122);
 }
-#FanGeneration{
+
+#FanGeneration {
   top: 370px;
-  right: 177px; /* different position */
-  background-color: rgb(128, 122, 122); 
+  right: 177px;
+  background-color: rgb(128, 122, 122);
 }
-#FanAbortBtn{
+
+#FanAbortBtn {
   top: 430px;
-  right: 177px; /* different position */
+  right: 177px;
   background-color: rgb(128, 122, 122);
 }
-#ReAuthBtn{
+
+#ReAuthBtn {
   top: 490px;
-  right: 177px; /* different position */
+  right: 177px;
   background-color: rgb(128, 122, 122);
 }
-#reAllocateBtn{
+
+#reAllocateBtn {
   top: 550px;
-  right: 177px; /* different position */
+  right: 177px;
   background-color: rgb(128, 122, 122);
 }
 
 .three-inputs {
-  display:flex;
+  display: flex;
   position: absolute;
-  left:61.3%;
+  left: 61.3%;
   right: 10px;
   width: 100px;
   gap: 5px;
 }
 
 .three-inputs input#MIN {
-  width: 65px;       /* small for min */
+  width: 65px;
+  /* small for min */
   text-align: center;
 }
 
 .three-inputs input#WEIGHT_TO_FILLED {
-  flex: 8;           /* takes remaining space, editable */
+  flex: 8;
+  /* takes remaining space, editable */
   min-width: 148px;
   text-align: center;
 }
 
 .three-inputs input#MAX {
-  width: 65px;       /* slightly bigger than MIN */
+  width: 65px;
+  /* slightly bigger than MIN */
   text-align: center;
 }
 
@@ -297,11 +314,13 @@ border-color: #007bff;
 /* Overlay */
 .popup-overlay {
   position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.45);
-  display: flex; 
-  justify-content: center; 
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  justify-content: center;
   align-items: center;
   z-index: 9999;
 }
@@ -313,7 +332,7 @@ border-color: #007bff;
   border-radius: 12px;
   width: 420px;
   font-family: 'DM Sans', sans-serif;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
   animation: popupFade 0.3s ease-out;
 }
 
@@ -334,7 +353,7 @@ border-color: #007bff;
   margin-bottom: 20px;
 }
 
-#fanTable th, 
+#fanTable th,
 #fanTable td {
   text-align: left;
   padding: 6px 8px;
@@ -399,8 +418,15 @@ border-color: #007bff;
 
 /* Animation */
 @keyframes popupFade {
-  from { opacity: 0; transform: translateY(-10px) scale(0.95); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 
@@ -412,7 +438,7 @@ border-color: #007bff;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0,0,0,0.45);
+  background-color: rgba(0, 0, 0, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -426,7 +452,7 @@ border-color: #007bff;
   width: 400px;
   padding: 25px 30px;
   border-radius: 12px;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
   text-align: center;
   font-family: "Segoe UI", Roboto, sans-serif;
   animation: slideIn 0.3s ease-out;
@@ -456,7 +482,8 @@ border-color: #007bff;
 
 #bayPopup input[type="radio"] {
   margin-right: 5px;
-  accent-color: #007bff; /* nice blue accent */
+  accent-color: #007bff;
+  /* nice blue accent */
 }
 
 /* Input field */
@@ -471,21 +498,21 @@ border-color: #007bff;
   color: #444;
   display: block;
   margin-bottom: 5px;
-  text-align: center; /* ✅ center the label */
+  text-align: center;
+  /* ✅ center the label */
 }
 
 #bayPopup .form-group input {
   width: 200px;
-    display: block;
-    margin: 0 auto;
-    padding: 8px 10px;
-    font-size: 14px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    outline: none;
-    transition: border-color 0.2s 
-ease;
-    text-align: center;
+  display: block;
+  margin: 0 auto;
+  padding: 8px 10px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.2s ease;
+  text-align: center;
 }
 
 
@@ -503,6 +530,10 @@ ease;
   cursor: pointer;
   margin: 0 5px;
   transition: all 0.2s ease-in-out;
+}
+#bayPopup button:hover{
+  transform: translateY(2px); /* moves button down slightly */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* subtle shadow */
 }
 
 /* Assign button (primary) */
@@ -529,13 +560,25 @@ ease;
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideIn {
-  from { opacity: 0; transform: translateY(-15px) scale(0.96); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(-15px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 
@@ -548,7 +591,7 @@ ease;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0,0,0,0.45);
+  background-color: rgba(0, 0, 0, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -562,7 +605,7 @@ ease;
   width: 400px;
   padding: 25px 30px;
   border-radius: 12px;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
   text-align: center;
   font-family: "Segoe UI", Roboto, sans-serif;
   animation: slideIn 0.3s ease-out;
@@ -586,7 +629,8 @@ ease;
 
 #bayPopup1 input[type="radio"] {
   margin-right: 5px;
-  accent-color: #007bff; /* nice blue accent */
+  accent-color: #007bff;
+  /* nice blue accent */
 }
 
 /* Input field */
@@ -601,21 +645,21 @@ ease;
   color: #444;
   display: block;
   margin-bottom: 5px;
-  text-align: center; /* ✅ center the label */
+  text-align: center;
+  /* ✅ center the label */
 }
 
 #bayPopup1 .form-group input {
   width: 200px;
-    display: block;
-    margin: 0 auto;
-    padding: 8px 10px;
-    font-size: 14px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    outline: none;
-    transition: border-color 0.2s 
-ease;
-    text-align: center;
+  display: block;
+  margin: 0 auto;
+  padding: 8px 10px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.2s ease;
+  text-align: center;
 }
 
 
@@ -659,11 +703,23 @@ ease;
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideIn {
-  from { opacity: 0; transform: translateY(-15px) scale(0.96); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(-15px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }

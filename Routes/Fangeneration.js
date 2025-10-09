@@ -1,12 +1,12 @@
-  const express = require('express');
-  const sql = require('mssql/msnodesqlv8');
-  const dbConfig = require('../Config/dbConfig');
-  const router = express.Router();
+const express = require("express");
+const sql = require("mssql/msnodesqlv8");
+const dbConfig = require("../Config/dbConfig");
+const router = express.Router();
 
-  // Serve the Fan Generation HTML page
-  router.get('/', async (req, res) => {
-    try {
-      const html = `
+// Serve the Fan Generation HTML page
+router.get("/", async (req, res) => {
+  try {
+    const html = `
         <!DOCTYPE html>
         <html lang="en">
         <head>
@@ -403,7 +403,7 @@ if (weightField) {
 
           const data = await res.json();
           if (res.ok) {
-            alert("Card Assigned Successfully!");
+            showCenterPopup("Card Assigned Successfully!");
             //document.getElementById("CARD_NO").value = "";
           } else {
             alert("Error: " + data.message);
@@ -478,7 +478,7 @@ if (reassignBtn) {
 
       const data = await res.json();
       if (res.ok) {
-        alert("Card Reassigned Successfully!");
+        showCenterPopup("Card Reassigned Successfully!");
         fetchTruckData(); // refresh UI after update
       } else {
         if (res.ok) {
@@ -893,7 +893,7 @@ document.getElementById("assignBayBtn1").addEventListener("click", async functio
 
     const data = await res.json();
     if (res.ok) {
-      alert("Bay Reallocated Successfully!");
+      showCenterPopup("Bay Reallocated Successfully!");
       closeBayPopup1();
     } else {
       alert("Error: " + data.message);
@@ -911,28 +911,28 @@ document.getElementById("assignBayBtn1").addEventListener("click", async functio
         </body>
         </html>
       `;
-      res.send(html);
-    } catch (err) {
-      console.error('Error loading Fan Generation page:', err);
-      res.status(500).send('Error loading Fan Generation page: ' + err.message);
-    }
-  });
+    res.send(html);
+  } catch (err) {
+    console.error("Error loading Fan Generation page:", err);
+    res.status(500).send("Error loading Fan Generation page: " + err.message);
+  }
+});
 
-
-  // Unified API: Fetch by Truck No OR Card Allocated No
- // =========================
+// Unified API: Fetch by Truck No OR Card Allocated No
+// =========================
 // 🔹 1. Search by Truck Reg No
 // =========================
-router.get('/api/fan-generation/truck/:truckRegNo', async (req, res) => {
+router.get("/api/fan-generation/truck/:truckRegNo", async (req, res) => {
   const truckRegNo = req.params.truckRegNo?.trim();
 
   try {
     const pool = await sql.connect(dbConfig);
 
     // Fetch Truck info
-    const truckResult = await pool.request()
-      .input('truckRegNo', sql.VarChar, truckRegNo)
-      .query('SELECT * FROM TRUCK_MASTER WHERE TRUCK_REG_NO = @truckRegNo');
+    const truckResult = await pool
+      .request()
+      .input("truckRegNo", sql.VarChar, truckRegNo)
+      .query("SELECT * FROM TRUCK_MASTER WHERE TRUCK_REG_NO = @truckRegNo");
 
     if (truckResult.recordset.length === 0) {
       return res.status(404).json({ message: "Truck not found" });
@@ -942,9 +942,9 @@ router.get('/api/fan-generation/truck/:truckRegNo', async (req, res) => {
     let dataMaster = {};
 
     // Fetch latest DATA_MASTER for this truck
-    const dataResult = await pool.request()
-      .input('truckRegNo', sql.VarChar, truckRegNo)
-      .query(`
+    const dataResult = await pool
+      .request()
+      .input("truckRegNo", sql.VarChar, truckRegNo).query(`
         SELECT TOP 1 
             FAN_NO,TRUCK_REG_NO, CARD_NO, PROCESS_TYPE, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, 
             ITEM_DESCRIPTION, FAN_TIME_OUT, FAN_EXPIRY, WEIGHT_TO_FILLED, PROCESS_STATUS
@@ -959,11 +959,10 @@ router.get('/api/fan-generation/truck/:truckRegNo', async (req, res) => {
 
     // ✅ Calculate Truck Status
     let processStatus = dataMaster.PROCESS_STATUS ?? -1;
-let truckStatusText = "Registered";
+    let truckStatusText = "Registered";
 
-if (processStatus === 1) truckStatusText = "Reported";
-else if (processStatus === 2) truckStatusText = "Fan Generation";
-
+    if (processStatus === 1) truckStatusText = "Reported";
+    else if (processStatus === 2) truckStatusText = "Fan Generation";
 
     res.json({
       ...dataMaster,
@@ -971,28 +970,25 @@ else if (processStatus === 2) truckStatusText = "Fan Generation";
       CARD_NO: dataMaster.CARD_NO,
       PROCESS_TYPE: dataMaster.PROCESS_TYPE ?? "",
       PROCESS_STATUS: processStatus,
-      TRUCK_STATUS_TEXT: truckStatusText
+      TRUCK_STATUS_TEXT: truckStatusText,
     });
-
   } catch (err) {
     console.error("Database Error:", err);
     res.status(500).json({ message: "Database Error" });
   }
 });
 
-
 // =========================
 // 🔹 2. Search by Card No
 // =========================
-router.get('/api/fan-generation/card/:cardNo', async (req, res) => {
+router.get("/api/fan-generation/card/:cardNo", async (req, res) => {
   const cardNo = req.params.cardNo?.trim();
 
   try {
     const pool = await sql.connect(dbConfig);
 
     // Fetch latest data by Card No
-    const cardResult = await pool.request()
-      .input('cardNo', sql.VarChar, cardNo)
+    const cardResult = await pool.request().input("cardNo", sql.VarChar, cardNo)
       .query(`
         SELECT TOP 1 
             FAN_NO,TRUCK_REG_NO, CARD_NO, PROCESS_TYPE, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, 
@@ -1011,9 +1007,10 @@ router.get('/api/fan-generation/card/:cardNo', async (req, res) => {
 
     // Fetch truck info linked to this card
     if (dataMaster.TRUCK_REG_NO) {
-      const truckResult = await pool.request()
-        .input('truckRegNo', sql.VarChar, dataMaster.TRUCK_REG_NO)
-        .query('SELECT * FROM TRUCK_MASTER WHERE TRUCK_REG_NO = @truckRegNo');
+      const truckResult = await pool
+        .request()
+        .input("truckRegNo", sql.VarChar, dataMaster.TRUCK_REG_NO)
+        .query("SELECT * FROM TRUCK_MASTER WHERE TRUCK_REG_NO = @truckRegNo");
 
       if (truckResult.recordset.length > 0) {
         truckData = truckResult.recordset[0];
@@ -1022,10 +1019,10 @@ router.get('/api/fan-generation/card/:cardNo', async (req, res) => {
 
     // ✅ Calculate Truck Status
     let processStatus = dataMaster.PROCESS_STATUS ?? -1;
-let truckStatusText = "Registered";
+    let truckStatusText = "Registered";
 
-if (processStatus === 1) truckStatusText = "Reported";
-else if (processStatus === 2) truckStatusText = "Fan Generation";
+    if (processStatus === 1) truckStatusText = "Reported";
+    else if (processStatus === 2) truckStatusText = "Fan Generation";
 
     res.json({
       ...dataMaster,
@@ -1033,98 +1030,119 @@ else if (processStatus === 2) truckStatusText = "Fan Generation";
       CARD_NO: dataMaster.CARD_NO,
       PROCESS_TYPE: dataMaster.PROCESS_TYPE ?? "",
       PROCESS_STATUS: processStatus,
-      TRUCK_STATUS_TEXT: truckStatusText
+      TRUCK_STATUS_TEXT: truckStatusText,
     });
-
   } catch (err) {
     console.error("Database Error:", err);
     res.status(500).json({ message: "Database Error" });
   }
 });
 
-
-
- // API route: Assign Card & Save to DATA_MASTER
-  router.post('/api/assign-card', async (req, res) => {
-  const { 
-    truckRegNo, 
-    cardNo, 
-    processType, 
-    CUSTOMER_NAME, 
-    ADDRESS_LINE_1, 
-    ADDRESS_LINE_2, 
-    ITEM_DESCRIPTION, 
-    FAN_TIME_OUT, 
-    WEIGHT_TO_FILLED 
+// API route: Assign Card & Save to DATA_MASTER
+router.post("/api/assign-card", async (req, res) => {
+  const {
+    truckRegNo,
+    cardNo,
+    processType,
+    CUSTOMER_NAME,
+    ADDRESS_LINE_1,
+    ADDRESS_LINE_2,
+    ITEM_DESCRIPTION,
+    FAN_TIME_OUT,
+    WEIGHT_TO_FILLED,
   } = req.body;
 
   if (!truckRegNo || !cardNo) {
-    return res.status(400).json({ message: "Truck Reg No and Card No are required" });
+    return res
+      .status(400)
+      .json({ message: "Truck Reg No and Card No are required" });
   }
 
   try {
     const pool = await sql.connect(dbConfig);
 
     // 1️⃣ Check if card exists in CARD_MASTER
-    const cardCheck = await pool.request()
-      .input('cardNo', sql.VarChar, cardNo)
-      .query('SELECT CARD_STATUS FROM CARD_MASTER WHERE CARD_NO = @cardNo');
+    const cardCheck = await pool
+      .request()
+      .input("cardNo", sql.VarChar, cardNo)
+      .query("SELECT CARD_STATUS FROM CARD_MASTER WHERE CARD_NO = @cardNo");
 
     if (cardCheck.recordset.length === 0) {
-      return res.status(401).json({ message: `Card ${cardNo} not found in Card Master (Unauthorized).` });
+      return res.status(401).json({
+        message: `Card ${cardNo} not found in Card Master (Unauthorized).`,
+      });
     }
 
     const cardStatus = cardCheck.recordset[0].CARD_STATUS;
-    if (cardStatus !== 1) { // assuming 1 = active, 0 = blocked
-      return res.status(400).json({ message: `Card ${cardNo} is BLOCKED or inactive.` });
+    if (cardStatus !== 1) {
+      // assuming 1 = active, 0 = blocked
+      return res
+        .status(400)
+        .json({ message: `Card ${cardNo} is BLOCKED or inactive.` });
     }
 
-   // Check if this truck already has a card
-      const existing = await pool.request()
-        .input('truckRegNo', sql.VarChar, truckRegNo)
-        .query('SELECT CARD_NO FROM DATA_MASTER WHERE TRUCK_REG_NO = @truckRegNo');
+    // Check if this truck already has a card
+    const existing = await pool
+      .request()
+      .input("truckRegNo", sql.VarChar, truckRegNo)
+      .query(
+        "SELECT CARD_NO FROM DATA_MASTER WHERE TRUCK_REG_NO = @truckRegNo"
+      );
 
-      if (existing.recordset.length > 0) {
-        // Truck already has a card → don't allow assigning another
-        return res.status(400).json({ message: `Truck ${truckRegNo} already has a card allocated (${existing.recordset[0].CARD_NO})` });
-      }
+    if (existing.recordset.length > 0) {
+      // Truck already has a card → don't allow assigning another
+      return res.status(400).json({
+        message: `Truck ${truckRegNo} already has a card allocated (${existing.recordset[0].CARD_NO})`,
+      });
+    }
 
-      // 2️⃣ Check if this CARD_NO is already assigned to another truck
-      const existingCard = await pool.request()
-        .input('cardNo', sql.VarChar, cardNo)
-        .query('SELECT TRUCK_REG_NO FROM DATA_MASTER WHERE CARD_NO = @cardNo');
+    // 2️⃣ Check if this CARD_NO is already assigned to another truck
+    const existingCard = await pool
+      .request()
+      .input("cardNo", sql.VarChar, cardNo)
+      .query("SELECT TRUCK_REG_NO FROM DATA_MASTER WHERE CARD_NO = @cardNo");
 
-      if (existingCard.recordset.length > 0) {
-        return res.status(400).json({ 
-          message: `Card ${cardNo} is already assigned to Truck ${existingCard.recordset[0].TRUCK_REG_NO}`
-        });
-      }
+    if (existingCard.recordset.length > 0) {
+      return res.status(400).json({
+        message: `Card ${cardNo} is already assigned to Truck ${existingCard.recordset[0].TRUCK_REG_NO}`,
+      });
+    }
 
     // 4️⃣ Generate FAN_NO (ddMMyyyyHHmmss)
-    function pad(n) { return n < 10 ? '0' + n : n; }
+    function pad(n) {
+      return n < 10 ? "0" + n : n;
+    }
     const now = new Date();
-    const fanNo = pad(now.getDate()) + pad(now.getMonth() + 1) + now.getFullYear() +
-                  pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());
+    const fanNo =
+      pad(now.getDate()) +
+      pad(now.getMonth() + 1) +
+      now.getFullYear() +
+      pad(now.getHours()) +
+      pad(now.getMinutes()) +
+      pad(now.getSeconds());
 
     // 5️⃣ Calculate FAN_EXPIRY (UTC)
     const fanTimeOutMinutes = parseInt(FAN_TIME_OUT) || 0;
     const fanExpiryLocal = new Date(now.getTime() + fanTimeOutMinutes * 60000);
-    const fanExpiryUTC = new Date(fanExpiryLocal.getTime() - fanExpiryLocal.getTimezoneOffset() * 60000);
+    const fanExpiryUTC = new Date(
+      fanExpiryLocal.getTime() - fanExpiryLocal.getTimezoneOffset() * 60000
+    );
 
     // 6️⃣ Insert new record into DATA_MASTER
-    await pool.request()
-      .input('TRUCK_REG_NO', sql.VarChar, truckRegNo)
-      .input('CARD_NO', sql.VarChar, cardNo)
-      .input('PROCESS_TYPE', sql.Int, parseInt(processType))
-      .input('PROCESS_STATUS', sql.Int, 1) // 1 = Reported
-      .input('CUSTOMER_NAME', sql.VarChar, CUSTOMER_NAME || "")
-      .input('ADDRESS_LINE_1', sql.VarChar, ADDRESS_LINE_1 || "")
-      .input('ADDRESS_LINE_2', sql.VarChar, ADDRESS_LINE_2 || "")
-      .input('ITEM_DESCRIPTION', sql.VarChar, ITEM_DESCRIPTION || "")
-      .input('FAN_NO', sql.VarChar, fanNo)
-      .input('FAN_TIME_OUT', sql.Int, fanTimeOutMinutes)
-      .input('FAN_EXPIRY', sql.DateTime, fanExpiryUTC)
-      .input('WEIGHT_TO_FILLED', sql.BigInt, parseInt(WEIGHT_TO_FILLED) || 0)
+    await pool
+      .request()
+      .input("TRUCK_REG_NO", sql.VarChar, truckRegNo)
+      .input("CARD_NO", sql.VarChar, cardNo)
+      .input("PROCESS_TYPE", sql.Int, parseInt(processType))
+      .input("PROCESS_STATUS", sql.Int, 1) // 1 = Reported
+      .input("CUSTOMER_NAME", sql.VarChar, CUSTOMER_NAME || "")
+      .input("ADDRESS_LINE_1", sql.VarChar, ADDRESS_LINE_1 || "")
+      .input("ADDRESS_LINE_2", sql.VarChar, ADDRESS_LINE_2 || "")
+      .input("ITEM_DESCRIPTION", sql.VarChar, ITEM_DESCRIPTION || "")
+      .input("FAN_NO", sql.VarChar, fanNo)
+      .input("FAN_TIME_OUT", sql.Int, fanTimeOutMinutes)
+      .input("FAN_EXPIRY", sql.DateTime, fanExpiryUTC)
+      .input("WEIGHT_TO_FILLED", sql.BigInt, parseInt(WEIGHT_TO_FILLED) || 0)
       .query(`
         INSERT INTO DATA_MASTER 
           (TRUCK_REG_NO, CARD_NO, PROCESS_TYPE, PROCESS_STATUS, 
@@ -1136,78 +1154,105 @@ else if (processStatus === 2) truckStatusText = "Fan Generation";
            @FAN_NO, @FAN_TIME_OUT, @FAN_EXPIRY, @WEIGHT_TO_FILLED)
       `);
 
-    res.json({ message: `Card ${cardNo} assigned to Truck ${truckRegNo} successfully` });
-
+    res.json({
+      message: `Card ${cardNo} assigned to Truck ${truckRegNo} successfully`,
+    });
   } catch (err) {
     console.error("Error in /api/assign-card:", err);
     res.status(500).json({ message: "Database Error" });
   }
 });
 
-
-
- // API route: Reassign Card (Update existing record)
-router.put('/api/reassign-card', async (req, res) => {
-  const { truckRegNo, cardNo, processType, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, ITEM_DESCRIPTION, FAN_TIME_OUT, WEIGHT_TO_FILLED } = req.body;
+// API route: Reassign Card (Update existing record)
+router.put("/api/reassign-card", async (req, res) => {
+  const {
+    truckRegNo,
+    cardNo,
+    processType,
+    CUSTOMER_NAME,
+    ADDRESS_LINE_1,
+    ADDRESS_LINE_2,
+    ITEM_DESCRIPTION,
+    FAN_TIME_OUT,
+    WEIGHT_TO_FILLED,
+  } = req.body;
 
   if (!truckRegNo || !cardNo)
-    return res.status(400).json({ message: "Truck Reg No and Card No are required" });
+    return res
+      .status(400)
+      .json({ message: "Truck Reg No and Card No are required" });
 
   try {
     const pool = await sql.connect(dbConfig);
 
     // 1️⃣ Check if card exists in CARD_MASTER
-    const cardCheck = await pool.request()
-      .input('cardNo', sql.VarChar, cardNo)
-      .query('SELECT CARD_STATUS FROM CARD_MASTER WHERE CARD_NO = @cardNo');
+    const cardCheck = await pool
+      .request()
+      .input("cardNo", sql.VarChar, cardNo)
+      .query("SELECT CARD_STATUS FROM CARD_MASTER WHERE CARD_NO = @cardNo");
 
     if (cardCheck.recordset.length === 0) {
-      return res.status(401).json({ message: `Card ${cardNo} not found in Card Master (Unauthorized).` });
+      return res.status(401).json({
+        message: `Card ${cardNo} not found in Card Master (Unauthorized).`,
+      });
     }
 
     const cardStatus = cardCheck.recordset[0].CARD_STATUS;
-    if (cardStatus !== 1) { // assuming 1 = active, 0 = blocked
-      return res.status(400).json({ message: `Card ${cardNo} is BLOCKED or inactive.` });
+    if (cardStatus !== 1) {
+      // assuming 1 = active, 0 = blocked
+      return res
+        .status(400)
+        .json({ message: `Card ${cardNo} is BLOCKED or inactive.` });
     }
 
     // 1️⃣ Check if truck exists
-    const existing = await pool.request()
-      .input('truckRegNo', sql.VarChar, truckRegNo)
-      .query('SELECT CARD_NO FROM DATA_MASTER WHERE TRUCK_REG_NO = @truckRegNo');
+    const existing = await pool
+      .request()
+      .input("truckRegNo", sql.VarChar, truckRegNo)
+      .query(
+        "SELECT CARD_NO FROM DATA_MASTER WHERE TRUCK_REG_NO = @truckRegNo"
+      );
 
     if (existing.recordset.length === 0) {
-      return res.status(404).json({ message: `Truck ${truckRegNo} not found. Please assign a card first.` });
+      return res.status(404).json({
+        message: `Truck ${truckRegNo} not found. Please assign a card first.`,
+      });
     }
 
     // ✅ If truck already has the same card, no need to reassign
     if (existing.recordset[0].CARD_NO === cardNo) {
-      return res.status(400).json({ 
-        message: `Truck ${truckRegNo} already has this card (${cardNo}) assigned`
+      return res.status(400).json({
+        message: `Truck ${truckRegNo} already has this card (${cardNo}) assigned`,
       });
     }
 
     // 2️⃣ Check if this CARD_NO is already assigned to another truck
-    const existingCard = await pool.request()
-      .input('cardNo', sql.VarChar, cardNo)
-      .query('SELECT TRUCK_REG_NO FROM DATA_MASTER WHERE CARD_NO = @cardNo');
+    const existingCard = await pool
+      .request()
+      .input("cardNo", sql.VarChar, cardNo)
+      .query("SELECT TRUCK_REG_NO FROM DATA_MASTER WHERE CARD_NO = @cardNo");
 
-    if (existingCard.recordset.length > 0 && existingCard.recordset[0].TRUCK_REG_NO !== truckRegNo) {
-      return res.status(400).json({ 
-        message: `Card ${cardNo} is already assigned to Truck ${existingCard.recordset[0].TRUCK_REG_NO}`
+    if (
+      existingCard.recordset.length > 0 &&
+      existingCard.recordset[0].TRUCK_REG_NO !== truckRegNo
+    ) {
+      return res.status(400).json({
+        message: `Card ${cardNo} is already assigned to Truck ${existingCard.recordset[0].TRUCK_REG_NO}`,
       });
     }
 
     // 3️⃣ Safe to update
-    const updateResult = await pool.request()
-      .input('TRUCK_REG_NO', sql.VarChar, truckRegNo)
-      .input('CARD_NO', sql.VarChar, cardNo)
-      .input('PROCESS_TYPE', sql.Int, parseInt(processType) || 0)
-      .input('CUSTOMER_NAME', sql.VarChar, CUSTOMER_NAME || "")
-      .input('ADDRESS_LINE_1', sql.VarChar, ADDRESS_LINE_1 || "")
-      .input('ADDRESS_LINE_2', sql.VarChar, ADDRESS_LINE_2 || "")
-      .input('ITEM_DESCRIPTION', sql.VarChar, ITEM_DESCRIPTION || "")
-      .input('FAN_TIME_OUT', sql.Int, parseInt(FAN_TIME_OUT) || 0)
-      .input('WEIGHT_TO_FILLED', sql.BigInt, parseInt(WEIGHT_TO_FILLED) || 0)
+    const updateResult = await pool
+      .request()
+      .input("TRUCK_REG_NO", sql.VarChar, truckRegNo)
+      .input("CARD_NO", sql.VarChar, cardNo)
+      .input("PROCESS_TYPE", sql.Int, parseInt(processType) || 0)
+      .input("CUSTOMER_NAME", sql.VarChar, CUSTOMER_NAME || "")
+      .input("ADDRESS_LINE_1", sql.VarChar, ADDRESS_LINE_1 || "")
+      .input("ADDRESS_LINE_2", sql.VarChar, ADDRESS_LINE_2 || "")
+      .input("ITEM_DESCRIPTION", sql.VarChar, ITEM_DESCRIPTION || "")
+      .input("FAN_TIME_OUT", sql.Int, parseInt(FAN_TIME_OUT) || 0)
+      .input("WEIGHT_TO_FILLED", sql.BigInt, parseInt(WEIGHT_TO_FILLED) || 0)
       .query(`
         UPDATE DATA_MASTER
         SET CARD_NO = @CARD_NO,
@@ -1222,11 +1267,12 @@ router.put('/api/reassign-card', async (req, res) => {
       `);
 
     if (updateResult.rowsAffected[0] === 0) {
-      return res.status(500).json({ message: "Reassign failed, no rows were updated." });
+      return res
+        .status(500)
+        .json({ message: "Reassign failed, no rows were updated." });
     }
 
     res.json({ message: "Card re-assigned successfully" });
-
   } catch (err) {
     console.error("Reassign Card Error:", err);
     res.status(500).json({ message: "Database Error: " + err.message });
@@ -1234,33 +1280,41 @@ router.put('/api/reassign-card', async (req, res) => {
 });
 
 // API: Update PROCESS_STATUS to 2
-router.put('/api/fan-generation/update-status', async (req,res)=>{
+router.put("/api/fan-generation/update-status", async (req, res) => {
   const { truckRegNo } = req.body;
-  if(!truckRegNo) return res.status(400).json({message:"Truck Reg No is required"});
-  try{
+  if (!truckRegNo)
+    return res.status(400).json({ message: "Truck Reg No is required" });
+  try {
     const pool = await sql.connect(dbConfig);
-    const result = await pool.request()
-      .input('truckRegNo', sql.VarChar, truckRegNo)
-      .input('processStatus', sql.Int, 2)
-      .query(`UPDATE DATA_MASTER SET PROCESS_STATUS=@processStatus WHERE TRUCK_REG_NO=@truckRegNo`);
-    if(result.rowsAffected[0]===0) return res.status(404).json({message:"Truck not found"});
-    res.json({message:"PROCESS_STATUS updated to Fan Generated"});
-  }catch(err){
+    const result = await pool
+      .request()
+      .input("truckRegNo", sql.VarChar, truckRegNo)
+      .input("processStatus", sql.Int, 2)
+      .query(
+        `UPDATE DATA_MASTER SET PROCESS_STATUS=@processStatus WHERE TRUCK_REG_NO=@truckRegNo`
+      );
+    if (result.rowsAffected[0] === 0)
+      return res.status(404).json({ message: "Truck not found" });
+    res.json({ message: "PROCESS_STATUS updated to Fan Generated" });
+  } catch (err) {
     console.error(err);
-    res.status(500).json({message:"Database Error"});
+    res.status(500).json({ message: "Database Error" });
   }
 });
 
-
 // Get BAY_NO for a truck
-router.get('/api/get-bay/:truckRegNo', async (req, res) => {
+router.get("/api/get-bay/:truckRegNo", async (req, res) => {
   const truckRegNo = req.params.truckRegNo?.trim();
-  if (!truckRegNo) return res.status(400).json({ message: "Truck Reg No required" });
+  if (!truckRegNo)
+    return res.status(400).json({ message: "Truck Reg No required" });
   try {
     const pool = await sql.connect(dbConfig);
-    const result = await pool.request()
-      .input('truckRegNo', sql.VarChar, truckRegNo)
-      .query('SELECT TOP 1 BAY_NO FROM DATA_MASTER WHERE TRUCK_REG_NO = @truckRegNo ORDER BY FAN_TIME_OUT DESC');
+    const result = await pool
+      .request()
+      .input("truckRegNo", sql.VarChar, truckRegNo)
+      .query(
+        "SELECT TOP 1 BAY_NO FROM DATA_MASTER WHERE TRUCK_REG_NO = @truckRegNo ORDER BY FAN_TIME_OUT DESC"
+      );
 
     res.json({ BAY_NO: result.recordset[0]?.BAY_NO || "" });
   } catch (err) {
@@ -1269,16 +1323,16 @@ router.get('/api/get-bay/:truckRegNo', async (req, res) => {
   }
 });
 
-
-
 // ============================
 // 🔹 3. Assign Bay (Auto/Manual) using TRUCK_MASTER
 // ============================
-router.post('/api/assign-bay', async (req, res) => {
+router.post("/api/assign-bay", async (req, res) => {
   const { truckRegNo, bayNo, bayType, itemDesc } = req.body; // itemDesc = "Petrol", "Jetkero", or "Diesel"
 
   if (!truckRegNo) {
-    return res.status(400).json({ message: "Truck Registration No is required" });
+    return res
+      .status(400)
+      .json({ message: "Truck Registration No is required" });
   }
 
   try {
@@ -1297,24 +1351,28 @@ router.post('/api/assign-bay', async (req, res) => {
       } else if (itemDesc && itemDesc.toLowerCase() === "diesel") {
         bayGroup = ["1", "2", "3", "4"];
       } else {
-        return res.status(400).json({ message: "Invalid or missing item type" });
+        return res
+          .status(400)
+          .json({ message: "Invalid or missing item type" });
       }
 
       // 1️⃣ Get truck count per bay from TRUCK_MASTER
       const countQuery = `
         SELECT BAY_NO, COUNT(*) AS TRUCK_COUNT
         FROM DATA_MASTER
-        WHERE BAY_NO IN (${bayGroup.map(b => `'${b}'`).join(",")})
+        WHERE BAY_NO IN (${bayGroup.map((b) => `'${b}'`).join(",")})
         GROUP BY BAY_NO
       `;
       const result = await pool.request().query(countQuery);
 
       // Initialize counts
       const bayCount = {};
-      bayGroup.forEach(b => bayCount[b] = 0);
+      bayGroup.forEach((b) => (bayCount[b] = 0));
 
       // Fill with database results
-      result.recordset.forEach(row => bayCount[row.BAY_NO] = row.TRUCK_COUNT);
+      result.recordset.forEach(
+        (row) => (bayCount[row.BAY_NO] = row.TRUCK_COUNT)
+      );
 
       // 2️⃣ Pick bay with least assigned trucks
       finalBayNo = Object.keys(bayCount).reduce((a, b) =>
@@ -1325,10 +1383,10 @@ router.post('/api/assign-bay', async (req, res) => {
     }
 
     // 3️⃣ Update the TRUCK_MASTER with the selected bay
-    await pool.request()
-      .input('truckRegNo', sql.VarChar, truckRegNo)
-      .input('bayNo', sql.VarChar, finalBayNo)
-      .query(`
+    await pool
+      .request()
+      .input("truckRegNo", sql.VarChar, truckRegNo)
+      .input("bayNo", sql.VarChar, finalBayNo).query(`
         UPDATE DATA_MASTER
         SET BAY_NO = @bayNo
         WHERE TRUCK_REG_NO = @truckRegNo
@@ -1341,11 +1399,10 @@ router.post('/api/assign-bay', async (req, res) => {
   }
 });
 
-
 // =========================
 // 🔹 FAN ABORT API
 // =========================
-router.delete('/api/fan-abort', async (req, res) => {
+router.delete("/api/fan-abort", async (req, res) => {
   const { truckRegNo, cardNo } = req.body;
 
   if (!truckRegNo && !cardNo) {
@@ -1361,24 +1418,33 @@ router.delete('/api/fan-abort', async (req, res) => {
       WHERE TRUCK_REG_NO = @truckRegNo OR CARD_NO = @cardNo
     `;
 
-    await pool.request()
-      .input('truckRegNo', sql.VarChar, truckRegNo || '')
-      .input('cardNo', sql.VarChar, cardNo || '')
+    await pool
+      .request()
+      .input("truckRegNo", sql.VarChar, truckRegNo || "")
+      .input("cardNo", sql.VarChar, cardNo || "")
       .query(deleteQuery);
 
     res.json({ message: "Fan Abort Successful" });
-
   } catch (err) {
     console.error("Fan Abort Error:", err);
     res.status(500).json({ message: "Database Error" });
   }
 });
 
+router.put("/api/re-authorization", async (req, res) => {
+  const {
+    truckRegNo,
+    processType,
+    customerName,
+    address1,
+    address2,
+    itemDesc,
+    fanTimeOut,
+    weightToFill,
+  } = req.body;
 
-router.put('/api/re-authorization', async (req, res) => { 
-  const { truckRegNo, processType, customerName, address1, address2, itemDesc, fanTimeOut, weightToFill } = req.body;
-
-  if (!truckRegNo) return res.status(400).json({ message: "Truck Reg No required" });
+  if (!truckRegNo)
+    return res.status(400).json({ message: "Truck Reg No required" });
 
   try {
     const pool = await sql.connect(dbConfig);
@@ -1387,20 +1453,23 @@ router.put('/api/re-authorization', async (req, res) => {
     const fanMinutes = parseInt(fanTimeOut) || 0;
     const now = new Date();
     const fanExpiry = new Date(now.getTime() + fanMinutes * 60000); // add minutes
-    const fanExpiryUTC = new Date(fanExpiry.getTime() - fanExpiry.getTimezoneOffset() * 60000);
+    const fanExpiryUTC = new Date(
+      fanExpiry.getTime() - fanExpiry.getTimezoneOffset() * 60000
+    );
 
     // Update record
-    const result = await pool.request()
-      .input('TRUCK_REG_NO', sql.VarChar, truckRegNo)
-      .input('PROCESS_TYPE', sql.Int, parseInt(processType) || 0)
-      .input('PROCESS_STATUS', sql.Int, 4) // Re-Authorization
-      .input('CUSTOMER_NAME', sql.VarChar, customerName || "")
-      .input('ADDRESS_LINE_1', sql.VarChar, address1 || "")
-      .input('ADDRESS_LINE_2', sql.VarChar, address2 || "")
-      .input('ITEM_DESCRIPTION', sql.VarChar, itemDesc || "")
-      .input('FAN_TIME_OUT', sql.Int, fanMinutes)
-      .input('FAN_EXPIRY', sql.DateTime, fanExpiryUTC)
-      .input('WEIGHT_TO_FILLED', sql.BigInt, parseInt(weightToFill) || 0)
+    const result = await pool
+      .request()
+      .input("TRUCK_REG_NO", sql.VarChar, truckRegNo)
+      .input("PROCESS_TYPE", sql.Int, parseInt(processType) || 0)
+      .input("PROCESS_STATUS", sql.Int, 4) // Re-Authorization
+      .input("CUSTOMER_NAME", sql.VarChar, customerName || "")
+      .input("ADDRESS_LINE_1", sql.VarChar, address1 || "")
+      .input("ADDRESS_LINE_2", sql.VarChar, address2 || "")
+      .input("ITEM_DESCRIPTION", sql.VarChar, itemDesc || "")
+      .input("FAN_TIME_OUT", sql.Int, fanMinutes)
+      .input("FAN_EXPIRY", sql.DateTime, fanExpiryUTC)
+      .input("WEIGHT_TO_FILLED", sql.BigInt, parseInt(weightToFill) || 0)
       .query(`
         UPDATE DATA_MASTER
         SET PROCESS_TYPE = @PROCESS_TYPE,
@@ -1420,22 +1489,22 @@ router.put('/api/re-authorization', async (req, res) => {
     }
 
     res.json({ message: "Re-Authorization updated successfully" });
-
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Database Error" });
   }
 });
 
-
 // ============================
 // 🔹 Re-Allocate Bay (Auto/Manual)
 // ============================
-router.post('/api/reallocate-bay', async (req, res) => {
+router.post("/api/reallocate-bay", async (req, res) => {
   const { truckRegNo, bayNo, bayType, itemDesc } = req.body; // itemDesc = "Petrol", "Jetkero", or "Diesel"
 
   if (!truckRegNo) {
-    return res.status(400).json({ message: "Truck Registration No is required" });
+    return res
+      .status(400)
+      .json({ message: "Truck Registration No is required" });
   }
 
   try {
@@ -1454,24 +1523,28 @@ router.post('/api/reallocate-bay', async (req, res) => {
       } else if (itemDesc && itemDesc.toLowerCase() === "diesel") {
         bayGroup = ["1", "2", "3", "4"];
       } else {
-        return res.status(400).json({ message: "Invalid or missing item type" });
+        return res
+          .status(400)
+          .json({ message: "Invalid or missing item type" });
       }
 
       // 1️⃣ Get truck count per bay from TRUCK_MASTER
       const countQuery = `
         SELECT BAY_NO, COUNT(*) AS TRUCK_COUNT
         FROM DATA_MASTER
-        WHERE BAY_NO IN (${bayGroup.map(b => `'${b}'`).join(",")})
+        WHERE BAY_NO IN (${bayGroup.map((b) => `'${b}'`).join(",")})
         GROUP BY BAY_NO
       `;
       const result = await pool.request().query(countQuery);
 
       // Initialize counts
       const bayCount = {};
-      bayGroup.forEach(b => bayCount[b] = 0);
+      bayGroup.forEach((b) => (bayCount[b] = 0));
 
       // Fill with database results
-      result.recordset.forEach(row => bayCount[row.BAY_NO] = row.TRUCK_COUNT);
+      result.recordset.forEach(
+        (row) => (bayCount[row.BAY_NO] = row.TRUCK_COUNT)
+      );
 
       // 2️⃣ Pick bay with least assigned trucks
       finalBayNo = Object.keys(bayCount).reduce((a, b) =>
@@ -1482,10 +1555,10 @@ router.post('/api/reallocate-bay', async (req, res) => {
     }
 
     // 3️⃣ Update the TRUCK_MASTER with the selected bay
-    await pool.request()
-      .input('truckRegNo', sql.VarChar, truckRegNo)
-      .input('bayNo', sql.VarChar, finalBayNo)
-      .query(`
+    await pool
+      .request()
+      .input("truckRegNo", sql.VarChar, truckRegNo)
+      .input("bayNo", sql.VarChar, finalBayNo).query(`
         UPDATE DATA_MASTER
         SET BAY_NO = @bayNo
         WHERE TRUCK_REG_NO = @truckRegNo
@@ -1498,22 +1571,18 @@ router.post('/api/reallocate-bay', async (req, res) => {
   }
 });
 
-
-
-
-
-
-
-
-
-router.get('/api/get-bay/:truckRegNo', async (req, res) => {
+router.get("/api/get-bay/:truckRegNo", async (req, res) => {
   const truckRegNo = req.params.truckRegNo?.trim();
-  if (!truckRegNo) return res.status(400).json({ message: "Truck Reg No required" });
+  if (!truckRegNo)
+    return res.status(400).json({ message: "Truck Reg No required" });
   try {
     const pool = await sql.connect(dbConfig);
-    const result = await pool.request()
-      .input('truckRegNo', sql.VarChar, truckRegNo)
-      .query('SELECT TOP 1 BAY_NO FROM DATA_MASTER WHERE TRUCK_REG_NO = @truckRegNo ORDER BY FAN_TIME_OUT DESC');
+    const result = await pool
+      .request()
+      .input("truckRegNo", sql.VarChar, truckRegNo)
+      .query(
+        "SELECT TOP 1 BAY_NO FROM DATA_MASTER WHERE TRUCK_REG_NO = @truckRegNo ORDER BY FAN_TIME_OUT DESC"
+      );
 
     res.json({ BAY_NO: result.recordset[0]?.BAY_NO || "" });
   } catch (err) {
@@ -1522,4 +1591,4 @@ router.get('/api/get-bay/:truckRegNo', async (req, res) => {
   }
 });
 
-  module.exports = router;
+module.exports = router;
