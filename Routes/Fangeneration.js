@@ -73,7 +73,7 @@ router.get("/", async (req, res) => {
     <button type="button" id="ReassignCardBtn" class="btn">Re Assign Card</button>
     <button type="button" id="FanGeneration" class="btn">Fan Generation</button>
     <button type="button" id="FanAbortBtn" class="btn">Fan Abort</button>
-    <button type="button" id="ReAuthBtn" class="btn">ReAuthorization</button>
+    <button type="button" id="ReAuthBtn" class="btn">Re Authorized</button>
     <button type="button" id="reAllocateBtn" class="btn" onclick="openReallocatePopup()">Re Allocate</button>
 
   
@@ -1135,6 +1135,7 @@ router.post("/api/assign-card", async (req, res) => {
       .input("CARD_NO", sql.VarChar, cardNo)
       .input("PROCESS_TYPE", sql.Int, parseInt(processType))
       .input("PROCESS_STATUS", sql.Int, 1) // 1 = Reported
+      .input("BATCH_STATUS", sql.Int, 1)   // ✅ Mark as active
       .input("CUSTOMER_NAME", sql.VarChar, CUSTOMER_NAME || "")
       .input("ADDRESS_LINE_1", sql.VarChar, ADDRESS_LINE_1 || "")
       .input("ADDRESS_LINE_2", sql.VarChar, ADDRESS_LINE_2 || "")
@@ -1145,11 +1146,11 @@ router.post("/api/assign-card", async (req, res) => {
       .input("WEIGHT_TO_FILLED", sql.BigInt, parseInt(WEIGHT_TO_FILLED) || 0)
       .query(`
         INSERT INTO DATA_MASTER 
-          (TRUCK_REG_NO, CARD_NO, PROCESS_TYPE, PROCESS_STATUS, 
+          (TRUCK_REG_NO, CARD_NO, PROCESS_TYPE, PROCESS_STATUS, BATCH_STATUS,
            CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, ITEM_DESCRIPTION, 
            FAN_NO, FAN_TIME_OUT, FAN_EXPIRY, WEIGHT_TO_FILLED)
         VALUES 
-          (@TRUCK_REG_NO, @CARD_NO, @PROCESS_TYPE, @PROCESS_STATUS,
+          (@TRUCK_REG_NO, @CARD_NO, @PROCESS_TYPE, @PROCESS_STATUS,  @BATCH_STATUS,
            @CUSTOMER_NAME, @ADDRESS_LINE_1, @ADDRESS_LINE_2, @ITEM_DESCRIPTION,
            @FAN_NO, @FAN_TIME_OUT, @FAN_EXPIRY, @WEIGHT_TO_FILLED)
       `);
