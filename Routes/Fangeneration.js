@@ -171,7 +171,7 @@
       <label><input type="radio" name="bayType" value="auto" checked> Auto</label>
       <label><input type="radio" name="bayType" value="manual"> Manual</label>
     </div>
-    <div class="form-group">
+    <div class="form-group" >
       <label>Assign Bay :</label>
       <input id="BAY_NO" type="text" placeholder="Enter Bay No">
     </div>
@@ -620,22 +620,30 @@ document.getElementById("savePdfBtn").addEventListener("click", async function (
 
 // Assign Bay button
 // ✅ Toggle Bay Input visibility (Auto / Manual)
-const bayTypeRadios = document.querySelectorAll('input[name="bayType"]');
-const bayFieldGroup = document.querySelector('#BAY_NO').closest('.form-group');
+document.addEventListener("DOMContentLoaded", function () {
+  // Select the radio buttons
+  const bayTypeRadios = document.querySelectorAll('input[name="bayType"]');
+  // Get the BAY_NO field’s parent .form-group
+  const bayFieldGroup = document.querySelector('#BAY_NO').closest('.form-group');
 
-function updateBayFieldVisibility() {
-  const selected = document.querySelector('input[name="bayType"]:checked')?.value;
-  if (selected === "auto") {
-    bayFieldGroup.style.display = "none";
-  } else {
-    bayFieldGroup.style.display = "block";
+  // Define function to show/hide BAY_NO field
+  function updateBayFieldVisibility() {
+    const selected = document.querySelector('input[name="bayType"]:checked')?.value;
+    if (selected === "auto") {
+      bayFieldGroup.style.display = "none";
+    } else {
+      bayFieldGroup.style.display = "block";
+    }
   }
-}
 
-bayTypeRadios.forEach(radio => {
-  radio.addEventListener('change', updateBayFieldVisibility);
+  // Attach event listener to each radio
+  bayTypeRadios.forEach(radio => {
+    radio.addEventListener('change', updateBayFieldVisibility);
+  });
+
+  // Run once initially
+  updateBayFieldVisibility();
 });
-updateBayFieldVisibility();
 
 //=======================
 // ✅ Assign Bay logic
