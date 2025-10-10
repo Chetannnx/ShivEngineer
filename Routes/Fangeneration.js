@@ -764,8 +764,9 @@ function showCenterPopup(message) {
 }
 
 
-
+//========================
 // Re-Authorization Button
+//========================
 document.getElementById("ReAuthBtn").addEventListener("click", async () => {
   const truckRegNo = document.getElementById("truckRegInput").value.trim();
   if (!truckRegNo) return alert("Enter Truck Reg No");
@@ -777,13 +778,12 @@ document.getElementById("ReAuthBtn").addEventListener("click", async () => {
   const address1 = document.getElementById("ADDRESS_LINE_1").value.trim();
   const address2 = document.getElementById("ADDRESS_LINE_2").value.trim();
   const itemDesc = document.getElementById("ITEM_DESCRIPTION").value.trim();
-
   const fanTimeOut = parseInt(document.getElementById("FAN_TIME_OUT").value, 10);
   if (isNaN(fanTimeOut) || fanTimeOut < 0) return alert("Invalid FAN Time Out");
 
   const weightToFill = parseInt(document.getElementById("WEIGHT_TO_FILLED").value, 10) || 0;
 
-  // Calculate FAN expiry as JS Date
+  // Calculate FAN expiry
   const now = new Date();
   const fanExpiry = new Date(now.getTime() + fanTimeOut * 60000); // minutes → ms
 
@@ -800,15 +800,24 @@ document.getElementById("ReAuthBtn").addEventListener("click", async () => {
         itemDesc,
         weightToFill,
         fanTimeOut,
-        fanExpiry // pass JS Date object directly
+        fanExpiry
       })
     });
 
     const data = await res.json();
     if (res.ok) {
       alert("Re-Authorization done!");
+
+      // Update truck status
       document.getElementById("truckStatus").value = 4;
       document.getElementById("FAN_EXPIRY").textContent = fanExpiry.toLocaleString();
+
+      // ✅ Show ReAuth FAN popup with data
+      showFanPopup(data.data);
+
+      // ✅ Ensure Save PDF button works ONLY for ReAuth (no Bay popup)
+      setupSavePdfButton();
+
     } else {
       alert("Error: " + data.message);
     }
@@ -817,6 +826,99 @@ document.getElementById("ReAuthBtn").addEventListener("click", async () => {
     alert("Server Error");
   }
 });
+
+// -------------------------
+// Show FAN Popup Function
+// -------------------------
+function showFanPopup(data) {
+  const pad = (n) => (n < 10 ? "0" + n : n);
+
+  document.getElementById("FAN_NO").textContent = data.FAN_NO || "";
+  document.getElementById("POP_CARD_NO").textContent = data.CARD_NO || "";
+  const dateTime = new Date().toLocaleString();
+  document.getElementById("DATE_TIME").textContent = dateTime;
+
+  if (data.FAN_EXPIRY) {
+    const dt = new Date(data.FAN_EXPIRY);
+    document.getElementById("FAN_EXPIRY").textContent =
+      pad(dt.getUTCDate()) + '/' + pad(dt.getUTCMonth() + 1) + '/' + dt.getUTCFullYear() + ' ' +
+      pad(dt.getUTCHours()) + ':' + pad(dt.getUTCMinutes());
+  } else {
+    document.getElementById("FAN_EXPIRY").textContent = "";
+  }
+
+  document.getElementById("POP_TRUCK_REG_NO").textContent = data.TRUCK_REG_NO || "";
+  document.getElementById("POP_CUSTOMER_NAME").textContent = data.CUSTOMER_NAME || "";
+  document.getElementById("POP_CARRIER_COMPANY").textContent = data.CARRIER_COMPANY || "";
+  document.getElementById("POP_ITEM_DESCRIPTION").textContent = data.ITEM_DESCRIPTION || "";
+  document.getElementById("POP_PROCESS_TYPE").textContent = data.PROCESS_TYPE == 1 ? "Loading" : "Unloading";
+  document.getElementById("POP_WEIGHT_TO_FILLED").textContent = data.WEIGHT_TO_FILLED || "";
+
+  // Show popup
+  document.getElementById("fanPopup").style.display = "flex";
+}
+
+// -------------------------
+// Generate PDF Function
+// -------------------------
+function generateFanPDF() {
+  var jsPDFObj = window.jspdf;
+  var doc = new jsPDFObj.jsPDF();
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.text("Fan Generation Report", 14, 20);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+
+  var y = 40;
+  var rows = document.querySelectorAll("#fanTable tr");
+  for (var i = 0; i < rows.length; i++) {
+    var cells = rows[i].querySelectorAll("th, td");
+    if (cells.length === 2) {
+      doc.text(cells[0].innerText + ": " + cells[1].innerText, 14, y);
+      y += 10;
+    }
+  }
+
+  // Download PDF
+  doc.save("Fan1_Generation_Report.pdf");
+}
+
+// -------------------------
+// Close popup
+// -------------------------
+function closePopup() {
+  document.getElementById("fanPopup").style.display = "none";
+}
+
+// -------------------------
+// Shared Save PDF Button Logic
+// -------------------------
+function setupSavePdfButton() {
+  const saveBtn = document.getElementById("savePdfBtn");
+  if (!saveBtn) return;
+
+  // Remove old listeners (to prevent bay popup from previous script)
+  const newBtn = saveBtn.cloneNode(true);
+  saveBtn.parentNode.replaceChild(newBtn, saveBtn);
+
+  // Add new listener only for ReAuth
+  newBtn.addEventListener("click", () => {
+    generateFanPDF();
+
+    // ✅ Conditional logic — only open Bay Allocation if FAN popup, not ReAuth
+    const fanPopupVisible = document.getElementById("fanPopup").style.display === "flex";
+    const bayPopupVisible = document.getElementById("bayPopup")?.style.display === "flex";
+
+    if (fanPopupVisible && !bayPopupVisible) {
+      // ❌ No bay popup for ReAuth
+      console.log("ReAuth PDF saved — Bay popup not opened");
+    }
+  });
+}
+
 
 
 //================
@@ -1038,7 +1140,10 @@ router.get("/api/fan-generation/card/:cardNo", async (req, res) => {
   }
 });
 
+
+//=============================================
 // API route: Assign Card & Save to DATA_MASTER
+//=============================================
 router.post("/api/assign-card", async (req, res) => {
   const {
     truckRegNo,
@@ -1164,7 +1269,10 @@ router.post("/api/assign-card", async (req, res) => {
   }
 });
 
+
+//==================================================
 // API route: Reassign Card (Update existing record)
+//==================================================
 router.put("/api/reassign-card", async (req, res) => {
   const {
     truckRegNo,
@@ -1280,7 +1388,11 @@ router.put("/api/reassign-card", async (req, res) => {
   }
 });
 
+
+
+//================================
 // API: Update PROCESS_STATUS to 2
+//================================
 router.put("/api/fan-generation/update-status", async (req, res) => {
   const { truckRegNo } = req.body;
   if (!truckRegNo)
@@ -1303,7 +1415,10 @@ router.put("/api/fan-generation/update-status", async (req, res) => {
   }
 });
 
+
+//=======================
 // Get BAY_NO for a truck
+//=======================
 router.get("/api/get-bay/:truckRegNo", async (req, res) => {
   const truckRegNo = req.params.truckRegNo?.trim();
   if (!truckRegNo)
@@ -1324,9 +1439,10 @@ router.get("/api/get-bay/:truckRegNo", async (req, res) => {
   }
 });
 
-// ============================
+
+// =================================================
 // 🔹 3. Assign Bay (Auto/Manual) using TRUCK_MASTER
-// ============================
+// =================================================
 router.post("/api/assign-bay", async (req, res) => {
   const { truckRegNo, bayNo, bayType, itemDesc } = req.body; // itemDesc = "Petrol", "Jetkero", or "Diesel"
 
@@ -1400,9 +1516,10 @@ router.post("/api/assign-bay", async (req, res) => {
   }
 });
 
-// =========================
+
+// =================
 // 🔹 FAN ABORT API
-// =========================
+// =================
 router.delete("/api/fan-abort", async (req, res) => {
   const { truckRegNo, cardNo } = req.body;
 
@@ -1432,6 +1549,10 @@ router.delete("/api/fan-abort", async (req, res) => {
   }
 });
 
+
+//======================================
+// Re-Authorized and updated data in SQL
+//======================================
 router.put("/api/re-authorization", async (req, res) => {
   const {
     truckRegNo,
@@ -1453,17 +1574,14 @@ router.put("/api/re-authorization", async (req, res) => {
     // Calculate FAN_EXPIRY
     const fanMinutes = parseInt(fanTimeOut) || 0;
     const now = new Date();
-    const fanExpiry = new Date(now.getTime() + fanMinutes * 60000); // add minutes
-    const fanExpiryUTC = new Date(
-      fanExpiry.getTime() - fanExpiry.getTimezoneOffset() * 60000
-    );
+    const fanExpiry = new Date(now.getTime() + fanMinutes * 60000);
+    const fanExpiryUTC = new Date(fanExpiry.getTime() - fanExpiry.getTimezoneOffset() * 60000);
 
     // Update record
-    const result = await pool
-      .request()
+    const result = await pool.request()
       .input("TRUCK_REG_NO", sql.VarChar, truckRegNo)
       .input("PROCESS_TYPE", sql.Int, parseInt(processType) || 0)
-      .input("PROCESS_STATUS", sql.Int, 4) // Re-Authorization
+      .input("PROCESS_STATUS", sql.Int, 4)
       .input("CUSTOMER_NAME", sql.VarChar, customerName || "")
       .input("ADDRESS_LINE_1", sql.VarChar, address1 || "")
       .input("ADDRESS_LINE_2", sql.VarChar, address2 || "")
@@ -1489,16 +1607,35 @@ router.put("/api/re-authorization", async (req, res) => {
       return res.status(404).json({ message: "Truck record not found" });
     }
 
-    res.json({ message: "Re-Authorization updated successfully" });
+     // ✅ Fetch the updated data (join TRUCK_MASTER for carrier company)
+    const updated = await pool.request()
+      .input("TRUCK_REG_NO", sql.VarChar, truckRegNo)
+      .query(`
+        SELECT 
+            D.*, 
+            T.CARRIER_COMPANY
+        FROM DATA_MASTER D
+        LEFT JOIN TRUCK_MASTER T
+            ON D.TRUCK_REG_NO = T.TRUCK_REG_NO
+        WHERE D.TRUCK_REG_NO = @TRUCK_REG_NO
+      `);
+    res.json({
+      message: "Re-Authorization updated successfully",
+      data: updated.recordset[0]
+    });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Database Error" });
+    console.error("Error:", err);
+    res.status(500).json({ message: "Database Error", error: err.message });
   }
 });
 
-// ============================
+
+
+
+// ================================
 // 🔹 Re-Allocate Bay (Auto/Manual)
-// ============================
+// ================================
 router.post("/api/reallocate-bay", async (req, res) => {
   const { truckRegNo, bayNo, bayType, itemDesc } = req.body; // itemDesc = "Petrol", "Jetkero", or "Diesel"
 
