@@ -156,7 +156,8 @@ router.get("/", async (req, res) => {
       <tr><th>Weight Filled</th><td id="POP_WEIGHT_TO_FILLED"></td></tr>
     </table>
 
-    <button id="savePdfBtn">Save PDF</button>
+    <button id="fanSavePdfBtn" style="display:none;">Save PDF</button>
+    <button id="reAuthSavePdfBtn" style="display:none;">Save PDF</button>
     <button onclick="closePopup()">Close</button>
   </div>
 </div>
@@ -512,6 +513,10 @@ function closePopup() {
         const truckRegNo = document.getElementById("truckRegInput").value.trim();
         if(!truckRegNo) return alert("Enter Truck No first!");
 
+        // Hide ReAuth button, show FanSave button
+          document.getElementById("reAuthSavePdfBtn").style.display = "none";
+          document.getElementById("fanSavePdfBtn").style.display = "inline-block";
+
         // 1️⃣ Update PROCESS_STATUS = 2
         const updateRes = await fetch('/Fan-Generation/api/fan-generation/update-status', {
           method: 'PUT',
@@ -572,7 +577,7 @@ function closeBayPopup() {
 }
 
 // After Save PDF, open Bay Allocation popup
-document.getElementById("savePdfBtn").addEventListener("click", async function () {
+document.getElementById("fanSavePdfBtn").addEventListener("click", async function () {
   var jsPDFObj = window.jspdf;
   var doc = new jsPDFObj.jsPDF();
 
@@ -771,6 +776,10 @@ document.getElementById("ReAuthBtn").addEventListener("click", async () => {
   const truckRegNo = document.getElementById("truckRegInput").value.trim();
   if (!truckRegNo) return alert("Enter Truck Reg No");
 
+  // Hide FanSave button, show ReAuth button
+    document.getElementById("fanSavePdfBtn").style.display = "none";
+    document.getElementById("reAuthSavePdfBtn").style.display = "inline-block";
+
   const processType = parseInt(document.getElementById("processType").value, 10);
   if (isNaN(processType)) return alert("Select a valid Process Type");
 
@@ -897,7 +906,7 @@ function closePopup() {
 // Shared Save PDF Button Logic
 // -------------------------
 function setupSavePdfButton() {
-  const saveBtn = document.getElementById("savePdfBtn");
+  const saveBtn = document.getElementById("reAuthSavePdfBtn");
   if (!saveBtn) return;
 
   // Remove old listeners (to prevent bay popup from previous script)
