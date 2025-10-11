@@ -536,3 +536,11 @@ a.btn-reset {
 a.btn-reset:hover {
   transform: scale(1.05);
 }
+
+input[readonly] {
+  background-color: #f0f0f0; /* Light gray background */
+  border: 1px solid #ccc; /* Subtle border */
+  cursor: not-allowed; /* Change cursor to default, not text-editing */
+  color: #555; /* Slightly muted text color */
+  pointer-events: none; /* Prevents all mouse events, including text selection */
+}

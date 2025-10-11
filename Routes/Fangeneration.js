@@ -3,6 +3,7 @@ const sql = require("mssql/msnodesqlv8");
 const dbConfig = require("../Config/dbConfig");
 const router = express.Router();
 
+
 // Serve the Fan Generation HTML page
 router.get("/", async (req, res) => {
   try {
@@ -53,6 +54,7 @@ router.get("/", async (req, res) => {
         <option value="1">Reported</option>
         <option value="2">Fan Generation</option>
         <option value="4">Re Authorized</option>
+        <option value="13">Abort</option>
 
       </select>
     </div>
@@ -70,11 +72,15 @@ router.get("/", async (req, res) => {
 
  
     <button type="button" id="assignCardBtn" class="btn">Assign Card</button>
-    <button type="button" id="ReassignCardBtn" class="btn">Re Assign Card</button>
+    <button type="button" id="ReassignCardBtn" class="btn">Re AssignCard</button>
     <button type="button" id="FanGeneration" class="btn">Fan Generation</button>
     <button type="button" id="FanAbortBtn" class="btn">Fan Abort</button>
     <button type="button" id="ReAuthBtn" class="btn">Re Authorized</button>
     <button type="button" id="reAllocateBtn" class="btn" onclick="openReallocatePopup()">Re Allocate</button>
+    <button type="button" id="checkBtn" class="btn">Abort</button>
+
+    <p id="result"></p>
+
 
   
           <div class="form-container">
@@ -133,7 +139,7 @@ router.get("/", async (req, res) => {
   <label>Weight Filled:</label>
   <input type="text" id="MIN" name="MAX1" placeholder="Min" readonly>
   <input type="number" id="WEIGHT_TO_FILLED" name="WEIGHT_TO_FILLED" placeholder="Weight to Fill">
-  <input type="text" id="MAX" name="MAX2" placeholder="Max">
+  <input type="text" id="MAX" name="MAX2" placeholder="Max" readonly>
 </div>
             </div>
           </div>
@@ -200,6 +206,51 @@ router.get("/", async (req, res) => {
 </div>
 
 
+<!-- Add this somewhere in your HTML, ideally near the end of <body> -->
+<div id="popupMsg" style="
+    display:none;
+    position:fixed;
+    top:50%;
+    left:50%;
+    transform:translate(-50%, -50%);
+    background:#fff;
+    border:1px solid #ccc;
+    padding:20px 30px;
+    z-index:1000;
+    box-shadow:0 0 15px rgba(0,0,0,0.3);
+    border-radius:8px;
+    text-align:center;
+    font-weight:bold;
+">
+  <span id="popupText"></span>
+  <br><br>
+  <button id="closePopup" style="
+      padding:5px 15px;
+      border:none;
+      background:#007bff;
+      color:#fff;
+      border-radius:5px;
+      cursor:pointer;
+  ">X</button>
+</div>
+
+
+<div id="truckPopup" style="
+    display:none;
+    position:fixed;
+    top:50%;
+    left:50%;
+    transform:translate(-50%, -50%);
+    background:#fff;
+    border:1px solid #ccc;
+    padding:20px 30px;
+    z-index:1000;
+    box-shadow:0 0 15px rgba(0,0,0,0.3);
+    border-radius:10px;
+    text-align:center;
+    font-weight:bold;
+    color:#333;
+"></div>
   
           <!-- Inline Script -->
           <script>
@@ -226,26 +277,35 @@ router.get("/", async (req, res) => {
     } else if (cardNo) {
         url = "/Fan-Generation/api/fan-generation/card/" + encodeURIComponent(cardNo);
     } else {
-        return alert("Please enter Truck No or Card Allocated No");
+        showPopup("Please enter Truck No or Card Allocated No");
+        return;
     }
 
     try {
         const res = await fetch(url);
-        if (!res.ok) {
-            const errorData = await res.json().catch(() => ({}));
 
+        // ✅ Read JSON once and safely
+        let data = {};
+        try {
+            data = await res.json();
+        } catch {
+            // ignore if response is not JSON
+        }
+
+        if (!res.ok) {
             // Special handling for card already assigned
-            if (res.status === 400 && errorData.truckRegNo) {
-                alert("This Card (" + (truckRegNo || cardNo) + ") is already registered with Truck " + errorData.truckRegNo);
+            if (res.status === 400 && data.truckRegNo) {
+                showPopup(
+                    "This Card (" + (truckRegNo || cardNo) + ") is already registered with Truck " + data.truckRegNo
+                );
                 return;
             }
 
-            throw new Error(errorData.message || "Truck or Card not found");
+            showPopup(data.message || "Truck or Card not found");
+            return; // stop further processing
         }
 
-        const data = await res.json();
-
-        // Fill all fields
+        // ✅ Fill all fields
         const allFields = [
             "TRUCK_REG_NO", "TRAILER_NO", "OWNER_NAME", "DRIVER_NAME", "HELPER_NAME", "CARRIER_COMPANY",
             "TRUCK_SEALING_REQUIREMENT", "BLACKLIST_STATUS", "REASON_FOR_BLACKLIST",
@@ -255,12 +315,11 @@ router.get("/", async (req, res) => {
             "FAN_TIME_OUT", "WEIGHT_TO_FILLED", "CARD_NO"
         ];
 
-        // Format date fields
         function formatDate(dateStr) {
             if (!dateStr) return "";
             const d = new Date(dateStr);
             if (isNaN(d)) return dateStr;
-            return d.toLocaleDateString("en-GB"); // DD/MM/YYYY
+            return d.toLocaleDateString("en-GB");
         }
 
         allFields.forEach(id => {
@@ -273,69 +332,47 @@ router.get("/", async (req, res) => {
             }
         });
 
+        // ✅ Truck Status
+        document.getElementById("truckStatus").value = data.PROCESS_STATUS ?? "-1";
 
-       if(document.getElementById("truckStatus")) document.getElementById("truckStatus").value = data.PROCESS_STATUS||"";
+        // Process Type select
+        const processTypeField = document.getElementById("processType");
+        if (processTypeField && data.PROCESS_TYPE != null) {
+            processTypeField.value = data.PROCESS_TYPE;
+        }
 
-      // Set the Process Type select value
-  const processTypeField = document.getElementById("processType");
-  if (processTypeField && data.PROCESS_TYPE != null) {
-    processTypeField.value = data.PROCESS_TYPE;
-  }
+        // Fill top Truck Reg No input
+        document.getElementById("truckRegInput").value = data.TRUCK_REG_NO || "";
 
-  // ✅ Set Truck Status dropdown based on PROCESS_STATUS
-if (data.PROCESS_STATUS !== undefined) {
-  document.getElementById("truckStatus").value = data.PROCESS_STATUS;
-} else {
-  document.getElementById("truckStatus").value = "-1"; // default Registered
-}
+        // Reassign button
+        const reassignBtn = document.getElementById("ReassignCardBtn");
+        if (reassignBtn) {
+            reassignBtn.disabled = !data.CARD_NO;
+        }
 
-// ✅ Fill the top Truck Reg No input separately
-document.getElementById("truckRegInput").value = data.TRUCK_REG_NO || "";
+        // Fuel min/max
+        const minField = document.getElementById("MIN");
+        const maxField = document.getElementById("MAX");
+        const weightField = document.getElementById("WEIGHT_TO_FILLED");
 
-          // ✅ Fill the top Truck Reg No input separately
-      document.getElementById("truckRegInput").value = data.TRUCK_REG_NO || "";
+        if (minField) minField.value = 0;
+        if (maxField) maxField.value = data.MAX_FUEL_CAPACITY ?? 0;
 
-      // After filling all fields:
-  document.getElementById("truckStatus").value = data.PROCESS_STATUS ?? "-1";
-
-  // Enable or disable Reassign button based on CARD_NO presence
-const reassignBtn = document.getElementById("ReassignCardBtn");
-if (reassignBtn) {
-    if (data.CARD_NO) {
-        reassignBtn.disabled = false;  // enable if truck already has card
-    } else {
-        reassignBtn.disabled = true;   // disable if no card
-    }
-}
-
-
-// Set Min = 0 and Max = MAX_FUEL_CAPACITY
-const minField = document.getElementById("MIN");
-const maxField = document.getElementById("MAX");
-const weightField = document.getElementById("WEIGHT_TO_FILLED");
-
-if (minField) minField.value = 0;
-if (maxField) maxField.value = data.MAX_FUEL_CAPACITY ?? 0;
-
-// Enforce max validation when user types
-if (weightField) {
-  weightField.max = data.MAX_FUEL_CAPACITY ?? 0;
-
-  weightField.addEventListener("input", function() {
-    const maxVal = parseFloat(this.max);
-    let val = parseFloat(this.value) || 0;
-    if (val > maxVal) this.value = maxVal;
-    if (val < 0) this.value = 0;
-  });
-}
-
-
+        if (weightField) {
+            weightField.max = data.MAX_FUEL_CAPACITY ?? 0;
+            weightField.addEventListener("input", function () {
+                const maxVal = parseFloat(this.max);
+                let val = parseFloat(this.value) || 0;
+                if (val > maxVal) this.value = maxVal;
+                if (val < 0) this.value = 0;
+            });
+        }
 
     } catch (err) {
-      console.error(err);
-      alert(err.message);
+        console.error(err);
+        showPopup(err.message || "Error fetching truck or card data.");
     }
-  }
+}
 
 
   // Trigger fetch on Enter key for Truck No
@@ -1016,7 +1053,77 @@ document.getElementById("assignBayBtn1").addEventListener("click", async functio
 });
 
 
+//===============
+//    Abort 
+//===============
+// Function to show popup
+function showPopup(msg) {
+  const popup = document.getElementById("popupMsg");
+  const text = document.getElementById("popupText");
+  text.textContent = msg;
+  popup.style.display = "block";
+}
+
+// Close button
+document.getElementById("closePopup").addEventListener("click", () => {
+  document.getElementById("popupMsg").style.display = "none";
+});
+
+// Main logic
+document.getElementById("checkBtn").addEventListener("click", async () => {
+  const cardNo = document.getElementById("CARD_NO").value.trim();
+  const truckStatusSelect = document.getElementById("truckStatus");
+
+  if (!cardNo) {
+    showPopup("Please enter Card No");
+    return;
+  }
+
+  try {
+    const response = await fetch("/Fan-Generation/api/check-common-view", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cardNo })
+    });
+
+    const data = await response.json();
+
+    if (data.status === "Abort") {
+      // Check if already selected
+      if (truckStatusSelect.value === "13") {
+        showPopup("Card No " + cardNo + " is already aborted.");
+
+      } else {
+        // Add abort option if not present
+        let abortOption = [...truckStatusSelect.options].find(opt => opt.text === "Abort");
+        if (!abortOption) {
+          abortOption = new Option("Abort", "13");
+          truckStatusSelect.add(abortOption);
+        }
+        truckStatusSelect.value = "13";
+        showPopup("Card No " + cardNo + " status set to Abort.");
+
+      }
+    } else {
+      showPopup("Data not found");
+    }
+
+  } catch (err) {
+    console.error("Error:", err);
+    showPopup("Error connecting to server");
+  }
+});
+
+
+
+
+
+
 </script>
+
+
+
+
 
 
         </body>
@@ -1050,25 +1157,41 @@ router.get("/api/fan-generation/truck/:truckRegNo", async (req, res) => {
     }
 
     const truckData = truckResult.recordset[0];
-    let dataMaster = {};
+
+    // ====== Condition Checks ======
+    const today = new Date();
+
+    // 1️⃣ Blacklist check
+    if (truckData.BLACKLIST_STATUS === 1) {
+      return res.status(400).json({ message: "This truck is blacklisted." });
+    }
+
+    // 2️⃣ Safety certificate check
+    if (truckData.SAFETY_CERTIFICATION_NO && new Date(truckData.SAFETY_CERTIFICATION_NO) < today) {
+      return res.status(400).json({ message: "Truck's safety certification date is expired." });
+    }
+
+    // 3️⃣ Calibration certificate check
+    if (truckData.CALIBRATION_CERTIFICATION_NO && new Date(truckData.CALIBRATION_CERTIFICATION_NO) < today) {
+      return res.status(400).json({ message: "Truck's calibration certificate date is expired." });
+    }
 
     // Fetch latest DATA_MASTER for this truck
     const dataResult = await pool
       .request()
-      .input("truckRegNo", sql.VarChar, truckRegNo).query(`
+      .input("truckRegNo", sql.VarChar, truckRegNo)
+      .query(`
         SELECT TOP 1 
-            FAN_NO,TRUCK_REG_NO, CARD_NO, PROCESS_TYPE, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, 
+            FAN_NO, TRUCK_REG_NO, CARD_NO, PROCESS_TYPE, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, 
             ITEM_DESCRIPTION, FAN_TIME_OUT, FAN_EXPIRY, WEIGHT_TO_FILLED, PROCESS_STATUS
         FROM DATA_MASTER 
         WHERE TRUCK_REG_NO = @truckRegNo 
         ORDER BY FAN_TIME_OUT DESC
       `);
 
-    if (dataResult.recordset.length > 0) {
-      dataMaster = dataResult.recordset[0];
-    }
+    let dataMaster = dataResult.recordset.length > 0 ? dataResult.recordset[0] : {};
 
-    // ✅ Calculate Truck Status
+    // Calculate Truck Status
     let processStatus = dataMaster.PROCESS_STATUS ?? -1;
     let truckStatusText = "Registered";
 
@@ -1088,6 +1211,7 @@ router.get("/api/fan-generation/truck/:truckRegNo", async (req, res) => {
     res.status(500).json({ message: "Database Error" });
   }
 });
+
 
 // =========================
 // 🔹 2. Search by Card No
@@ -1737,5 +1861,53 @@ router.get("/api/get-bay/:truckRegNo", async (req, res) => {
     res.status(500).json({ message: "Database Error" });
   }
 });
+
+//================
+//     Abort
+//================
+router.post("/api/check-common-view", async (req, res) => {
+  const { cardNo } = req.body;
+
+  if (!cardNo) {
+    return res.status(400).json({ message: "Card number required" });
+  }
+
+  try {
+    const pool = await sql.connect(dbConfig);
+
+    // ✅ 1️⃣ Check COMMON_VIEW for record
+    const result = await pool.request()
+      .input("cardNo", sql.VarChar, cardNo)
+      .query(`
+        SELECT TOP 1 * 
+        FROM dbo.COMMON_VIEW 
+        WHERE CARD_NO = @cardNo 
+          AND BATCH_STATUS = 1
+      `);
+
+    if (result.recordset.length > 0) {
+      // ✅ 2️⃣ Update DATA_MASTER table PROCESS_STATUS = 13
+      await pool.request()
+        .input("cardNo", sql.VarChar, cardNo)
+        .query(`
+          UPDATE dbo.DATA_MASTER 
+          SET PROCESS_STATUS = 13 
+          WHERE CARD_NO = @cardNo
+        `);
+
+      // ✅ 3️⃣ Return message & status
+      res.json({ message: "Data Exist", status: "Abort" });
+    } else {
+      res.json({ message: "No Data" });
+    }
+
+  } catch (err) {
+    console.error("❌ SQL Error:", err);
+    res.status(500).json({ message: "Error connecting to server", error: err.message });
+  } finally {
+    sql.close();
+  }
+});
+
 
 module.exports = router;

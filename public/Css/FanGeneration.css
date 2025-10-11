@@ -247,38 +247,43 @@ nav ul li a.active::after {
 }
 
 #assignCardBtn {
-  top: 250px;
-  right: 177px;
+  top: 260px;
+  right: 100px;
   background-color: rgb(128, 122, 122);
 }
 
 #ReassignCardBtn {
   top: 310px;
-  right: 177px;
+  right: 100px;
   background-color: rgb(128, 122, 122);
 }
 
 #FanGeneration {
-  top: 370px;
-  right: 177px;
+  top: 360px;
+  right: 100px;
   background-color: rgb(128, 122, 122);
 }
 
 #FanAbortBtn {
-  top: 430px;
-  right: 177px;
+  top: 410px;
+  right: 100px;
   background-color: rgb(128, 122, 122);
 }
 
 #ReAuthBtn {
-  top: 490px;
-  right: 177px;
+  top: 460px;
+  right: 100px;
   background-color: rgb(128, 122, 122);
 }
 
 #reAllocateBtn {
-  top: 550px;
-  right: 177px;
+  top: 510px;
+  right: 100px;
+  background-color: rgb(128, 122, 122);
+}
+#checkBtn{
+  top: 560px;
+  right: 100px;
   background-color: rgb(128, 122, 122);
 }
 
@@ -722,4 +727,12 @@ nav ul li a.active::after {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+}
+
+input[readonly] {
+  background-color: #f0f0f0; /* Light gray background */
+  border: 1px solid #ccc; /* Subtle border */
+  cursor: not-allowed; /* Change cursor to default, not text-editing */
+  color: #555; /* Slightly muted text color */
+  pointer-events: none; /* Prevents all mouse events, including text selection */
 }
