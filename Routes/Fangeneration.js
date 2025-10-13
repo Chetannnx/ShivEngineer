@@ -1115,16 +1115,7 @@ document.getElementById("checkBtn").addEventListener("click", async () => {
 });
 
 
-
-
-
-
 </script>
-
-
-
-
-
 
         </body>
         </html>
@@ -1222,12 +1213,13 @@ router.get("/api/fan-generation/card/:cardNo", async (req, res) => {
   try {
     const pool = await sql.connect(dbConfig);
 
-    // Fetch latest data by Card No
-    const cardResult = await pool.request().input("cardNo", sql.VarChar, cardNo)
+    // 🔹 Fetch latest DATA_MASTER for this card
+    const cardResult = await pool.request()
+      .input("cardNo", sql.VarChar, cardNo)
       .query(`
         SELECT TOP 1 
-            FAN_NO,TRUCK_REG_NO, CARD_NO, PROCESS_TYPE, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, 
-            ITEM_DESCRIPTION, FAN_TIME_OUT,FAN_EXPIRY, WEIGHT_TO_FILLED, PROCESS_STATUS
+            FAN_NO, TRUCK_REG_NO, CARD_NO, PROCESS_TYPE, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, 
+            ITEM_DESCRIPTION, FAN_TIME_OUT, FAN_EXPIRY, WEIGHT_TO_FILLED, PROCESS_STATUS
         FROM DATA_MASTER 
         WHERE CARD_NO = @cardNo 
         ORDER BY FAN_TIME_OUT DESC
@@ -1240,7 +1232,7 @@ router.get("/api/fan-generation/card/:cardNo", async (req, res) => {
     const dataMaster = cardResult.recordset[0];
     let truckData = {};
 
-    // Fetch truck info linked to this card
+    // 🔹 Fetch truck info linked to this card
     if (dataMaster.TRUCK_REG_NO) {
       const truckResult = await pool
         .request()
@@ -1252,13 +1244,41 @@ router.get("/api/fan-generation/card/:cardNo", async (req, res) => {
       }
     }
 
+    // ====== Condition Checks ======
+    const today = new Date();
+
+    // 1️⃣ Blacklist check
+    if (truckData.BLACKLIST_STATUS === 1) {
+      return res.status(400).json({ message: "This truck is blacklisted." });
+    }
+
+    // 2️⃣ Safety certificate check
+    if (
+      truckData.SAFETY_CERTIFICATION_NO &&
+      new Date(truckData.SAFETY_CERTIFICATION_NO) < today
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Truck's safety certification date is expired." });
+    }
+
+    // 3️⃣ Calibration certificate check
+    if (
+      truckData.CALIBRATION_CERTIFICATION_NO &&
+      new Date(truckData.CALIBRATION_CERTIFICATION_NO) < today
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Truck's calibration certificate date is expired." });
+    }
+
     // ✅ Calculate Truck Status
     let processStatus = dataMaster.PROCESS_STATUS ?? -1;
     let truckStatusText = "Registered";
-
     if (processStatus === 1) truckStatusText = "Reported";
     else if (processStatus === 2) truckStatusText = "Fan Generation";
 
+    // ✅ Combine all info and return
     res.json({
       ...dataMaster,
       ...truckData,
@@ -1351,13 +1371,19 @@ router.post("/api/assign-card", async (req, res) => {
       return n < 10 ? "0" + n : n;
     }
     const now = new Date();
-    const fanNo =
-      pad(now.getDate()) +
-      pad(now.getMonth() + 1) +
-      now.getFullYear() +
-      pad(now.getHours()) +
-      pad(now.getMinutes()) +
-      pad(now.getSeconds());
+    function getFanNo() {
+  const now = new Date();
+  const pad = (n) => (n < 10 ? "0" + n : n);
+  const dd = pad(now.getDate());
+  const MM = pad(now.getMonth() + 1);
+  const yyyy = now.getFullYear();
+  const HH = pad(now.getHours());
+  const mm = pad(now.getMinutes());
+  const ss = pad(now.getSeconds());
+  return `${dd}${MM}${yyyy}${HH}${mm}${ss}`;
+}
+
+const fanNo = getFanNo();
 
     // 5️⃣ Calculate FAN_EXPIRY (UTC)
     const fanTimeOutMinutes = parseInt(FAN_TIME_OUT) || 0;
@@ -1407,22 +1433,13 @@ router.post("/api/assign-card", async (req, res) => {
 // API route: Reassign Card (Update existing record)
 //==================================================
 router.put("/api/reassign-card", async (req, res) => {
-  const {
-    truckRegNo,
-    cardNo,
-    processType,
-    CUSTOMER_NAME,
-    ADDRESS_LINE_1,
-    ADDRESS_LINE_2,
-    ITEM_DESCRIPTION,
-    FAN_TIME_OUT,
-    WEIGHT_TO_FILLED,
-  } = req.body;
+  const { truckRegNo, cardNo } = req.body;
 
-  if (!truckRegNo || !cardNo)
+  if (!truckRegNo || !cardNo) {
     return res
       .status(400)
       .json({ message: "Truck Reg No and Card No are required" });
+  }
 
   try {
     const pool = await sql.connect(dbConfig);
@@ -1441,34 +1458,35 @@ router.put("/api/reassign-card", async (req, res) => {
 
     const cardStatus = cardCheck.recordset[0].CARD_STATUS;
     if (cardStatus !== 1) {
-      // assuming 1 = active, 0 = blocked
       return res
         .status(400)
         .json({ message: `Card ${cardNo} is BLOCKED or inactive.` });
     }
 
-    // 1️⃣ Check if truck exists
-    const existing = await pool
+    // 2️⃣ Check if truck exists with BATCH_STATUS = 1
+    const existingTruck = await pool
       .request()
       .input("truckRegNo", sql.VarChar, truckRegNo)
-      .query(
-        "SELECT CARD_NO FROM DATA_MASTER WHERE TRUCK_REG_NO = @truckRegNo"
-      );
+      .query(`
+        SELECT CARD_NO 
+        FROM DATA_MASTER 
+        WHERE TRUCK_REG_NO = @truckRegNo AND BATCH_STATUS = 1
+      `);
 
-    if (existing.recordset.length === 0) {
+    if (existingTruck.recordset.length === 0) {
       return res.status(404).json({
-        message: `Truck ${truckRegNo} not found. Please assign a card first.`,
+        message: `No active record found for Truck ${truckRegNo}`,
       });
     }
 
-    // ✅ If truck already has the same card, no need to reassign
-    if (existing.recordset[0].CARD_NO === cardNo) {
+    // ✅ If same card already assigned, skip
+    if (existingTruck.recordset[0].CARD_NO === cardNo) {
       return res.status(400).json({
-        message: `Truck ${truckRegNo} already has this card (${cardNo}) assigned`,
+        message: `Truck ${truckRegNo} already has this card (${cardNo}) assigned.`,
       });
     }
 
-    // 2️⃣ Check if this CARD_NO is already assigned to another truck
+    // 3️⃣ Check if this card is already used elsewhere
     const existingCard = await pool
       .request()
       .input("cardNo", sql.VarChar, cardNo)
@@ -1483,38 +1501,27 @@ router.put("/api/reassign-card", async (req, res) => {
       });
     }
 
-    // 3️⃣ Safe to update
-    const updateResult = await pool
+    // 4️⃣ Update only CARD_NO where BATCH_STATUS = 1
+    const result = await pool
       .request()
-      .input("TRUCK_REG_NO", sql.VarChar, truckRegNo)
-      .input("CARD_NO", sql.VarChar, cardNo)
-      .input("PROCESS_TYPE", sql.Int, parseInt(processType) || 0)
-      .input("CUSTOMER_NAME", sql.VarChar, CUSTOMER_NAME || "")
-      .input("ADDRESS_LINE_1", sql.VarChar, ADDRESS_LINE_1 || "")
-      .input("ADDRESS_LINE_2", sql.VarChar, ADDRESS_LINE_2 || "")
-      .input("ITEM_DESCRIPTION", sql.VarChar, ITEM_DESCRIPTION || "")
-      .input("FAN_TIME_OUT", sql.Int, parseInt(FAN_TIME_OUT) || 0)
-      .input("WEIGHT_TO_FILLED", sql.BigInt, parseInt(WEIGHT_TO_FILLED) || 0)
+      .input("truckRegNo", sql.VarChar, truckRegNo)
+      .input("cardNo", sql.VarChar, cardNo)
       .query(`
         UPDATE DATA_MASTER
-        SET CARD_NO = @CARD_NO,
-            PROCESS_TYPE = @PROCESS_TYPE,
-            CUSTOMER_NAME = @CUSTOMER_NAME,
-            ADDRESS_LINE_1 = @ADDRESS_LINE_1,
-            ADDRESS_LINE_2 = @ADDRESS_LINE_2,
-            ITEM_DESCRIPTION = @ITEM_DESCRIPTION,
-            FAN_TIME_OUT = @FAN_TIME_OUT,
-            WEIGHT_TO_FILLED = @WEIGHT_TO_FILLED
-        WHERE TRUCK_REG_NO = @TRUCK_REG_NO
+        SET CARD_NO = @cardNo
+        WHERE TRUCK_REG_NO = @truckRegNo
+          AND BATCH_STATUS = 1
       `);
 
-    if (updateResult.rowsAffected[0] === 0) {
-      return res
-        .status(500)
-        .json({ message: "Reassign failed, no rows were updated." });
+    if (result.rowsAffected[0] === 0) {
+      return res.status(400).json({
+        message: `Card reassign failed — no active record found (BATCH_STATUS != 1).`,
+      });
     }
 
-    res.json({ message: "Card re-assigned successfully" });
+    res.json({
+      message: `Card ${cardNo} successfully re-assigned to Truck ${truckRegNo}`,
+    });
   } catch (err) {
     console.error("Reassign Card Error:", err);
     res.status(500).json({ message: "Database Error: " + err.message });
@@ -1523,10 +1530,12 @@ router.put("/api/reassign-card", async (req, res) => {
 
 
 
+
 //================================
 // API: Update PROCESS_STATUS to 2
 //================================
 router.put("/api/fan-generation/update-status", async (req, res) => {
+
   const { truckRegNo } = req.body;
   if (!truckRegNo)
     return res.status(400).json({ message: "Truck Reg No is required" });
