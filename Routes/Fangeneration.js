@@ -1077,48 +1077,89 @@ closeBtn.addEventListener("click", closePopup);
 
 // Main logic
 document.getElementById("checkBtn").addEventListener("click", async () => {
-  const cardNo = document.getElementById("CARD_NO").value.trim();
+  const cardInput = document.getElementById("CARD_NO");
   const truckStatusSelect = document.getElementById("truckStatus");
+
+  if (!cardInput) {
+    console.error("❌ CARD_NO input not found in DOM");
+    return;
+  }
+
+  const cardNo = cardInput.value.trim();
 
   if (!cardNo) {
     showPopup("Please enter Card No");
     return;
   }
 
+  // ✅ If SmartTags not available, default processType = 0
+  let processType = 0;
+  try {
+    if (typeof SmartTags === "function") {
+      processType = SmartTags("PROCESS_TYPE");
+    }
+  } catch (err) {
+    console.warn("⚠️ SmartTags not found, defaulting processType = 0");
+  }
+
   try {
     const response = await fetch("/Fan-Generation/api/check-common-view", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cardNo })
+      body: JSON.stringify({ cardNo, processType })
     });
+
+    if (!response.ok) {
+      throw new Error("HTTP error! Status:" + response.status );
+    }
 
     const data = await response.json();
 
+    // === ✅ Abort flow ===
     if (data.status === "Abort") {
-      // Check if already selected
-      if (truckStatusSelect.value === "13") {
-        showPopup("Card No " + cardNo + " is already aborted.");
+      // Already aborted check
+      if (truckStatusSelect && truckStatusSelect.value === "13") {
+        showPopup("Card No" + cardNo + "is already aborted.");
+        return;
+      }
 
-      } else {
-        // Add abort option if not present
-        let abortOption = [...truckStatusSelect.options].find(opt => opt.text === "Abort");
+      // Add "Abort" option if missing
+      if (truckStatusSelect) {
+        let abortOption = [...truckStatusSelect.options].find(opt => opt.value === "13");
         if (!abortOption) {
           abortOption = new Option("Abort", "13");
           truckStatusSelect.add(abortOption);
         }
         truckStatusSelect.value = "13";
-        showPopup("Card No " + cardNo + " status set to Abort.");
-
       }
-    } else {
+
+      // Sequential popups
+      showCenterPopup("Fan Abort Successful");
+
+      setTimeout(() => {
+        if (processType === 0) {
+          showPopup("UnLoading Successfully Aborted");
+        } else {
+          showPopup("Loading Successfully Aborted");
+        }
+      }, 3000);
+
+      return;
+    }
+
+    // === Other responses ===
+    if (data.message === "No Data") {
       showPopup("Data not found");
+    } else {
+      showPopup(data.message || "Unexpected response");
     }
 
   } catch (err) {
-    console.error("Error:", err);
-    showPopup("Error connecting to server");
+    console.error("❌ Error in abort flow:", err);
+    showPopup("Error connecting to server or processing request");
   }
 });
+
 
 
 </script>
@@ -1880,7 +1921,7 @@ router.get("/api/get-bay/:truckRegNo", async (req, res) => {
 //     Abort
 //================
 router.post("/api/check-common-view", async (req, res) => {
-  const { cardNo } = req.body;
+  const { cardNo, processType } = req.body; // ✅ include processType from frontend
 
   if (!cardNo) {
     return res.status(400).json({ message: "Card number required" });
@@ -1900,7 +1941,7 @@ router.post("/api/check-common-view", async (req, res) => {
       `);
 
     if (result.recordset.length > 0) {
-      // ✅ 2️⃣ Update DATA_MASTER table PROCESS_STATUS = 13
+      // ✅ 2️⃣ Update DATA_MASTER table PROCESS_STATUS = 13 (abort)
       await pool.request()
         .input("cardNo", sql.VarChar, cardNo)
         .query(`
@@ -1909,8 +1950,21 @@ router.post("/api/check-common-view", async (req, res) => {
           WHERE CARD_NO = @cardNo
         `);
 
-      // ✅ 3️⃣ Return message & status
-      res.json({ message: "Data Exist", status: "Abort" });
+      // ✅ 3️⃣ Conditional popup message (based on PROCESS_TYPE)
+      let popupMessage = "";
+      if (processType === 0) {
+        popupMessage = "UnLoading Successfully Aborted";
+      } else {
+        popupMessage = "Loading Successfully Aborted";
+      }
+
+      // ✅ 4️⃣ Return both message and popup info
+      res.json({
+        message: "Data Exist",
+        popup: popupMessage,
+        writeCondition: true, // same as SmartTags("WriteCondition{1}") = True
+        status: "Abort"
+      });
     } else {
       res.json({ message: "No Data" });
     }

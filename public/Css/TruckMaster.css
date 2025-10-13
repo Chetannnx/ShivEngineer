@@ -544,3 +544,35 @@ input[readonly] {
   color: #555; /* Slightly muted text color */
   pointer-events: none; /* Prevents all mouse events, including text selection */
 }
+
+#closeTruckPopup {
+  background: none;
+  position: absolute;
+  font-size: 22px;
+  top: 1px;
+  left: 192px;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+  color: red;
+  transition: all 0.5s ease;
+}
+
+/* Hover animation — glow + spin + fade */
+#closeTruckPopup:hover {
+  color: #ff4444;
+  transform: rotate(120deg);
+}
+
+
+#overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    backdrop-filter: blur(1.5px); /* blur intensity */
+    background: rgba(0, 0, 0, 0.2); /* optional dark overlay */
+    z-index: 999;
+    display: none; /* hidden by default */
+}

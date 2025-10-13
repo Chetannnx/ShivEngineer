@@ -184,6 +184,36 @@ router.get('/', (req, res) => {
   </div>
 </div>` : ''}
 
+
+<!-- Add this somewhere in your HTML, ideally near the end of <body> -->
+<div id="overlay"></div>
+<div id="popupMsg" style="
+    display:none;
+    position:fixed;
+    top:50%;
+    left:50%;
+    transform:translate(-50%, -50%);
+    background:#fff;
+    border:1px solid #ccc;
+    padding:30px 40px;
+    z-index:1000;
+    box-shadow:0 0 15px rgba(0,0,0,0.3);
+    border-radius:8px;
+    font-weight:bold;
+    width:250px;
+    max-width: 90%;
+    overflow-wrap: break-word;  /* Wrap long words */
+    word-wrap: break-word;
+    word-break: break-word;
+    text-align:center;
+    box-sizing:border-box;
+">
+  <!-- Close button top-right -->
+  <button id="closeTruckPopup"
+  ">✖</button>
+  <div id="truckPopupText"></div>
+</div>
+
   <script>
 (function () {
     // Get query parameters
@@ -218,6 +248,7 @@ router.get('/', (req, res) => {
           body: JSON.stringify(data)
         });
         if(res.ok){
+        showTruckPopup('Insert Truck Successfully');
           window.location.href = '/truck-master?truck=' + data.TRUCK_REG_NO;
         } else {
           alert('Error inserting data');
@@ -340,10 +371,14 @@ saveBtn?.addEventListener('click', async (e) => {
       body: JSON.stringify(data)
     });
 
-    if (res.ok) {
-      alert('Truck updated successfully');
-      window.location.reload();
-    } else {
+   if (res.ok) {
+    showTruckPopup('Truck updated successfully');
+
+    // Wait for the user to click the close button
+    closeBtn.addEventListener('click', () => {
+        window.location.reload(); // reload after closing
+    }, { once: true }); // { once: true } ensures the handler runs only once
+}else {
       const errorText = await res.text();
       alert('Error updating data: ' + errorText);
     }
@@ -395,6 +430,26 @@ if (deleteBtn) {
       });
   });
 }
+
+
+
+// Function to show popup
+const popup = document.getElementById("popupMsg");
+const overlay = document.getElementById("overlay");
+const closeBtn = document.getElementById("closeTruckPopup");
+
+function showTruckPopup(msg) {
+  document.getElementById("truckPopupText").textContent = msg;
+  popup.style.display = "block";
+  overlay.style.display = "block";
+}
+
+function closeTruckPopup() {
+  popup.style.display = "none";
+  overlay.style.display = "none";
+}
+
+closeBtn.addEventListener("click", closeTruckPopup);
 </script>
 
 
@@ -425,7 +480,7 @@ router.post('/insert-truck', async (req, res) => {
       .input('HELPER_NAME', sql.VarChar, data.HELPER_NAME)
       .input('CARRIER_COMPANY', sql.VarChar, data.CARRIER_COMPANY)
       .input('TRUCK_SEALING_REQUIREMENT', sql.Bit, truckSealingReq) // ✅ FIXED NAME
-      .input('BLACKLIST_STATUS', sql.Bit, data.BLACKLIST_STATUS)
+      .input('BLACKLIST_STATUS', sql.Bit, data.BLACKLIST_STATUS === "1" ? 1 : 0)
       .input('REASON_FOR_BLACKLIST', sql.VarChar, data.REASON_FOR_BLACKLIST)
       .input('SAFETY_CERTIFICATION_NO', sql.Date, data.SAFETY_CERTIFICATION_NO)
       .input('CALIBRATION_CERTIFICATION_NO', sql.Date, data.CALIBRATION_CERTIFICATION_NO)
