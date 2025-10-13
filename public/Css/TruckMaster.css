@@ -263,7 +263,7 @@ input[type="text"]{
   box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.08);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border-radius: 12px;
+  border-radius: 19px;
 }
 
 /* Each Form Group */

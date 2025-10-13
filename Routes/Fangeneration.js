@@ -207,6 +207,7 @@ router.get("/", async (req, res) => {
 
 
 <!-- Add this somewhere in your HTML, ideally near the end of <body> -->
+<div id="overlay"></div>
 <div id="popupMsg" style="
     display:none;
     position:fixed;
@@ -215,25 +216,24 @@ router.get("/", async (req, res) => {
     transform:translate(-50%, -50%);
     background:#fff;
     border:1px solid #ccc;
-    padding:20px 30px;
+    padding:30px 40px;
     z-index:1000;
     box-shadow:0 0 15px rgba(0,0,0,0.3);
     border-radius:8px;
-    text-align:center;
     font-weight:bold;
+    width:250px;
+    max-width: 90%;
+    overflow-wrap: break-word;  /* Wrap long words */
+    word-wrap: break-word;
+    word-break: break-word;
+    text-align:center;
+    box-sizing:border-box;
 ">
-  <span id="popupText"></span>
-  <br><br>
-  <button id="closePopup" style="
-      padding:5px 15px;
-      border:none;
-      background:#007bff;
-      color:#fff;
-      border-radius:5px;
-      cursor:pointer;
-  ">X</button>
+  <!-- Close button top-right -->
+  <button id="closePopup"
+  ">✖</button>
+  <div id="popupText"></div>
 </div>
-
 
 <div id="truckPopup" style="
     display:none;
@@ -410,8 +410,8 @@ router.get("/", async (req, res) => {
       assignBtn.addEventListener("click", async () => {
         const truckRegNo = document.getElementById("truckRegInput").value.trim();
         const cardNo = document.getElementById("CARD_NO").value.trim();
-        if (!truckRegNo) return alert("Enter Truck Reg No");
-        if (!cardNo) return alert("Enter Card Allocated");
+        if (!truckRegNo) return showPopup("Enter Truck Reg No");
+        if (!cardNo) return showPopup("Enter Card Allocated");
 
         // Collect other fields
         const customerName = document.getElementById("CUSTOMER_NAME").value.trim();
@@ -444,7 +444,7 @@ router.get("/", async (req, res) => {
             showCenterPopup("Card Assigned Successfully!");
             //document.getElementById("CARD_NO").value = "";
           } else {
-            alert("Error: " + data.message);
+            showPopup(data.message || "Something went wrong while assigning the card");
           }
         } catch (err) {
           console.error(err);
@@ -487,7 +487,7 @@ if (reassignBtn) {
   reassignBtn.addEventListener("click", async () => {
     const truckRegNo = document.getElementById("truckRegInput").value.trim();
     const cardNo = document.getElementById("CARD_NO").value.trim();
-    if (!truckRegNo) return alert("Enter Truck Reg No");
+    if (!truckRegNo) return showPopup("Enter Truck Reg No");
     if (!cardNo) return alert("Enter New Card Allocated");
 
     // Collect other fields (just like assign)
@@ -523,7 +523,7 @@ if (reassignBtn) {
   alert("Card Assigned Successfully!");
 } else {
   // Show friendly backend message (400 means logical validation fail)
-  alert(data.message || "Unknown Error");
+  showPopup(data.message || "Unknown Error");
 }
 
       }
@@ -548,7 +548,7 @@ function closePopup() {
     document.getElementById("FanGeneration").addEventListener("click", async () => {
       try {
         const truckRegNo = document.getElementById("truckRegInput").value.trim();
-        if(!truckRegNo) return alert("Enter Truck No first!");
+        if(!truckRegNo) return showPopup("Enter Truck No first!");
 
         // Hide ReAuth button, show FanSave button
           document.getElementById("reAuthSavePdfBtn").style.display = "none";
@@ -727,7 +727,7 @@ document.getElementById("FanAbortBtn").addEventListener("click", async () => {
   const cardNo = document.getElementById("CARD_NO").value.trim();
 
   if (!truckRegNo && !cardNo) {
-    return alert("Enter Truck Reg No or Card No");
+    return showPopup("Enter Truck Reg No or Card No");
   }
 
   if (!confirm("Are you sure you want to abort this FAN?")) {
@@ -811,7 +811,7 @@ function showCenterPopup(message) {
 //========================
 document.getElementById("ReAuthBtn").addEventListener("click", async () => {
   const truckRegNo = document.getElementById("truckRegInput").value.trim();
-  if (!truckRegNo) return alert("Enter Truck Reg No");
+  if (!truckRegNo) return showPopup("Enter Truck Reg No");
 
   // Hide FanSave button, show ReAuth button
     document.getElementById("fanSavePdfBtn").style.display = "none";
@@ -985,7 +985,7 @@ async function openReallocatePopup() {
     const truckRegNoInput = document.getElementById("truckRegInput");
     if (!truckRegNoInput) return alert("Truck Reg Input not found in HTML!");
     const truckRegNo = truckRegNoInput.value.trim();
-    if (!truckRegNo) return alert("Truck Reg No missing");
+    if (!truckRegNo) return showPopup("Truck Reg No missing");
 
     currentTruckRegNo = truckRegNo;
 
@@ -1057,17 +1057,23 @@ document.getElementById("assignBayBtn1").addEventListener("click", async functio
 //    Abort 
 //===============
 // Function to show popup
+const popup = document.getElementById("popupMsg");
+const overlay = document.getElementById("overlay");
+const closeBtn = document.getElementById("closePopup");
+
 function showPopup(msg) {
-  const popup = document.getElementById("popupMsg");
-  const text = document.getElementById("popupText");
-  text.textContent = msg;
-  popup.style.display = "block";
+    document.getElementById("popupText").textContent = msg;
+    popup.style.display = "block";
+    overlay.style.display = "block"; // show blur
 }
 
-// Close button
-document.getElementById("closePopup").addEventListener("click", () => {
-  document.getElementById("popupMsg").style.display = "none";
-});
+function closePopup() {
+    popup.style.display = "none";
+    overlay.style.display = "none"; // hide blur
+}
+
+closeBtn.addEventListener("click", closePopup);
+
 
 // Main logic
 document.getElementById("checkBtn").addEventListener("click", async () => {
@@ -1771,7 +1777,6 @@ router.put("/api/re-authorization", async (req, res) => {
     res.status(500).json({ message: "Database Error", error: err.message });
   }
 });
-
 
 
 
