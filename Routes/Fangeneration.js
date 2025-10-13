@@ -141,8 +141,12 @@ router.get("/", async (req, res) => {
   <input type="number" id="WEIGHT_TO_FILLED" name="WEIGHT_TO_FILLED" placeholder="Weight to Fill">
   <input type="text" id="MAX" name="MAX2" placeholder="Max" readonly>
 </div>
+
+
             </div>
+            
           </div>
+          
 
 
           <!-- Fan Generation Popup -->
@@ -1160,6 +1164,11 @@ document.getElementById("checkBtn").addEventListener("click", async () => {
   }
 });
 
+
+
+//============
+//  Range
+//============
 
 
 </script>
