@@ -77,7 +77,7 @@ router.get('/', (req, res) => {
       <li><a href="/tees">CARD MASTER</a></li>
       <li><a href="/truck-master" class="active">TRUCK MASTER</a></li>
       <li><a href="/Fan-Generation">FAN GENERATION</a></li>
-      <li><a href="/contact">ENTRY BRIDGE</a></li>
+      <li><a href="/EntryWeight">ENTRY BRIDGE</a></li>
     </ul>
   </nav>
 
@@ -450,6 +450,28 @@ function closeTruckPopup() {
 }
 
 closeBtn.addEventListener("click", closeTruckPopup);
+
+
+//=======================
+//Smooth transition page
+//========================
+// When clicking any link, fade out the page before leaving
+  document.addEventListener("DOMContentLoaded", () => {
+    const links = document.querySelectorAll("a");
+
+    links.forEach(link => {
+      if (link.hostname === window.location.hostname) {
+        link.addEventListener("click", e => {
+          e.preventDefault();
+          document.body.classList.add("fade-out");
+          setTimeout(() => {
+            window.location = link.href;
+          }, 500); // match CSS transition duration
+        });
+      }
+    });
+  });
+
 </script>
 
 

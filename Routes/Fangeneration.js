@@ -24,7 +24,7 @@ router.get("/", async (req, res) => {
               <li><a href="/tees">CARD MASTER</a></li>
               <li><a href="/truck-master">TRUCK MASTER</a></li>
               <li><a class="active" href="/Fan-Generation">FAN GENERATION</a></li>
-              <li><a>ENTRY BRIDGE</a></li>
+              <li><a href="/EntryWeight">ENTRY BRIDGE</a></li>
             </ul>
           </nav>
 
@@ -53,8 +53,8 @@ router.get("/", async (req, res) => {
         <option value="-1">Registered</option>
         <option value="1">Reported</option>
         <option value="2">Fan Generation</option>
-        <option value="4">Re Authorized</option>
-        <option value="13">Abort</option>
+        <option value="4">Fan Reauthorised</option>
+        <option value="13">Aborted</option>
 
       </select>
     </div>
@@ -462,27 +462,26 @@ router.get("/", async (req, res) => {
 
   //find Using URL
     (function () {
-    // Get query parameters from URL
-    const params = new URLSearchParams(window.location.search);
+  // Parse query parameters from URL
+  const params = new URLSearchParams(window.location.search);
+  const cardNo = params.get('CARD_NO');
 
-    // Read CARD_NO from query string
-    const cardNo = params.get('CARD_NO'); // should match URL parameter
+  // If CARD_NO is present, fill the input and optionally trigger fetch
+  if (cardNo) {
+    const input = document.getElementById('CARD_NO');
+    if (input) {
+      input.value = cardNo;
 
-    // If CARD_NO exists, set it in input field
-    if (cardNo) {
-      const cardInput = document.getElementById('CARD_NO');
-      if (cardInput) {
-        cardInput.value = cardNo;
-
-        // Optional: auto-fetch truck data if CARD_NO is present
-        if (typeof fetchTruckData === "function") {
-          fetchTruckData();
-        }
-      } else {
-        console.warn('Input with id="CARD_NO" not found.');
+      // Optional: call your fetch function to load related data
+      if (typeof fetchTruckData === "function") {
+        fetchTruckData();
       }
+    } else {
+      console.warn('CARD_NO field not found in iframe.');
     }
-  })();
+  }
+})();
+
 
 
   // Handle Reassign Button Click
@@ -1123,7 +1122,7 @@ document.getElementById("checkBtn").addEventListener("click", async () => {
     if (data.status === "Abort") {
       // Already aborted check
       if (truckStatusSelect && truckStatusSelect.value === "13") {
-        showPopup("Card No" + cardNo + "is already aborted.");
+        showPopup("Card No " + cardNo + " is already aborted.");
         return;
       }
 
@@ -1169,7 +1168,22 @@ document.getElementById("checkBtn").addEventListener("click", async () => {
 //============
 //  Range
 //============
+  // When clicking any link, fade out the page before leaving
+  document.addEventListener("DOMContentLoaded", () => {
+    const links = document.querySelectorAll("a");
 
+    links.forEach(link => {
+      if (link.hostname === window.location.hostname) {
+        link.addEventListener("click", e => {
+          e.preventDefault();
+          document.body.classList.add("fade-out");
+          setTimeout(() => {
+            window.location = link.href;
+          }, 500); // match CSS transition duration
+        });
+      }
+    });
+  });
 
 </script>
 

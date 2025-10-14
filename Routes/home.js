@@ -23,6 +23,29 @@ router.get("/", (req, res) => {
     </ul>
   </nav>
   <h2 style="font-family: 'DM Sans', sans-serif;">SHIV ENGINEERING</h2>
+
+  
+<script>
+ 
+  //smooth transition page
+  // When clicking any link, fade out the page before leaving
+  document.addEventListener("DOMContentLoaded", () => {
+    const links = document.querySelectorAll("a");
+
+    links.forEach(link => {
+      if (link.hostname === window.location.hostname) {
+        link.addEventListener("click", e => {
+          e.preventDefault();
+          document.body.classList.add("fade-out");
+          setTimeout(() => {
+            window.location = link.href;
+          }, 500); // match CSS transition duration
+        });
+      }
+    });
+  });
+</script>
+
 </body>
 </html>`;
   res.send(html);

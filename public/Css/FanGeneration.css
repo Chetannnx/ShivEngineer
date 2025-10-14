@@ -6,6 +6,13 @@ body {
   padding: 10px;
   background: #F5F5F5;
   font-weight: bold;
+   opacity: 1;
+  transition: opacity 0.4s ease;
+}
+
+/* When page is being hidden */
+body.fade-out {
+  opacity: 0;
 }
 
 h2 {
@@ -749,13 +756,13 @@ input[readonly] {
   border: none;
   cursor: pointer;
   color: red;
-  transition: all 0.5s ease;
+  transition: all 0.5s;
 }
 
 /* Hover animation — glow + spin + fade */
 #closePopup:hover {
   color: #ff4444;
-  transform: rotate(120deg);
+  transform: rotate(45deg);
 }
 
 

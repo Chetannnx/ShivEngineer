@@ -1,0 +1,146 @@
+body {
+  font-family: 'DM Sans', sans-serif;
+  padding: 10px;
+  background: #F5F5F5;
+  opacity: 1;
+  transition: opacity 0.4s ease;
+}
+/* When page is being hidden */
+body.fade-out {
+  opacity: 0;
+}
+
+
+h2{
+  text-align: center;
+}
+/* === NAVBAR STYLES === */
+nav {
+  padding: 1px;
+  font-weight: bold;
+  padding-bottom: 20px;
+  font-weight: bold;
+}
+
+nav ul {
+  list-style: none;
+  display: flex;
+  justify-content: flex-start; /* Left alignment */
+  margin: 0;
+  padding: 0;
+  gap: 25px;
+}
+
+nav ul li a {
+  color: #1e3a8a; /* Dark blue text */
+  font-weight: 500;
+  text-decoration: none;
+  padding: 8px 0;
+  position: relative;
+  font-size: 16px;
+  transition: color 0.3s ease;
+}
+
+/* Hover effect */
+nav ul li a:hover {
+  color: #2563eb; /* Slightly brighter blue */
+}
+
+/* Bottom underline animation */
+nav ul li a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -5px;
+  width: 0;
+  height: 3px;
+  background: #2563eb; /* Blue underline */
+  transition: width 0.4s ease;
+}
+
+nav ul li a:hover::after {
+  width: 100%;
+}
+
+/* Active link style */
+nav ul li a.active {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+nav ul li a.active::after {
+  width: 100%;
+}
+h2 {
+    font-family: 'DM Sans', sans-serif;
+    align-items: center;
+    gap: 8px; /* space between icon and text */
+    font-size: 24px;
+}
+
+h2 img {
+    width: 24px;
+    height: 24px;
+    vertical-align:middle;
+    font-weight: bold;
+}
+/* div {
+  background-color: white;
+  width: 1200px;
+  height: 200px;
+  padding: 20px;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  justify-content: center; 
+  align-items: center; 
+  flex-direction: column;
+  box-sizing: border-box;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+} */
+
+ div {
+  position: absolute;
+  left: 50%;
+  top: 30%;
+  transform: translate(-50%, -50%);
+      background-color: #fff;
+      width: 1200px;
+      height: 300px;
+      padding: 20px;
+      box-sizing: border-box;
+      border-radius: 20px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    /* First row: CARD NO + PROCESS TYPE */
+    form {
+  display: flex;
+  justify-content: center; /* center both groups horizontally */
+  align-items: center;
+  gap: 100px; /* gap between CARD NO group & PROCESS TYPE group */
+}
+
+    /* Input groups spacing */
+    label {
+      font-weight: bold;
+      margin-right: 10px;
+    }
+
+    input {
+      padding: 8px;
+      font-size: 16px;
+      width: 250px;
+    }
+
+    /* Truck reg no below */
+    #truck_reg {
+      width: 250px;
+    }

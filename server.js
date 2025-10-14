@@ -32,6 +32,9 @@ app.use('/',require('./Routes/tees'))
 app.use('/truckmaster', require('./Routes/truckMaster'));
 app.use('/truck-master', require('./Routes/truckMaster'));
 app.use('/Fan-Generation', require('./Routes/Fangeneration'));
+app.use('/EntryWeight', require('./Routes/EntryWeight'));
+app.use('/Icons', express.static(path.join(__dirname, 'Icons')));
+
 
 // ✅ Generate self-signed certificate dynamically
 const attrs = [{ name: 'commonName', value: 'localhost' }];
