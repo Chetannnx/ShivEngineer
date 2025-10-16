@@ -270,6 +270,80 @@ router.get("/", async (req, res) => {
       const reassignBtn = document.getElementById("ReassignCardBtn");
       if (reassignBtn) reassignBtn.disabled = true; // start disabled
   });
+function updateButtonStates(state) {
+    const assignBtn = document.getElementById("assignCardBtn");
+    const reassignBtn = document.getElementById("ReassignCardBtn");
+    const fanBtn = document.getElementById("FanGeneration");
+    const fanOtherBtns = [
+        document.getElementById("FanAbortBtn"),
+        document.getElementById("ReAuthBtn"),
+        document.getElementById("reAllocateBtn")
+    ];
+
+    // Disable all by default
+    [assignBtn, reassignBtn, fanBtn, ...fanOtherBtns].forEach(b => {
+        if(b) b.disabled = true;
+        if(b) b.classList.remove("enabled");
+    });
+
+    switch(state) {
+        case 'truckFetched':
+            if(assignBtn) assignBtn.disabled = false;
+            break;
+        case 'cardAssigned':
+            if(reassignBtn) reassignBtn.disabled = false;
+            if(fanBtn) fanBtn.disabled = false;
+            break;
+        case 'reassigned':
+            if(reassignBtn) reassignBtn.disabled = false;
+            break;
+        case 'fanGenerated':
+            if(fanOtherBtns) fanOtherBtns.forEach(b => { if(b) b.disabled = false; });
+            break;
+    }
+}
+
+
+
+// ==========================
+// Check if truck already has a card
+// ==========================
+function checkTruckCard(truckRegNo) {
+    if (!truckRegNo) return;
+
+    const assignBtn = document.getElementById("assignCardBtn");
+    const reassignBtn = document.getElementById("ReassignCardBtn");
+    const fanGenBtn = document.getElementById("FanGeneration");
+
+    fetch("/Fan-Generation/api/check-truck-card?truckRegNo=" + encodeURIComponent(truckRegNo))
+        .then(res => res.json())
+        .then(data => {
+            if (data.assigned) {
+                assignBtn.disabled = true;
+                reassignBtn.disabled = false;
+                fanGenBtn.disabled = false;
+            } else {
+                assignBtn.disabled = false;
+                reassignBtn.disabled = true;
+                fanGenBtn.disabled = true;
+            }
+        })
+        .catch(err => console.error(err));
+}
+
+
+window.addEventListener('DOMContentLoaded', () => {
+    const truckRegNoInput = document.getElementById("truckRegInput");
+    if (truckRegNoInput.value.trim()) {
+        checkTruckCard(truckRegNoInput.value.trim());
+    }
+        
+
+
+    truckRegNoInput.addEventListener('change', () => {
+        checkTruckCard(truckRegNoInput.value.trim());
+    });
+});
 
 
 
@@ -312,6 +386,26 @@ router.get("/", async (req, res) => {
             showPopup(data.message || "Truck or Card not found");
             return; // stop further processing
         }
+
+
+
+        // ✅ Enable Assign Card button and style after successful fetch
+const assignBtn = document.getElementById("assignCardBtn");
+if(assignBtn) {
+    assignBtn.disabled = false;
+    assignBtn.classList.add("enabled");
+}
+
+// ✅ Disable all other buttons until user performs assign
+const otherBtns = ["ReassignCardBtn","FanGeneration","FanAbortBtn","ReAuthBtn","reAllocateBtn","checkBtn"];
+otherBtns.forEach(id => {
+    const btn = document.getElementById(id);
+    if(btn) {
+        btn.disabled = true;
+        btn.classList.remove("enabled");
+    }
+});
+
 
         // ✅ Fill all fields
         const allFields = [
@@ -409,17 +503,15 @@ router.get("/", async (req, res) => {
     }
   });
 
-
-
-
+  
 
     // Trigger fetch on Enter key
-    document.getElementById("truckRegInput").addEventListener("keypress", function(e) {
-      if (e.key === "Enter") {
-        e.preventDefault(); // Prevent form submission/refresh
-        fetchTruckData();
-      }
-    });
+    // document.getElementById("truckRegInput").addEventListener("keypress", function(e) {
+    //   if (e.key === "Enter") {
+    //     e.preventDefault(); // Prevent form submission/refresh
+    //     fetchTruckData();
+    //   }
+    // });
 
     // Trigger fetch on button click
     window.addEventListener('DOMContentLoaded', () => {
@@ -460,6 +552,16 @@ router.get("/", async (req, res) => {
           const data = await res.json();
           if (res.ok) {
             showCenterPopup("Card Assigned Successfully!");
+
+           
+    // Disable Assign, Enable Reassign & FanGeneration
+                assignBtn.disabled = true;
+                const enableBtns = ["ReassignCardBtn","FanGeneration"];
+                enableBtns.forEach(id => {
+                    const btn = document.getElementById(id);
+                    if(btn) btn.disabled = false;
+                });
+
             //document.getElementById("CARD_NO").value = "";
           } else {
             showPopup(data.message || "Something went wrong while assigning the card");
@@ -1253,6 +1355,25 @@ function confirmPopup(message) {
         });
     });
 }
+
+
+
+window.addEventListener('DOMContentLoaded', () => {
+    const allBtns = document.querySelectorAll("#assignCardBtn, #ReassignCardBtn, #FanGeneration, #FanAbortBtn, #ReAuthBtn, #reAllocateBtn, #checkBtn");
+
+    allBtns.forEach(btn => {
+        if(btn.id === "assignCardBtn") {
+            btn.disabled = true;          // Initially disabled until data is loaded
+            btn.classList.remove("enabled");
+        } else {
+            btn.disabled = true;          // Other buttons always disabled initially
+            btn.classList.remove("enabled");
+        }
+    });
+});
+
+
+
 
 
 

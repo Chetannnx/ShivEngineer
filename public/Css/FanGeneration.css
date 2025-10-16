@@ -290,6 +290,19 @@ nav ul li a.active::after {
   background-color: rgb(128, 122, 122);
 }
 
+.btn:disabled {
+    background-color: #ccc !important;  /* Gray background */
+    color: #666 !important;            /* Dim text */
+    cursor: not-allowed;               /* Show forbidden cursor */
+    opacity: 0.7;
+  }
+
+  .btn.enabled {
+    background-color: #4CAF50; /* Green background */
+    color: white;
+    cursor: pointer;
+  }
+
 .three-inputs {
   display: flex;
   position: absolute;
