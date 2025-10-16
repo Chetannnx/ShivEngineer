@@ -6,14 +6,8 @@ body {
   padding: 10px;
   background: #F5F5F5;
   font-weight: bold;
-   opacity: 1;
-  transition: opacity 0.4s ease;
 }
 
-/* When page is being hidden */
-body.fade-out {
-  opacity: 0;
-}
 
 h2 {
   text-align: center;

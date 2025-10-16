@@ -255,6 +255,10 @@ router.get("/", async (req, res) => {
     font-weight:bold;
     color:#333;
 "></div>
+
+
+
+
   
           <!-- Inline Script -->
           <script>
@@ -380,12 +384,22 @@ router.get("/", async (req, res) => {
 
 
   // Trigger fetch on Enter key for Truck No
-  document.getElementById("truckRegInput").addEventListener("keypress", function(e) {
+  document.getElementById("truckRegInput").addEventListener("keydown", async function (e) {
     if (e.key === "Enter") {
-      e.preventDefault();
-      fetchTruckData();
+        e.preventDefault(); // prevent form submission
+        const truckRegNo = this.value.trim();
+        if (!truckRegNo) {
+            showPopup("Please enter Truck Number");
+            return;
+        }
+
+        // Ask confirmation
+        const confirmLoad = await confirmPopup("Do you want to reload the data for this truck?");
+        if (confirmLoad) {
+            await fetchTruckData(); // ✅ load truck data only on YES
+        }
     }
-  });
+})
 
   // Trigger fetch on Enter key for Card Allocated
   document.getElementById("CARD_NO").addEventListener("keypress", function(e) {
@@ -1168,22 +1182,79 @@ document.getElementById("checkBtn").addEventListener("click", async () => {
 //============
 //  Range
 //============
-  // When clicking any link, fade out the page before leaving
-  document.addEventListener("DOMContentLoaded", () => {
-    const links = document.querySelectorAll("a");
+// 🟢 Simple Popup Confirmation Helper
+function confirmPopup(message) {
+    return new Promise(function (resolve) {
+        // Create overlay
+        var overlay = document.createElement("div");
+        overlay.id = "popupOverlay";
+        overlay.style.position = "fixed";
+        overlay.style.top = "0";
+        overlay.style.left = "0";
+        overlay.style.width = "100%";
+        overlay.style.height = "100%";
+        overlay.style.background = "rgba(0,0,0,0.5)";
+        overlay.style.display = "flex";
+        overlay.style.alignItems = "center";
+        overlay.style.justifyContent = "center";
+        overlay.style.zIndex = "9999";
 
-    links.forEach(link => {
-      if (link.hostname === window.location.hostname) {
-        link.addEventListener("click", e => {
-          e.preventDefault();
-          document.body.classList.add("fade-out");
-          setTimeout(() => {
-            window.location = link.href;
-          }, 500); // match CSS transition duration
+        // Create popup box
+        var box = document.createElement("div");
+        box.style.background = "#fff";
+        box.style.padding = "20px 30px";
+        box.style.borderRadius = "10px";
+        box.style.textAlign = "center";
+        box.style.fontFamily = "Arial";
+        box.style.width = "350px";
+
+        // Message
+        var msg = document.createElement("p");
+        msg.textContent = message;
+        msg.style.marginBottom = "20px";
+        msg.style.fontSize = "16px";
+        box.appendChild(msg);
+
+        // Yes button
+        var yesBtn = document.createElement("button");
+        yesBtn.textContent = "Yes";
+        yesBtn.style.marginRight = "20px";
+        yesBtn.style.padding = "6px 16px";
+        yesBtn.style.border = "none";
+        yesBtn.style.background = "green";
+        yesBtn.style.color = "#fff";
+        yesBtn.style.borderRadius = "5px";
+
+        // No button
+        var noBtn = document.createElement("button");
+        noBtn.textContent = "No";
+        noBtn.style.padding = "6px 16px";
+        noBtn.style.border = "none";
+        noBtn.style.background = "red";
+        noBtn.style.color = "#fff";
+        noBtn.style.borderRadius = "5px";
+
+        // Add buttons to box
+        box.appendChild(yesBtn);
+        box.appendChild(noBtn);
+
+        // Add box to overlay
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+
+        // Handle clicks
+        yesBtn.addEventListener("click", function () {
+            document.body.removeChild(overlay);
+            resolve(true);
         });
-      }
+        noBtn.addEventListener("click", function () {
+            document.body.removeChild(overlay);
+            resolve(false);
+        });
     });
-  });
+}
+
+
 
 </script>
 

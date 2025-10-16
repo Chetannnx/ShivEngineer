@@ -2,13 +2,8 @@ body {
   font-family: 'DM Sans', sans-serif;
   padding: 10px;
   background: #F5F5F5;
-  opacity: 1;
-  transition: opacity 0.4s ease;
 }
-/* When page is being hidden */
-body.fade-out {
-  opacity: 0;
-}
+
 
 
 h2{
@@ -102,45 +97,68 @@ h2 img {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 } */
 
- div {
+ /* Centered card with border-radius */
+.card {
   position: absolute;
   left: 50%;
-  top: 30%;
-  transform: translate(-50%, -50%);
-      background-color: #fff;
-      width: 1200px;
-      height: 300px;
-      padding: 20px;
-      box-sizing: border-box;
-      border-radius: 20px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 20px;
-    }
-
-    /* First row: CARD NO + PROCESS TYPE */
-    form {
-  display: flex;
-  justify-content: center; /* center both groups horizontally */
-  align-items: center;
-  gap: 100px; /* gap between CARD NO group & PROCESS TYPE group */
+  top:23%;
+  transform: translate(-50%, -30%);
+  background-color: #fff;
+  width: 1000px;
+  padding: 30px;
+  box-sizing: border-box;
+  border-radius: 20px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.2);
 }
 
-    /* Input groups spacing */
-    label {
-      font-weight: bold;
-      margin-right: 10px;
-    }
+/* Form layout: left and right groups */
+form {
+  display: flex;
+  justify-content: center; /* center horizontally */
+  gap: 130px; /* gap between left and right */
+  align-items: flex-start;
+}
 
-    input {
-      padding: 8px;
-      font-size: 16px;
-      width: 250px;
-    }
+/* Left group (CARD NO + TRUCK REG NO stacked) */
+.left-group {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
 
-    /* Truck reg no below */
-    #truck_reg {
-      width: 250px;
-    }
+/* Right group (PROCESS TYPE) */
+.right-group {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Individual input groups */
+.input-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+label {
+  font-weight: bold;
+  display: flex;
+}
+
+input {
+  font-family:'DM Sans', sans-serif ;
+  font-weight: bold;
+  padding: 8px;
+  font-size: 16px;
+  width: 280px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  width: 280px;
+  padding: 10px 12px;
+  transition: border-color 0.3s ease;
+}
+input:focus{
+  border-color: #007bff;
+  outline: none;
+  box-shadow: 0px 0px 5px rgba(0, 123, 255, 0.3);
+}

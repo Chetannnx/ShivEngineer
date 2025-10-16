@@ -3,13 +3,8 @@ body {
   font-family: 'DM Sans', sans-serif;
   padding: 10px;
   background: #F5F5F5;
-  opacity: 1;
-  transition: opacity 0.4s ease;
 }
-/* When page is being hidden */
-body.fade-out {
-  opacity: 0;
-}
+
 /* === Top Bar (Search + Buttons + Dropdown) === */
 .top-bar {
   width: 100%;

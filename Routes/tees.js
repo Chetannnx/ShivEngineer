@@ -645,25 +645,7 @@ async function editCardFromPopup() {
   }
 }
 
-//=======================
-//Smooth transition page
-//========================
-// When clicking any link, fade out the page before leaving
-  document.addEventListener("DOMContentLoaded", () => {
-    const links = document.querySelectorAll("a");
 
-    links.forEach(link => {
-      if (link.hostname === window.location.hostname) {
-        link.addEventListener("click", e => {
-          e.preventDefault();
-          document.body.classList.add("fade-out");
-          setTimeout(() => {
-            window.location = link.href;
-          }, 500); // match CSS transition duration
-        });
-      }
-    });
-  });
 
 </script>
 

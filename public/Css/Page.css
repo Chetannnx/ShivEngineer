@@ -2,13 +2,9 @@ body {
   font-family: 'DM Sans', sans-serif;
   padding: 10px;
   background: #F5F5F5;
-  opacity: 1;
-  transition: opacity 0.4s ease;
+
 }
-/* When page is being hidden */
-body.fade-out {
-  opacity: 0;
-}
+
 
 /* === Top Bar (Search + Buttons + Dropdown) === */
 .top-bar {
@@ -313,8 +309,8 @@ img, iframe { max-width: 100%; height: auto; border-radius: 10px; }
 
 /* Popup buttons */
 .popup-content button {
-  margin: 10px 5px 0 5px;
-  padding: 8px 16px;
+  /* margin: 1px 1px; */
+  padding: 11px 15px;
   border-radius: 12px;
   border: 1px solid #ffffff;
   background: #59595a;

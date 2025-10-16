@@ -30,19 +30,33 @@ router.get("/", (req, res) => {
   ENTRY WEIGH BRIDGE
 </h2>
 
- <div>
-    <form>
-      <label for="card_no">CARD NO:</label>
-      <input type="text" id="card_no" placeholder="Enter Card Number">
+ <div class="card">
+  <form>
+    <div class="left-group">
+      <div class="input-group">
+        <label for="card_no">CARD NO:</label>
+        <input type="text" id="card_no" placeholder="Enter Card Number">
+      </div>
+      <div class="input-group">
+        <label for="truck_reg">TRUCK NO:</label>
+        <input type="text" id="truck_reg" readonly>
+      </div>
+    </div>
 
-      <label for="process_type">PROCESS TYPE:</label>
-      <input type="text" id="process_type" readonly>
-    </form>
-
-      <label for="truck_reg">TRUCK REG NO:</label>
-      <input type="text" id="truck_reg" readonly>
-    
-  </div>    
+    <div class="right-group">
+      <div class="input-group">
+        <label for="process_type">PROCESS TYPE:</label>
+        <input type="text" id="process_type" readonly>
+      </div>
+      <div>
+      <p>(*)For Loading - Measured Weight will be 'Tare Weight'
+      For Unloading - Measured Weight will be 'Gross Weight'</p>
+      
+      </div>
+    </div>
+  </form>
+</div>
+   
   
 
 <script>
@@ -85,22 +99,7 @@ router.get("/", (req, res) => {
 //=======================
 //Smooth transition page
 //========================
-// When clicking any link, fade out the page before leaving
-  document.addEventListener("DOMContentLoaded", () => {
-    const links = document.querySelectorAll("a");
 
-    links.forEach(link => {
-      if (link.hostname === window.location.hostname) {
-        link.addEventListener("click", e => {
-          e.preventDefault();
-          document.body.classList.add("fade-out");
-          setTimeout(() => {
-            window.location = link.href;
-          }, 500); // match CSS transition duration
-        });
-      }
-    });
-  });
 </script>
 </body>
 </html>`;
