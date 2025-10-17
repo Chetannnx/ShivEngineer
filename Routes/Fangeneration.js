@@ -168,7 +168,7 @@ router.get("/", async (req, res) => {
 
     <button id="fanSavePdfBtn" style="display:none;">Save PDF</button>
     <button id="reAuthSavePdfBtn" style="display:none;">Save PDF</button>
-    <button onclick="closePopup()">Close</button>
+    <button onclick="closeFanPopup()">Close</button>
   </div>
 </div>
 
@@ -263,90 +263,6 @@ router.get("/", async (req, res) => {
           <!-- Inline Script -->
           <script>
 
-          
-
-           // ✅ Disable Reassign button initially
-  window.addEventListener('DOMContentLoaded', () => {
-      const reassignBtn = document.getElementById("ReassignCardBtn");
-      if (reassignBtn) reassignBtn.disabled = true; // start disabled
-  });
-function updateButtonStates(state) {
-    const assignBtn = document.getElementById("assignCardBtn");
-    const reassignBtn = document.getElementById("ReassignCardBtn");
-    const fanBtn = document.getElementById("FanGeneration");
-    const fanOtherBtns = [
-        document.getElementById("FanAbortBtn"),
-        document.getElementById("ReAuthBtn"),
-        document.getElementById("reAllocateBtn")
-    ];
-
-    // Disable all by default
-    [assignBtn, reassignBtn, fanBtn, ...fanOtherBtns].forEach(b => {
-        if(b) b.disabled = true;
-        if(b) b.classList.remove("enabled");
-    });
-
-    switch(state) {
-        case 'truckFetched':
-            if(assignBtn) assignBtn.disabled = false;
-            break;
-        case 'cardAssigned':
-            if(reassignBtn) reassignBtn.disabled = false;
-            if(fanBtn) fanBtn.disabled = false;
-            break;
-        case 'reassigned':
-            if(reassignBtn) reassignBtn.disabled = false;
-            break;
-        case 'fanGenerated':
-            if(fanOtherBtns) fanOtherBtns.forEach(b => { if(b) b.disabled = false; });
-            break;
-    }
-}
-
-
-
-// ==========================
-// Check if truck already has a card
-// ==========================
-function checkTruckCard(truckRegNo) {
-    if (!truckRegNo) return;
-
-    const assignBtn = document.getElementById("assignCardBtn");
-    const reassignBtn = document.getElementById("ReassignCardBtn");
-    const fanGenBtn = document.getElementById("FanGeneration");
-
-    fetch("/Fan-Generation/api/check-truck-card?truckRegNo=" + encodeURIComponent(truckRegNo))
-        .then(res => res.json())
-        .then(data => {
-            if (data.assigned) {
-                assignBtn.disabled = true;
-                reassignBtn.disabled = false;
-                fanGenBtn.disabled = false;
-            } else {
-                assignBtn.disabled = false;
-                reassignBtn.disabled = true;
-                fanGenBtn.disabled = true;
-            }
-        })
-        .catch(err => console.error(err));
-}
-
-
-window.addEventListener('DOMContentLoaded', () => {
-    const truckRegNoInput = document.getElementById("truckRegInput");
-    if (truckRegNoInput.value.trim()) {
-        checkTruckCard(truckRegNoInput.value.trim());
-    }
-        
-
-
-    truckRegNoInput.addEventListener('change', () => {
-        checkTruckCard(truckRegNoInput.value.trim());
-    });
-});
-
-
-
     // Define the fetch function
    async function fetchTruckData() {
     const truckRegNo = document.getElementById("truckRegInput").value.trim();
@@ -388,23 +304,6 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
 
-
-        // ✅ Enable Assign Card button and style after successful fetch
-const assignBtn = document.getElementById("assignCardBtn");
-if(assignBtn) {
-    assignBtn.disabled = false;
-    assignBtn.classList.add("enabled");
-}
-
-// ✅ Disable all other buttons until user performs assign
-const otherBtns = ["ReassignCardBtn","FanGeneration","FanAbortBtn","ReAuthBtn","reAllocateBtn","checkBtn"];
-otherBtns.forEach(id => {
-    const btn = document.getElementById(id);
-    if(btn) {
-        btn.disabled = true;
-        btn.classList.remove("enabled");
-    }
-});
 
 
         // ✅ Fill all fields
@@ -552,16 +451,6 @@ otherBtns.forEach(id => {
           const data = await res.json();
           if (res.ok) {
             showCenterPopup("Card Assigned Successfully!");
-
-           
-    // Disable Assign, Enable Reassign & FanGeneration
-                assignBtn.disabled = true;
-                const enableBtns = ["ReassignCardBtn","FanGeneration"];
-                enableBtns.forEach(id => {
-                    const btn = document.getElementById(id);
-                    if(btn) btn.disabled = false;
-                });
-
             //document.getElementById("CARD_NO").value = "";
           } else {
             showPopup(data.message || "Something went wrong while assigning the card");
@@ -573,6 +462,7 @@ otherBtns.forEach(id => {
       });
     }
   });
+
 
 
 
@@ -659,7 +549,7 @@ if (reassignBtn) {
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
-function closePopup() {
+function closeFanPopup() {
   document.getElementById("fanPopup").style.display = "none";
 }
 
@@ -721,6 +611,7 @@ function closePopup() {
         // 6️⃣ Show popup
         document.getElementById("fanPopup").style.display = "flex";
 
+
       } catch(err){
         alert("Error: "+err.message);
       }
@@ -758,7 +649,7 @@ document.getElementById("fanSavePdfBtn").addEventListener("click", async functio
   doc.save("Fan_Generation_Report.pdf");
 
   // 2️⃣ Close the Fan Generation popup
-  closePopup();
+  closeFanPopup();
 
   // 3️⃣ Prefill BAY_NO from backend
   const truckRegNo = document.getElementById("truckRegInput").value.trim();
@@ -1054,7 +945,7 @@ function generateFanPDF() {
 // -------------------------
 // Close popup
 // -------------------------
-function closePopup() {
+function closeFanPopup() {
   document.getElementById("fanPopup").style.display = "none";
 }
 
@@ -1355,24 +1246,6 @@ function confirmPopup(message) {
         });
     });
 }
-
-
-
-window.addEventListener('DOMContentLoaded', () => {
-    const allBtns = document.querySelectorAll("#assignCardBtn, #ReassignCardBtn, #FanGeneration, #FanAbortBtn, #ReAuthBtn, #reAllocateBtn, #checkBtn");
-
-    allBtns.forEach(btn => {
-        if(btn.id === "assignCardBtn") {
-            btn.disabled = true;          // Initially disabled until data is loaded
-            btn.classList.remove("enabled");
-        } else {
-            btn.disabled = true;          // Other buttons always disabled initially
-            btn.classList.remove("enabled");
-        }
-    });
-});
-
-
 
 
 
