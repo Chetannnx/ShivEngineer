@@ -564,13 +564,17 @@ function closeFanPopup() {
           document.getElementById("fanSavePdfBtn").style.display = "inline-block";
 
         // 1️⃣ Update PROCESS_STATUS = 2
-        const updateRes = await fetch('/Fan-Generation/api/fan-generation/update-status', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ truckRegNo })
-        });
-        const updateData = await updateRes.json();
-        if (!updateRes.ok) throw new Error(updateData.message || "Failed to update status");
+        // 🆕  Generate FAN number in backend
+const fanGenRes = await fetch('/Fan-Generation/api/fan-generation/generate', {
+  method: 'PUT',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ truckRegNo })
+});
+const fanGenData = await fanGenRes.json();
+if (!fanGenRes.ok) throw new Error(fanGenData.message || "Failed to generate FAN");
+
+        // const updateData = await updateRes.json();
+        // if (!updateRes.ok) throw new Error(updateData.message || "Failed to update status");
 
         // 2️⃣ Update Truck Status dropdown
         const truckStatusDropdown = document.getElementById("truckStatus");
@@ -590,7 +594,7 @@ function closeFanPopup() {
 
 
         // 5️⃣ Fill popup values
-        document.getElementById("FAN_NO").textContent = data.FAN_NO || "";
+        document.getElementById("FAN_NO").textContent = fanGenData.FAN_NO;
         document.getElementById("POP_CARD_NO").textContent = data.CARD_NO||"";
         document.getElementById("DATE_TIME").textContent = dateTime;
 
@@ -1502,23 +1506,23 @@ router.post("/api/assign-card", async (req, res) => {
     }
 
     // 4️⃣ Generate FAN_NO (ddMMyyyyHHmmss)
-    function pad(n) {
-      return n < 10 ? "0" + n : n;
-    }
-    const now = new Date();
-    function getFanNo() {
+//     function pad(n) {
+//       return n < 10 ? "0" + n : n;
+//     }
+//     const now = new Date();
+//     function getFanNo() {
   const now = new Date();
-  const pad = (n) => (n < 10 ? "0" + n : n);
-  const dd = pad(now.getDate());
-  const MM = pad(now.getMonth() + 1);
-  const yyyy = now.getFullYear();
-  const HH = pad(now.getHours());
-  const mm = pad(now.getMinutes());
-  const ss = pad(now.getSeconds());
-  return `${dd}${MM}${yyyy}${HH}${mm}${ss}`;
-}
+//   const pad = (n) => (n < 10 ? "0" + n : n);
+//   const dd = pad(now.getDate());
+//   const MM = pad(now.getMonth() + 1);
+//   const yyyy = now.getFullYear();
+//   const HH = pad(now.getHours());
+//   const mm = pad(now.getMinutes());
+//   const ss = pad(now.getSeconds());
+//   return `${dd}${MM}${yyyy}${HH}${mm}${ss}`;
+// }
 
-const fanNo = getFanNo();
+// const fanNo = getFanNo();
 
     // 5️⃣ Calculate FAN_EXPIRY (UTC)
     const fanTimeOutMinutes = parseInt(FAN_TIME_OUT) || 0;
@@ -1539,7 +1543,7 @@ const fanNo = getFanNo();
       .input("ADDRESS_LINE_1", sql.VarChar, ADDRESS_LINE_1 || "")
       .input("ADDRESS_LINE_2", sql.VarChar, ADDRESS_LINE_2 || "")
       .input("ITEM_DESCRIPTION", sql.VarChar, ITEM_DESCRIPTION || "")
-      .input("FAN_NO", sql.VarChar, fanNo)
+      // .input("FAN_NO", sql.VarChar, fanNo)
       .input("FAN_TIME_OUT", sql.Int, fanTimeOutMinutes)
       .input("FAN_EXPIRY", sql.DateTime, fanExpiryUTC)
       .input("WEIGHT_TO_FILLED", sql.BigInt, parseInt(WEIGHT_TO_FILLED) || 0)
@@ -1547,11 +1551,11 @@ const fanNo = getFanNo();
         INSERT INTO DATA_MASTER 
           (TRUCK_REG_NO, CARD_NO, PROCESS_TYPE, PROCESS_STATUS, BATCH_STATUS,
            CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, ITEM_DESCRIPTION, 
-           FAN_NO, FAN_TIME_OUT, FAN_EXPIRY, WEIGHT_TO_FILLED)
+           FAN_TIME_OUT, FAN_EXPIRY, WEIGHT_TO_FILLED)
         VALUES 
           (@TRUCK_REG_NO, @CARD_NO, @PROCESS_TYPE, @PROCESS_STATUS,  @BATCH_STATUS,
            @CUSTOMER_NAME, @ADDRESS_LINE_1, @ADDRESS_LINE_2, @ITEM_DESCRIPTION,
-           @FAN_NO, @FAN_TIME_OUT, @FAN_EXPIRY, @WEIGHT_TO_FILLED)
+           @FAN_TIME_OUT, @FAN_EXPIRY, @WEIGHT_TO_FILLED)
       `);
 
     res.json({
@@ -2062,6 +2066,61 @@ router.post("/api/check-common-view", async (req, res) => {
     res.status(500).json({ message: "Error connecting to server", error: err.message });
   } finally {
     sql.close();
+  }
+});
+
+
+router.put("/api/fan-generation/generate", async (req, res) => {
+  const { truckRegNo } = req.body;
+
+  if (!truckRegNo) return res.status(400).json({ message: "Truck Reg No is required" });
+
+  try {
+    const pool = await sql.connect(dbConfig);
+
+    // 1️⃣ Generate FAN_NO
+    function pad(n) { return n < 10 ? "0" + n : n; }
+    const now = new Date();
+    const dd = pad(now.getDate());
+    const MM = pad(now.getMonth() + 1);
+    const yyyy = now.getFullYear();
+    const HH = pad(now.getHours());
+    const mm = pad(now.getMinutes());
+    const ss = pad(now.getSeconds());
+    const fanNo = `${dd}${MM}${yyyy}${HH}${mm}${ss}`;
+
+    // 2️⃣ Fetch FAN_TIME_OUT for expiry calculation
+    const data = await pool.request()
+      .input("truckRegNo", sql.VarChar, truckRegNo)
+      .query("SELECT FAN_TIME_OUT FROM DATA_MASTER WHERE TRUCK_REG_NO = @truckRegNo");
+
+    if (data.recordset.length === 0) {
+      return res.status(404).json({ message: "Truck not found in DATA_MASTER" });
+    }
+
+    const FAN_TIME_OUT = parseInt(data.recordset[0].FAN_TIME_OUT) || 0;
+
+    // 3️⃣ Calculate expiry
+    const fanExpiryLocal = new Date(now.getTime() + FAN_TIME_OUT * 60000);
+    const fanExpiryUTC = new Date(
+      fanExpiryLocal.getTime() - fanExpiryLocal.getTimezoneOffset() * 60000
+    );
+
+    // 4️⃣ Update record with FAN_NO and FAN_EXPIRY
+    await pool.request()
+      .input("truckRegNo", sql.VarChar, truckRegNo)
+      .input("FAN_NO", sql.VarChar, fanNo)
+      .input("FAN_EXPIRY", sql.DateTime, fanExpiryUTC)
+      .query(`
+        UPDATE DATA_MASTER 
+        SET FAN_NO = @FAN_NO, FAN_EXPIRY = @FAN_EXPIRY, PROCESS_STATUS = 2
+        WHERE TRUCK_REG_NO = @truckRegNo
+      `);
+
+    res.json({ message: "FAN generated successfully", FAN_NO: fanNo });
+  } catch (err) {
+    console.error("Error generating FAN:", err);
+    res.status(500).json({ message: "Server Error while generating FAN" });
   }
 });
 
