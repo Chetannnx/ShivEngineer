@@ -162,3 +162,23 @@ input:focus{
   outline: none;
   box-shadow: 0px 0px 5px rgba(0, 123, 255, 0.3);
 }
+
+
+#closePopup {
+  background: none;
+  position: absolute;
+  font-size: 22px;
+  top: 1px;
+  left: 215px;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+  color: red;
+  transition: all 0.5s;
+}
+
+/* Hover animation — glow + spin + fade */
+#closePopup:hover {
+  color: #ff4444;
+  transform: rotate(45deg);
+}

@@ -1151,12 +1151,13 @@ document.getElementById("checkBtn").addEventListener("click", async () => {
       showCenterPopup("Fan Abort Successful");
 
       setTimeout(() => {
-        if (processType === 0) {
-          showPopup("UnLoading Successfully Aborted");
-        } else {
-          showPopup("Loading Successfully Aborted");
-        }
-      }, 3000);
+    // ✅ Corrected logic — same as backend
+    if (Number(processType) === 0) {
+      showPopup("UnLoading Successfully Aborted");
+    } else {
+      showPopup("Loading Successfully Aborted");
+    }
+  }, 3000);
 
       return;
     }
@@ -2013,7 +2014,7 @@ router.get("/api/get-bay/:truckRegNo", async (req, res) => {
 //     Abort
 //================
 router.post("/api/check-common-view", async (req, res) => {
-  const { cardNo, processType } = req.body; // ✅ include processType from frontend
+  const { cardNo, processType } = req.body;
 
   if (!cardNo) {
     return res.status(400).json({ message: "Card number required" });
@@ -2033,7 +2034,29 @@ router.post("/api/check-common-view", async (req, res) => {
       `);
 
     if (result.recordset.length > 0) {
-      // ✅ 2️⃣ Update DATA_MASTER table PROCESS_STATUS = 13 (abort)
+      // ✅ 2️⃣ Check DATA_MASTER PROCESS_STATUS
+      const statusCheck = await pool.request()
+        .input("cardNo", sql.VarChar, cardNo)
+        .query(`
+          SELECT TOP 1 PROCESS_STATUS 
+          FROM dbo.DATA_MASTER 
+          WHERE CARD_NO = @cardNo
+        `);
+
+      if (
+        statusCheck.recordset.length > 0 &&
+        statusCheck.recordset[0].PROCESS_STATUS === 8
+      ) {
+        // 🟠 If PROCESS_STATUS = 8 → show warning, don’t abort
+        return res.json({
+          message: "Abort not allowed while loading/unloading is active",
+          popup: "First Stop Loading/Unloading before Aborted",
+          writeCondition: false,
+          status: "Blocked"
+        });
+      }
+
+      // ✅ 3️⃣ Update DATA_MASTER table PROCESS_STATUS = 13 (abort)
       await pool.request()
         .input("cardNo", sql.VarChar, cardNo)
         .query(`
@@ -2042,25 +2065,22 @@ router.post("/api/check-common-view", async (req, res) => {
           WHERE CARD_NO = @cardNo
         `);
 
-      // ✅ 3️⃣ Conditional popup message (based on PROCESS_TYPE)
-      let popupMessage = "";
-      if (processType === 0) {
-        popupMessage = "UnLoading Successfully Aborted";
-      } else {
-        popupMessage = "Loading Successfully Aborted";
-      }
+      // ✅ 4️⃣ Conditional popup message (corrected mapping)
+      const popupMessage =
+        processType === 0
+          ? "UnLoading Successfully Aborted"
+          : "Loading Successfully Aborted";
 
-      // ✅ 4️⃣ Return both message and popup info
+      // ✅ 5️⃣ Return both message and popup info
       res.json({
         message: "Data Exist",
         popup: popupMessage,
-        writeCondition: true, // same as SmartTags("WriteCondition{1}") = True
+        writeCondition: true,
         status: "Abort"
       });
     } else {
       res.json({ message: "No Data" });
     }
-
   } catch (err) {
     console.error("❌ SQL Error:", err);
     res.status(500).json({ message: "Error connecting to server", error: err.message });
@@ -2068,6 +2088,8 @@ router.post("/api/check-common-view", async (req, res) => {
     sql.close();
   }
 });
+
+
 
 
 router.put("/api/fan-generation/generate", async (req, res) => {
