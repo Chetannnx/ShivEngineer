@@ -1,33 +1,43 @@
+/* === GLOBAL STYLES === */
 body {
   font-family: 'DM Sans', sans-serif;
   padding: 10px;
   background: #F5F5F5;
 }
 
-
-
-h2{
+h2 {
+  font-family: 'DM Sans', sans-serif;
   text-align: center;
+  align-items: center;
+  gap: 8px;
+  font-size: 24px;
 }
+
+h2 img {
+  width: 24px;
+  height: 24px;
+  vertical-align: middle;
+  font-weight: bold;
+}
+
 /* === NAVBAR STYLES === */
 nav {
   padding: 1px;
   font-weight: bold;
   padding-bottom: 20px;
-  font-weight: bold;
 }
 
 nav ul {
   list-style: none;
   display: flex;
-  justify-content: flex-start; /* Left alignment */
+  justify-content: flex-start;
   margin: 0;
   padding: 0;
   gap: 25px;
 }
 
 nav ul li a {
-  color: #1e3a8a; /* Dark blue text */
+  color: #1e3a8a;
   font-weight: 500;
   text-decoration: none;
   padding: 8px 0;
@@ -36,12 +46,10 @@ nav ul li a {
   transition: color 0.3s ease;
 }
 
-/* Hover effect */
 nav ul li a:hover {
-  color: #2563eb; /* Slightly brighter blue */
+  color: #2563eb;
 }
 
-/* Bottom underline animation */
 nav ul li a::after {
   content: "";
   position: absolute;
@@ -49,7 +57,7 @@ nav ul li a::after {
   bottom: -5px;
   width: 0;
   height: 3px;
-  background: #2563eb; /* Blue underline */
+  background: #2563eb;
   transition: width 0.4s ease;
 }
 
@@ -57,7 +65,6 @@ nav ul li a:hover::after {
   width: 100%;
 }
 
-/* Active link style */
 nav ul li a.active {
   color: #2563eb;
   font-weight: 600;
@@ -66,104 +73,100 @@ nav ul li a.active {
 nav ul li a.active::after {
   width: 100%;
 }
-h2 {
-    font-family: 'DM Sans', sans-serif;
-    align-items: center;
-    gap: 8px; /* space between icon and text */
-    font-size: 24px;
-}
 
-h2 img {
-    width: 24px;
-    height: 24px;
-    vertical-align:middle;
-    font-weight: bold;
-}
-/* div {
-  background-color: white;
-  width: 1200px;
-  height: 200px;
-  padding: 20px;
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+/* === FORM CONTAINER === */
+.form-container {
   display: flex;
-  justify-content: center; 
-  align-items: center; 
-  flex-direction: column;
-  box-sizing: border-box;
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-} */
-
- /* Centered card with border-radius */
-.card {
-  position: absolute;
-  left: 50%;
-  top:23%;
-  transform: translate(-50%, -30%);
-  background-color: #fff;
-  width: 1000px;
-  padding: 30px;
-  box-sizing: border-box;
-  border-radius: 20px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.2);
-}
-
-/* Form layout: left and right groups */
-form {
-  display: flex;
-  justify-content: center; /* center horizontally */
-  gap: 130px; /* gap between left and right */
+  justify-content: space-between;
   align-items: flex-start;
-}
-
-/* Left group (CARD NO + TRUCK REG NO stacked) */
-.left-group {
-  display: flex;
-  flex-direction: column;
   gap: 40px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 25px 35px 70px; /* extra bottom padding for button space */
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  max-width: 1200px;
+  margin: 30px auto;
+  position: relative; /* so button can position inside */
+  height: auto;
 }
 
-/* Right group (PROCESS TYPE) */
-.right-group {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+/* Each column */
+.form-container > div {
+  flex: 1;
 }
 
-/* Individual input groups */
-.input-group {
+/* === FORM GROUP (Label + Input Inline) === */
+.form-group {
   display: flex;
   align-items: center;
-  gap: 10px;
+  margin-bottom: 15px;
+  gap: 15px;
 }
 
-label {
-  font-weight: bold;
-  display: flex;
+.form-group label {
+  flex: 0 0 140px; /* Fixed label width */
+  font-weight: 600;
+  color: #333;
 }
 
-input {
-  font-family:'DM Sans', sans-serif ;
-  font-weight: bold;
-  padding: 8px;
-  font-size: 16px;
-  width: 280px;
-  border-radius: 10px;
+.form-group input,
+.form-group select {
+  flex: 1;
+  padding: 8px 10px;
   border: 1px solid #ccc;
-  width: 280px;
-  padding: 10px 12px;
-  transition: border-color 0.3s ease;
+  border-radius: 6px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: bold;
+  font-size: 16px;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
-input:focus{
+
+
+/* ✅ Center the button at the bottom of the form-container */
+.button-container {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+#acceptBtn {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 10px 30px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  transition: background-color 0.3s ease;
+}
+
+#acceptBtn:hover {
+  background-color: #45a049;
+}
+
+
+.form-group input:focus,
+.form-group select:focus {
   border-color: #007bff;
   outline: none;
   box-shadow: 0px 0px 5px rgba(0, 123, 255, 0.3);
 }
 
+/* === NOTE BOX === */
+.form-note {
+  margin-top: 20px;
+  background: #f8f9fa;
+  padding: 12px 15px;
+  border-left: 4px solid #007bff;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #333;
+}
 
+/* === POPUP CLOSE BUTTON === */
 #closePopup {
   background: none;
   position: absolute;
@@ -177,8 +180,35 @@ input:focus{
   transition: all 0.5s;
 }
 
-/* Hover animation — glow + spin + fade */
 #closePopup:hover {
   color: #ff4444;
   transform: rotate(45deg);
+}
+
+/* === RESPONSIVE DESIGN === */
+@media (max-width: 1024px) {
+  .form-container {
+    flex-direction: column;
+    gap: 25px;
+    max-width: 90%;
+    padding: 20px;
+  }
+
+  .form-group {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .form-group label {
+    flex: none;
+    width: 100%;
+  }
+
+  .form-group input,
+  .form-group select {
+    width: 20%;
+  }
+}
+.form-group input {
+width: 30%;
 }
