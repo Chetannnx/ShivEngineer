@@ -78,6 +78,7 @@ router.get('/', (req, res) => {
       <li><a href="/truck-master" class="active">TRUCK MASTER</a></li>
       <li><a href="/Fan-Generation">FAN GENERATION</a></li>
       <li><a href="/EntryWeight">ENTRY BRIDGE</a></li>
+      <li><a href="/ExitWeigh">EXIT BRIDGE</a></li>
     </ul>
   </nav>
 

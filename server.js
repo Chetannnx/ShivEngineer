@@ -33,6 +33,7 @@ app.use('/truckmaster', require('./Routes/truckMaster'));
 app.use('/truck-master', require('./Routes/truckMaster'));
 app.use('/Fan-Generation', require('./Routes/Fangeneration'));
 app.use('/EntryWeight', require('./Routes/EntryWeight'));
+app.use('/ExitWeigh', require('./Routes/ExitWeigh'));
 app.use('/Icons', express.static(path.join(__dirname, 'Icons')));
 
 

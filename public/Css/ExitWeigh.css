@@ -1,0 +1,165 @@
+/* === GLOBAL STYLES === */
+body {
+  font-family: 'DM Sans', sans-serif;
+  padding: 10px;
+  background: #F5F5F5;
+}
+
+h2 {
+  font-family: 'DM Sans', sans-serif;
+  text-align: center;
+  align-items: center;
+  gap: 8px;
+  font-size: 24px;
+}
+
+h2 img {
+  width: 24px;
+  height: 24px;
+  vertical-align: middle;
+  font-weight: bold;
+}
+
+/* === NAVBAR STYLES === */
+nav {
+  padding: 1px;
+  font-weight: bold;
+  padding-bottom: 20px;
+}
+
+nav ul {
+  list-style: none;
+  display: flex;
+  justify-content: flex-start;
+  margin: 0;
+  padding: 0;
+  gap: 25px;
+}
+
+nav ul li a {
+  color: #1e3a8a;
+  font-weight: 500;
+  text-decoration: none;
+  padding: 8px 0;
+  position: relative;
+  font-size: 16px;
+  transition: color 0.3s ease;
+}
+
+nav ul li a:hover {
+  color: #2563eb;
+}
+
+nav ul li a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -5px;
+  width: 0;
+  height: 3px;
+  background: #2563eb;
+  transition: width 0.4s ease;
+}
+
+nav ul li a:hover::after {
+  width: 100%;
+}
+
+nav ul li a.active {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+nav ul li a.active::after {
+  width: 100%;
+}
+/* === FORM CONTAINER === */
+.form-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 40px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 25px 35px 70px; /* extra bottom padding for button space */
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  max-width: 1200px;
+  margin: 30px auto;
+  position: relative; /* so button can position inside */
+  height: auto;
+}
+
+/* Each column */
+.form-container > div {
+  flex: 1;
+}
+
+/* === FORM GROUP (Label + Input Inline) === */
+.form-group {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  gap: 15px;
+}
+
+.form-group label {
+  flex: 0 0 140px; /* Fixed label width */
+  font-weight: 600;
+  color: #333;
+}
+
+.form-group input,
+.form-group select {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: bold;
+  font-size: 16px;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+
+/* ✅ Center the button at the bottom of the form-container */
+.button-container {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+#acceptBtn {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 10px 30px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  transition: background-color 0.3s ease;
+}
+
+#acceptBtn:hover {
+  background-color: #45a049;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  border-color: #007bff;
+  outline: none;
+  box-shadow: 0px 0px 5px rgba(0, 123, 255, 0.3);
+}
+
+/* === NOTE BOX === */
+.form-note {
+  margin-top: 20px;
+  background: #f8f9fa;
+  padding: 12px 15px;
+  border-left: 4px solid #007bff;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #333;
+}

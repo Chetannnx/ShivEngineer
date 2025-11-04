@@ -25,6 +25,7 @@ router.get("/", async (req, res) => {
               <li><a href="/truck-master">TRUCK MASTER</a></li>
               <li><a class="active" href="/Fan-Generation">FAN GENERATION</a></li>
               <li><a href="/EntryWeight">ENTRY BRIDGE</a></li>
+              <li><a href="/ExitWeigh">EXIT BRIDGE</a></li>
             </ul>
           </nav>
 
@@ -302,6 +303,8 @@ router.get("/", async (req, res) => {
             showPopup(data.message || "Truck or Card not found");
             return; // stop further processing
         }
+        // at the end of successful fetch, decide and set buttons
+setBtnState(decideStateFromData(data));
 
 
 
@@ -346,10 +349,10 @@ router.get("/", async (req, res) => {
         document.getElementById("truckRegInput").value = data.TRUCK_REG_NO || "";
 
         // Reassign button
-        const reassignBtn = document.getElementById("ReassignCardBtn");
-        if (reassignBtn) {
-            reassignBtn.disabled = !data.CARD_NO;
-        }
+        // const reassignBtn = document.getElementById("ReassignCardBtn");
+        // if (reassignBtn) {
+        //     reassignBtn.disabled = !data.CARD_NO;
+        // }
 
         // Fuel min/max
         const minField = document.getElementById("MIN");
@@ -451,6 +454,8 @@ router.get("/", async (req, res) => {
           const data = await res.json();
           if (res.ok) {
             showCenterPopup("Card Assigned Successfully!");
+            setBtnState("ASSIGNED_CAN_FANGEN");
+
             //document.getElementById("CARD_NO").value = "";
           } else {
             showPopup(data.message || "Something went wrong while assigning the card");
@@ -614,6 +619,7 @@ if (!fanGenRes.ok) throw new Error(fanGenData.message || "Failed to generate FAN
 
         // 6️⃣ Show popup
         document.getElementById("fanPopup").style.display = "flex";
+        setBtnState("FAN_GENERATED");
 
 
       } catch(err){
@@ -759,6 +765,8 @@ document.getElementById("FanAbortBtn").addEventListener("click", async () => {
 
     if (res.ok) {
       // ✅ Clear all inputs
+      setBtnState("ABORTED");
+
       const inputs = document.querySelectorAll('input, select');
       inputs.forEach(el => {
         if (el.tagName === 'SELECT') el.selectedIndex = 0;
@@ -1256,6 +1264,59 @@ function confirmPopup(message) {
 
 
 </script>
+<script>
+document.addEventListener("DOMContentLoaded", () => setBtnState("LOADED_ONLY_ASSIGN")); // will flip once data loads
+</script>
+<script>
+// helper to enable/disable buttons in one place
+function setBtnState(state){
+  const $ = (id) => document.getElementById(id);
+  const btns = {
+    assign: $("assignCardBtn"),
+    reassign: $("ReassignCardBtn"),
+    fanGen: $("FanGeneration"),
+    abort: $("FanAbortBtn"),
+    reauth: $("ReAuthBtn"),
+    reallocate: $("reAllocateBtn"),
+    checkAbort: $("checkBtn")
+  };
+
+  // default: all disabled
+  Object.values(btns).forEach(b => b && (b.disabled = true));
+
+  // states
+  if (state === "LOADED_ONLY_ASSIGN") {
+    btns.assign.disabled = false;
+  }
+  if (state === "ASSIGNED_CAN_FANGEN") {
+    btns.reassign.disabled = false;
+    btns.fanGen.disabled = false;
+  }
+  if (state === "FAN_GENERATED") {
+    btns.reassign.disabled = false;
+    btns.abort.disabled = false;
+    btns.reauth.disabled = false;
+    btns.reallocate.disabled = false;
+  }
+  if (state === "ABORTED") {
+    // everything remains disabled
+  }
+}
+
+// decide state from current data
+function decideStateFromData(data){
+  // PROCESS_STATUS: -1 Registered, 1 Reported, 2 Fan Generation, 4 Reauthorised, 13 Aborted
+  const ps = Number(data?.PROCESS_STATUS ?? -1);
+  const hasCard = !!data?.CARD_NO;
+
+  if (ps === 13) return "ABORTED";
+  if (ps === 2 || ps === 4) return "FAN_GENERATED";
+  if (hasCard) return "ASSIGNED_CAN_FANGEN";
+  return "LOADED_ONLY_ASSIGN";
+}
+</script>
+
+
 
         </body>
         </html>
