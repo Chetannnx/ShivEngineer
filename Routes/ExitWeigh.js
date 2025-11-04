@@ -43,8 +43,8 @@ router.get("/", (req, res) => {
     </div>
 
     <div class="form-group">
-      <label for="MAX_WEIGHT_ENTRY">Max Weight Entry :</label>
-      <input id="max_weight_entry" name="MAX_WEIGHT_ENTRY" type="text">
+      <label for="MEASURED_WEIGHT">Measured Weight :</label>
+      <input id="measured_weight" name="MEASURED_WEIGHT" type="text">
     </div>
 
     <div class="form-group">
@@ -76,13 +76,104 @@ router.get("/", (req, res) => {
   
 <script>
  
+// =============================
+  // Fetch Truck + Process info
+  // =============================
+  document.getElementById("card_no").addEventListener("input", async function() {
+  const cardNo = this.value.trim();
+  const truckField = document.getElementById("truck_reg");
+  const processField = document.getElementById("process_type");
+
+  if (cardNo.length === 0) {
+    truckField.value = "";
+    processField.value = "";
+    return;
+  }
+
+  try {
+    const url = "/EntryWeight/fetch?CARD_NO=" + encodeURIComponent(cardNo);
+    const res = await fetch(url);
+
+    const data = await res.json();
+
+    // ✅ If backend says FAN not generated, show alert and stop
+    if (data.warning) {
+      showPopup(data.warning);
+      truckField.value = "";
+      processField.value = "";
+      return;
+    }
+
+    // ✅ Fill data only if TRUCK_REG_NO exists
+    if (data && data.TRUCK_REG_NO) {
+      truckField.value = data.TRUCK_REG_NO;
+
+      // Convert process type to readable text
+      if (data.PROCESS_TYPE === 1 || data.PROCESS_TYPE === "1") {
+        processField.value = "LOADING";
+      } else if (data.PROCESS_TYPE === 0 || data.PROCESS_TYPE === "0") {
+        processField.value = "UNLOADING";
+      } else {
+        processField.value = "";
+      }
+    } else {
+      truckField.value = "";
+      processField.value = "";
+    }
+  } catch (err) {
+    console.error("Fetch error:", err);
+  }
+});
+
 
 </script>
+
+
 
 </body>
 </html>`;
   res.send(html);
 });
+
+// =============================
+// API Endpoint: Fetch Truck Data
+// =============================
+router.get("/fetch", async (req, res) => {
+  const { CARD_NO } = req.query;
+
+  if (!CARD_NO) return res.status(400).json({ error: "CARD_NO is required" });
+
+  try {
+    const pool = await sql.connect(dbConfig);
+    const result = await pool
+      .request()
+      .input("CARD_NO", sql.VarChar, CARD_NO)
+      .query(`
+        SELECT TRUCK_REG_NO, PROCESS_TYPE, PROCESS_STATUS
+        FROM DATA_MASTER
+        WHERE CARD_NO = @CARD_NO
+      `);
+
+    if (result.recordset.length > 0) {
+      const record = result.recordset[0];
+
+      // ✅ If PROCESS_STATUS < 2, return a warning instead of data
+      if (record.PROCESS_STATUS < 2) {
+        return res.status(200).json({
+          warning: "FAN is not Generated",
+        });
+      }
+
+      res.json(record);
+    } else {
+      res.json({});
+    }
+  } catch (err) {
+    console.error("SQL error:", err);
+    res.status(500).json({ error: "Database error" });
+  }
+});
+
 
 
 

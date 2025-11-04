@@ -45,7 +45,7 @@ router.get("/", (req, res) => {
     </div>
 
     <div class="form-group">
-      <label for="MAX_WEIGHT_ENTRY">Max Weight Entry :</label>
+      <label for="MAX_WEIGHT_ENTRY">Measured Weight :</label>
       <input id="max_weight_entry" name="MAX_WEIGHT_ENTRY" type="text">
     </div>
   </div>
@@ -107,36 +107,50 @@ router.get("/", (req, res) => {
   // Fetch Truck + Process info
   // =============================
   document.getElementById("card_no").addEventListener("input", async function() {
-    const cardNo = this.value.trim();
-    if (cardNo.length === 0) {
-      document.getElementById("truck_reg").value = "";
-      document.getElementById("process_type").value = "";
+  const cardNo = this.value.trim();
+  const truckField = document.getElementById("truck_reg");
+  const processField = document.getElementById("process_type");
+
+  if (cardNo.length === 0) {
+    truckField.value = "";
+    processField.value = "";
+    return;
+  }
+
+  try {
+    const url = "/EntryWeight/fetch?CARD_NO=" + encodeURIComponent(cardNo);
+    const res = await fetch(url);
+
+    const data = await res.json();
+
+    // ✅ If backend says FAN not generated, show alert and stop
+    if (data.warning) {
+      showPopup(data.warning);
+      truckField.value = "";
+      processField.value = "";
       return;
     }
 
-    try {
-      const res = await fetch(\`/EntryWeight/fetch?CARD_NO=\${encodeURIComponent(cardNo)}\`);
-      const data = await res.json();
+    // ✅ Fill data only if TRUCK_REG_NO exists
+    if (data && data.TRUCK_REG_NO) {
+      truckField.value = data.TRUCK_REG_NO;
 
-      if (data && data.TRUCK_REG_NO) {
-        document.getElementById("truck_reg").value = data.TRUCK_REG_NO;
-
-        // Show readable process type
-        if (data.PROCESS_TYPE === 1 || data.PROCESS_TYPE === "1") {
-          document.getElementById("process_type").value = "LOADING";
-        } else if (data.PROCESS_TYPE === 0 || data.PROCESS_TYPE === "0") {
-          document.getElementById("process_type").value = "UNLOADING";
-        } else {
-          document.getElementById("process_type").value = "";
-        }
+      // Convert process type to readable text
+      if (data.PROCESS_TYPE === 1 || data.PROCESS_TYPE === "1") {
+        processField.value = "LOADING";
+      } else if (data.PROCESS_TYPE === 0 || data.PROCESS_TYPE === "0") {
+        processField.value = "UNLOADING";
       } else {
-        document.getElementById("truck_reg").value = "";
-        document.getElementById("process_type").value = "";
+        processField.value = "";
       }
-    } catch (err) {
-      console.error("Fetch error:", err);
+    } else {
+      truckField.value = "";
+      processField.value = "";
     }
-  });
+  } catch (err) {
+    console.error("Fetch error:", err);
+  }
+});
 
 
 //=======================
@@ -214,15 +228,24 @@ router.get("/fetch", async (req, res) => {
 
   try {
     const pool = await sql.connect(dbConfig);
-    const result = await pool
-      .request()
-      .input("CARD_NO", sql.VarChar, CARD_NO)
-      .query(
-        "SELECT TRUCK_REG_NO, PROCESS_TYPE FROM DATA_MASTER WHERE CARD_NO = @CARD_NO"
-      );
+    const result = await pool.request().input("CARD_NO", sql.VarChar, CARD_NO)
+      .query(`
+        SELECT TRUCK_REG_NO, PROCESS_TYPE, PROCESS_STATUS
+        FROM DATA_MASTER
+        WHERE CARD_NO = @CARD_NO
+      `);
 
     if (result.recordset.length > 0) {
-      res.json(result.recordset[0]);
+      const record = result.recordset[0];
+
+      // ✅ If PROCESS_STATUS < 2, return a warning instead of data
+      if (record.PROCESS_STATUS < 2) {
+        return res.status(200).json({
+          warning: "FAN is not Generated",
+        });
+      }
+
+      res.json(record);
     } else {
       res.json({});
     }
@@ -232,18 +255,13 @@ router.get("/fetch", async (req, res) => {
   }
 });
 
-
-
 router.post("/accept", async (req, res) => {
   const { CARD_NO, WEIGHT_TO_FILLED, max_weight_entry } = req.body;
-
-  
 
   try {
     const pool = await sql.connect(dbConfig);
 
-    const result = await pool.request()
-      .input("CARD_NO", sql.VarChar, CARD_NO)
+    const result = await pool.request().input("CARD_NO", sql.VarChar, CARD_NO)
       .query(`
         SELECT 
           PROCESS_TYPE,
@@ -258,7 +276,9 @@ router.post("/accept", async (req, res) => {
       `);
 
     if (result.recordset.length === 0) {
-      return res.status(404).json({ warning: "No active batch found for this card" });
+      return res
+        .status(404)
+        .json({ warning: "No active batch found for this card" });
     }
 
     const row = result.recordset[0];
@@ -267,46 +287,49 @@ router.post("/accept", async (req, res) => {
     const enteredMaxWeight = parseFloat(max_weight_entry) || 0;
     const weightToFilledNum = parseFloat(row.WEIGHT_TO_FILLED) || 0;
 
-
     // 🔹 Compute max fuel capacity
-    const maxFuelCapacity = parseFloat(row.MAX_FUEL_CAPACITY) - enteredMaxWeight;
+    const maxFuelCapacity =
+      parseFloat(row.MAX_FUEL_CAPACITY) - enteredMaxWeight;
 
     // 🔹 FAN expiry & process status checks (keep your existing ones)
-    const fanExpiryMinutes = Math.floor((new Date(row.FAN_EXPIRY) - new Date()) / 60000);
+    const fanExpiryMinutes = Math.floor(
+      (new Date(row.FAN_EXPIRY) - new Date()) / 60000
+    );
     if (row.PROCESS_STATUS < 2) {
       return res.status(200).json({ warning: "FAN is not Generated." });
     } else if (row.PROCESS_STATUS > 4) {
       return res.status(200).json({ warning: "Weight Already Accepted." });
     } else if (fanExpiryMinutes < 0) {
-      await pool.request()
-        .input("CARD_NO", sql.VarChar, CARD_NO)
-        .query(`
+      await pool.request().input("CARD_NO", sql.VarChar, CARD_NO).query(`
           UPDATE DATA_MASTER 
           SET BATCH_STATUS = 0, PROCESS_STATUS = 3
           WHERE CARD_NO = @CARD_NO AND BATCH_STATUS = 1
         `);
-      return res.status(200).json({ warning: "FAN Expired. Please Generate FAN Once Again." });
+      return res
+        .status(200)
+        .json({ warning: "FAN Expired. Please Generate FAN Once Again." });
     }
 
     // 🔹 Step 4: Check condition
-//     if (!weightToFilledNum || weightToFilledNum <= 0) {
-//   return res.status(200).json({ warning: "Invalid 'Weight to be Filled' value." });
-// }
+    //     if (!weightToFilledNum || weightToFilledNum <= 0) {
+    //   return res.status(200).json({ warning: "Invalid 'Weight to be Filled' value." });
+    // }
 
-if (weightToFilledNum > maxFuelCapacity) {
-  return res.status(200).json({
-    warning: "'Weight to be Filled' is higher than Max Fuel Capacity. Set Lower Weight",
-  });
-}
+    if (weightToFilledNum > maxFuelCapacity) {
+      return res.status(200).json({
+        warning:
+          "'Weight to be Filled' is higher than Max Fuel Capacity. Set Lower Weight",
+      });
+    }
     // 🔹 Step 5: Proceed with update
     //const entryWeight = row.TARE_WEIGHT_TM; // measured weight
 
     if (row.PROCESS_TYPE === 1) {
-      await pool.request()
+      await pool
+        .request()
         .input("CARD_NO", sql.VarChar, CARD_NO)
         .input("TARE_WEIGHT", sql.Float, enteredMaxWeight)
-        .input("MAX_WEIGHT_ENTRY", sql.Float, maxFuelCapacity)
-        .query(`
+        .input("MAX_WEIGHT_ENTRY", sql.Float, maxFuelCapacity).query(`
           UPDATE DATA_MASTER
           SET 
             TARE_WEIGHT = @TARE_WEIGHT,
@@ -319,13 +342,13 @@ if (weightToFilledNum > maxFuelCapacity) {
       return res.status(200).json({
         success: "Entry Weight Updated (Tare Weight)",
         TRUCK_REG_NO: row.TRUCK_REG_NO,
-        PROCESS_TYPE: row.PROCESS_TYPE
+        PROCESS_TYPE: row.PROCESS_TYPE,
       });
     } else {
-      await pool.request()
+      await pool
+        .request()
         .input("CARD_NO", sql.VarChar, CARD_NO)
-        .input("GROSS_WEIGHT", sql.Float, enteredMaxWeight)
-        .query(`
+        .input("GROSS_WEIGHT", sql.Float, enteredMaxWeight).query(`
           UPDATE DATA_MASTER
           SET 
             GROSS_WEIGHT = @GROSS_WEIGHT,
@@ -337,19 +360,14 @@ if (weightToFilledNum > maxFuelCapacity) {
       return res.status(200).json({
         success: "Entry Weight Updated (Gross Weight)",
         TRUCK_REG_NO: row.TRUCK_REG_NO,
-        PROCESS_TYPE: row.PROCESS_TYPE
+        PROCESS_TYPE: row.PROCESS_TYPE,
       });
     }
-
   } catch (err) {
     console.error("SQL error:", err);
     res.status(500).json({ error: "Database error: " + err.message });
   }
 });
-
-
-
-
 
 router.get;
 

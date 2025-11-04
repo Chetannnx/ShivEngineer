@@ -271,10 +271,10 @@ router.get("/", async (req, res) => {
 
     // ✅ Determine correct API endpoint
     let url = "";
-    if (truckRegNo) {
-        url = "/Fan-Generation/api/fan-generation/truck/" + encodeURIComponent(truckRegNo);
-    } else if (cardNo) {
+    if (cardNo) {
         url = "/Fan-Generation/api/fan-generation/card/" + encodeURIComponent(cardNo);
+    } else if (truckRegNo) {
+        url = "/Fan-Generation/api/fan-generation/truck/" + encodeURIComponent(truckRegNo);
     } else {
         showPopup("Please enter Truck No or Card Allocated No");
         return;
@@ -2206,6 +2206,67 @@ router.put("/api/fan-generation/generate", async (req, res) => {
     res.status(500).json({ message: "Server Error while generating FAN" });
   }
 });
+
+router.put("/api/fan-generation/generate", async (req, res) => {
+  const { truckRegNo } = req.body;
+  if (!truckRegNo) return res.status(400).json({ message: "Truck Reg No is required" });
+
+  try {
+    const pool = await sql.connect(dbConfig);
+
+    // 🚫 PRE-CHECK: already generated?
+    const existing = await pool.request()
+      .input("truckRegNo", sql.VarChar, truckRegNo)
+      .query(`
+        SELECT TOP 1 FAN_NO, PROCESS_STATUS
+        FROM DATA_MASTER
+        WHERE TRUCK_REG_NO = @truckRegNo
+        ORDER BY FAN_TIME_OUT DESC
+      `);
+
+    if (existing.recordset.length === 0) {
+      return res.status(404).json({ message: "Truck not found in DATA_MASTER" });
+    }
+
+    const row = existing.recordset[0];
+    if (row.FAN_NO || (row.PROCESS_STATUS != null && row.PROCESS_STATUS >= 2)) {
+      return res.status(400).json({ message: "FAN already generated for this truck" });
+    }
+
+    // 1️⃣ Generate FAN_NO
+    function pad(n){ return n < 10 ? "0"+n : n; }
+    const now = new Date();
+    const fanNo = `${pad(now.getDate())}${pad(now.getMonth()+1)}${now.getFullYear()}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+
+    // 2️⃣ Read FAN_TIME_OUT
+    const tmoRes = await pool.request()
+      .input("truckRegNo", sql.VarChar, truckRegNo)
+      .query("SELECT FAN_TIME_OUT FROM DATA_MASTER WHERE TRUCK_REG_NO = @truckRegNo");
+
+    const FAN_TIME_OUT = parseInt(tmoRes.recordset[0]?.FAN_TIME_OUT) || 0;
+
+    // 3️⃣ Compute expiry (UTC)
+    const fanExpiryLocal = new Date(now.getTime() + FAN_TIME_OUT * 60000);
+    const fanExpiryUTC = new Date(fanExpiryLocal.getTime() - fanExpiryLocal.getTimezoneOffset() * 60000);
+
+    // 4️⃣ Persist + set PROCESS_STATUS = 2
+    await pool.request()
+      .input("truckRegNo", sql.VarChar, truckRegNo)
+      .input("FAN_NO", sql.VarChar, fanNo)
+      .input("FAN_EXPIRY", sql.DateTime, fanExpiryUTC)
+      .query(`
+        UPDATE DATA_MASTER
+        SET FAN_NO = @FAN_NO, FAN_EXPIRY = @FAN_EXPIRY, PROCESS_STATUS = 2
+        WHERE TRUCK_REG_NO = @truckRegNo
+      `);
+
+    res.json({ message: "FAN generated successfully", FAN_NO: fanNo });
+  } catch (err) {
+    console.error("Error generating FAN:", err);
+    res.status(500).json({ message: "Server Error while generating FAN" });
+  }
+});
+
 
 
 module.exports = router;
