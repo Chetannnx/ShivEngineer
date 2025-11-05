@@ -259,6 +259,7 @@ router.get("/", async (req, res) => {
 
 
 
+<img id="somgasLogo" src="/Icons/Somgas.png" alt="" style="display:none">
 
   
           <!-- Inline Script -->
@@ -634,50 +635,142 @@ function closeBayPopup() {
 }
 
 // After Save PDF, open Bay Allocation popup
+// After Save PDF, open Bay Allocation popup (styled layout)
 document.getElementById("fanSavePdfBtn").addEventListener("click", async function () {
-  var jsPDFObj = window.jspdf;
-  var doc = new jsPDFObj.jsPDF();
+  try {
+    // robust jsPDF resolve
+    var jsPDFLib = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+    if (!jsPDFLib) { console.warn("jsPDF not loaded"); return; }
+    var doc = new jsPDFLib({ unit: "pt", format: "a4" });
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.text("Fan Generation Report", 14, 20);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-
-  var y = 40;
-  var rows = document.querySelectorAll("#fanTable tr");
-  for (var i = 0; i < rows.length; i++) {
-    var cells = rows[i].querySelectorAll("th, td");
-    if (cells.length === 2) {
-      doc.text(cells[0].innerText + ": " + cells[1].innerText, 14, y);
-      y += 10;
+    // ====== read all values from the popup table ======
+    function get(label) {
+      var rows = document.querySelectorAll("#fanTable tr");
+      for (var i = 0; i < rows.length; i++) {
+        var c = rows[i].querySelectorAll("th,td");
+        if (c.length >= 2 && c[0].innerText.trim().toLowerCase() === label.toLowerCase()) {
+          return c[1].innerText.trim();
+        }
+      }
+      return "";
     }
+
+    var data = {
+      fanNo: get("FAN NO"),
+      cardNo: get("Card No"),
+      dateTime: get("Date Time"),
+      expiry: get("Fan Expiry"),
+      truckNo: get("Truck Reg No"),
+      customer: get("Customer Name"),
+      carrier: get("Carrier Company"),
+      itemDesc: get("Item Description"),
+      processType: get("Process Type"),
+      qty: get("Weight Filled")
+    };
+
+    // ====== layout helpers ======
+    var W = doc.internal.pageSize.getWidth();
+    var H = doc.internal.pageSize.getHeight();
+    var M = 28, labelW = 140, rowH = 22, fieldW = W - M*2 - labelW - 10;
+    var y = 96;
+
+    function textFit(t){ return doc.splitTextToSize(t || "", fieldW - 10); }
+    function row(label, value, suffix){
+      doc.setFont("helvetica","bold"); doc.setFontSize(10);
+      doc.text(label, M, y + 14);
+      doc.setDrawColor(180);
+      doc.roundedRect(M + labelW, y, fieldW, rowH, 3, 3);
+      doc.setFont("helvetica","normal"); doc.setFontSize(10);
+      var lines = textFit((value || "") + (suffix ? "  " + suffix : ""));
+      doc.text(lines, M + labelW + 6, y + 14);
+      y += rowH + 6;
+    }
+
+    // ====== header (logo + title + gray bar) ======
+    var logo = document.getElementById("somgasLogo");
+    if (logo && logo.complete) { try { doc.addImage(logo, "PNG", M, 18, 140, 36); } catch(e){} }
+    doc.setFont("helvetica","bold"); doc.setFontSize(18);
+    doc.text("FILLING ADVISORY NOTE", W/2, 40, { align: "center" });
+
+    doc.setFillColor(235,235,235); doc.setDrawColor(200);
+    doc.rect(0, 64, W, 20, "F");
+    doc.setFont("helvetica","bold"); doc.setFontSize(9);
+    doc.text("Detail page 1", M, 78);
+
+    // ====== body fields ======
+    row("FAN No.", data.fanNo);
+    row("Card No.", data.cardNo);
+    row("Date & Time", data.dateTime);
+    row("FAN Expiry Time", data.expiry);
+
+    doc.setDrawColor(220); doc.line(M, y + 4, W - M, y + 4); y += 14;
+
+    row("Truck No.", data.truckNo);
+    row("Customer", data.customer);
+    row("Carrier Company", data.carrier);
+
+    // Item & Description (taller box)
+    doc.setFont("helvetica","bold"); doc.setFontSize(10);
+    doc.text("Item & Description", M, y + 14);
+    doc.setDrawColor(180); doc.roundedRect(M + labelW, y, fieldW, 70, 3, 3);
+    doc.setFont("helvetica","normal"); doc.setFontSize(10);
+    doc.text(textFit(data.itemDesc), M + labelW + 6, y + 14);
+    y += 80;
+
+    row("Process Type", data.processType);
+    row("Qty To Be Filled", data.qty, "kg");
+
+    // footer
+    doc.setFont("helvetica","normal"); doc.setFontSize(8);
+    doc.text("Generated on " + new Date().toLocaleString(), M, H - 24);
+
+    // ====== save ======
+    doc.save("FAN_" + (data.fanNo || Date.now()) + ".pdf");
+
+    // ====== your existing flow (unchanged) ======
+    closeFanPopup(); // close the fan popup
+
+    // prefill Bay from backend then show Bay popup
+    var truckRegNo = document.getElementById("truckRegInput").value.trim();
+    if (!truckRegNo) return;
+    try {
+      var res = await fetch('/Fan-Generation/api/get-bay/' + encodeURIComponent(truckRegNo));
+      if (res.ok) {
+        var d = await res.json();
+        document.getElementById("BAY_NO").value = d.BAY_NO || "";
+      }
+    } catch(e){ console.error(e); }
+    document.getElementById("bayPopup").style.display = "flex";
+  } catch (err) {
+    console.error("PDF error:", err);
+    // fail silently so other buttons continue working
   }
+});
+
 
   // 1️⃣ Download PDF
-  doc.save("Fan_Generation_Report.pdf");
+ // doc.save("Fan_Generation_Report.pdf");
 
   // 2️⃣ Close the Fan Generation popup
-  closeFanPopup();
+ // closeFanPopup();
 
   // 3️⃣ Prefill BAY_NO from backend
-  const truckRegNo = document.getElementById("truckRegInput").value.trim();
-  if (!truckRegNo) return;
+  // const truckRegNo = document.getElementById("truckRegInput").value.trim();
+  // if (!truckRegNo) return;
 
-  try {
-    const res = await fetch('/Fan-Generation/api/get-bay/' + encodeURIComponent(truckRegNo));
-    if (!res.ok) throw new Error("Failed to fetch Bay No");
-    const data = await res.json();
-    document.getElementById("BAY_NO").value = data.BAY_NO || "";
-  } catch (err) {
-    console.error(err);
-    document.getElementById("BAY_NO").value = "";
-  }
+  // try {
+  //   const res = await fetch('/Fan-Generation/api/get-bay/' + encodeURIComponent(truckRegNo));
+  //   if (!res.ok) throw new Error("Failed to fetch Bay No");
+  //   const data = await res.json();
+  //   document.getElementById("BAY_NO").value = data.BAY_NO || "";
+  // } catch (err) {
+  //   console.error(err);
+  //   document.getElementById("BAY_NO").value = "";
+  // }
 
   // 4️⃣ Show Bay Allocation popup
-  document.getElementById("bayPopup").style.display = "flex";
-});
+//   document.getElementById("bayPopup").style.display = "flex";
+// });
 
 // Assign Bay button
 // ✅ Toggle Bay Input visibility (Auto / Manual)
@@ -974,7 +1067,7 @@ function setupSavePdfButton() {
 
   // Add new listener only for ReAuth
   newBtn.addEventListener("click", () => {
-    generateFanPDF();
+    generateStyledFANPDF();
 
     // ✅ Conditional logic — only open Bay Allocation if FAN popup, not ReAuth
     const fanPopupVisible = document.getElementById("fanPopup").style.display === "flex";
@@ -987,6 +1080,95 @@ function setupSavePdfButton() {
   });
 }
 
+//=================
+//RE-AUTHORIZE PDF
+//=================
+function generateStyledFANPDF() {
+  // resolve jsPDF safely
+  var jsPDFLib = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+  if (!jsPDFLib) { console.warn("jsPDF not loaded"); return; }
+  var doc = new jsPDFLib({ unit: "pt", format: "a4" });
+
+  // read values from popup table
+  function get(label) {
+    var rows = document.querySelectorAll("#fanTable tr");
+    for (var i = 0; i < rows.length; i++) {
+      var c = rows[i].querySelectorAll("th,td");
+      if (c.length >= 2 && c[0].innerText.trim().toLowerCase() === label.toLowerCase()) {
+        return c[1].innerText.trim();
+      }
+    }
+    return "";
+  }
+
+  var W = doc.internal.pageSize.getWidth();
+  var H = doc.internal.pageSize.getHeight();
+  var M = 28, labelW = 140, rowH = 22, fieldW = W - M*2 - labelW - 10;
+  var y = 96;
+
+  function textFit(t){ return doc.splitTextToSize(t || "", fieldW - 10); }
+  function row(label, value, suffix){
+    doc.setFont("helvetica","bold"); doc.setFontSize(10);
+    doc.text(label, M, y + 14);
+    doc.setDrawColor(180);
+    doc.roundedRect(M + labelW, y, fieldW, rowH, 3, 3);
+    doc.setFont("helvetica","normal"); doc.setFontSize(10);
+    var lines = textFit((value || "") + (suffix ? "  " + suffix : ""));
+    doc.text(lines, M + labelW + 6, y + 14);
+    y += rowH + 6;
+  }
+
+  var data = {
+    fanNo: get("FAN NO"),
+    cardNo: get("Card No"),
+    dateTime: get("Date Time"),
+    expiry: get("Fan Expiry"),
+    truckNo: get("Truck Reg No"),
+    customer: get("Customer Name"),
+    carrier: get("Carrier Company"),
+    itemDesc: get("Item Description"),
+    processType: get("Process Type"),
+    qty: get("Weight Filled")
+  };
+
+  // header
+  var logo = document.getElementById("somgasLogo");
+  if (logo && logo.complete) { try { doc.addImage(logo, "PNG", M, 18, 140, 36); } catch(_){} }
+  doc.setFont("helvetica","bold"); doc.setFontSize(18);
+  doc.text("FILLING ADVISORY NOTE", W/2, 40, { align: "center" });
+  doc.setFillColor(235,235,235); doc.setDrawColor(200);
+  doc.rect(0, 64, W, 20, "F");
+  doc.setFont("helvetica","bold"); doc.setFontSize(9);
+  doc.text("Detail page 1", M, 78);
+
+  // body
+  row("FAN No.", data.fanNo);
+  row("Card No.", data.cardNo);
+  row("Date & Time", data.dateTime);
+  row("FAN Expiry Time", data.expiry);
+
+  doc.setDrawColor(220); doc.line(M, y + 4, W - M, y + 4); y += 14;
+
+  row("Truck No.", data.truckNo);
+  row("Customer", data.customer);
+  row("Carrier Company", data.carrier);
+
+  // Item & Description big box
+  doc.setFont("helvetica","bold"); doc.setFontSize(10);
+  doc.text("Item & Description", M, y + 14);
+  doc.setDrawColor(180); doc.roundedRect(M + labelW, y, fieldW, 70, 3, 3);
+  doc.setFont("helvetica","normal"); doc.setFontSize(10);
+  doc.text(textFit(data.itemDesc), M + labelW + 6, y + 14);
+  y += 80;
+
+  row("Process Type", data.processType);
+  row("Qty To Be Filled", data.qty, "kg");
+
+  // footer + save
+  doc.setFont("helvetica","normal"); doc.setFontSize(8);
+  doc.text("Generated on " + new Date().toLocaleString(), M, H - 24);
+  doc.save("FAN_" + (data.fanNo || Date.now()) + ".pdf");
+}
 
 
 //================
