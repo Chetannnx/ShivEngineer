@@ -216,6 +216,7 @@ const totalCardHTML = `
       <li><a href="/Fan-Generation">FAN GENERATION</a></li>
       <li><a href="/EntryWeight">ENTRY BRIDGE</a></li>
       <li><a href="/ExitWeigh">EXIT BRIDGE</a></li>
+      <li><a href="/InvoiceGeneration">INVOICE GENERATION</a></li>
     </ul>
   </nav>
 <title>Card Master</title>
