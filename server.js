@@ -28,7 +28,7 @@ app.set('poolPromise', poolPromise);
 // ✅ Use Routers (cleaned duplicates)
 app.use('/', require('./Routes/home'));
 app.use('/tees', require('./Routes/tees'));
-app.use('/',require('./Routes/tees'))
+//app.use('/',require('./Routes/tees'))
 app.use('/truckmaster', require('./Routes/truckMaster'));
 app.use('/truck-master', require('./Routes/truckMaster'));
 app.use('/Fan-Generation', require('./Routes/Fangeneration'));

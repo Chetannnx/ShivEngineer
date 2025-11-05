@@ -208,10 +208,6 @@ document.getElementById("acceptBtn").addEventListener("click", async function ()
   }
 });
 
-
-
-
-
 </script>
 </body>
 </html>`;
