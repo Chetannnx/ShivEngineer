@@ -316,9 +316,12 @@ router.post("/accept", async (req, res) => {
     if (PROCESS_STATUS < 14) return res.json({ popup: "Unauthorised Access." });
 
     // 3) Sealing requirement
-    if (SEAL_REQ === 1 && (!SEAL_NO || String(SEAL_NO).trim() === "")) {
-      return res.json({ popup: "Fill Information" });
-    }
+   if (SEAL_REQ === 1) {
+  // When sealing is required
+  if (!SEAL_NO || String(SEAL_NO).trim() === "") {
+    return res.json({ popup: "Fill Information" });
+  }
+}
 
     // 4) Compute & prepare update
     const ExitWeight = Number(EXIT_WEIGHT);
