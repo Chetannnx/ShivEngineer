@@ -177,15 +177,35 @@ document.getElementById("closePopup").addEventListener("click", function() {
 // ===============
 document.getElementById("acceptBtn").addEventListener("click", async function () {
   const cardNo = document.getElementById("card_no").value.trim();
+  const measuredWeightStr = document.getElementById("measured_weight").value.trim();
+  const sealNo = document.getElementById("seal_no").value.trim();
+
   if (!cardNo) {
     showPopup("Enter Card Number.");
     return;
   }
+  if (!measuredWeightStr) {
+    showPopup("Enter Measured Weight.");
+    return;
+  }
+
+  const exitWeight = Number(measuredWeightStr);
+  if (!isFinite(exitWeight) || exitWeight <= 0) {
+    showPopup("Measured Weight must be a positive number.");
+    return;
+  }
 
   try {
-    const url = "/ExitWeigh/accept?CARD_NO=" + encodeURIComponent(cardNo);
-    const res = await fetch(url);
-   
+    const res = await fetch("/ExitWeigh/accept", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        CARD_NO: cardNo,
+        EXIT_WEIGHT: exitWeight,
+        SEAL_NO: sealNo
+      })
+    });
+
     const data = await res.json();
 
     if (!res.ok) {
@@ -193,14 +213,13 @@ document.getElementById("acceptBtn").addEventListener("click", async function ()
       return;
     }
 
-    // Server returns a "popup" message per your rules
     if (data.popup) {
       showPopup(data.popup);
       return;
     }
 
-    // Fallback (exactly = 14 or any other case you decide later)
-    showPopup(data.message || "Ready to proceed.");
+    // Success message (includes computed Net if you want to show it)
+    showPopup(data.message || "Exit Weight Accepted.");
   } catch (e) {
     console.error(e);
     showPopup("Network error");
@@ -255,50 +274,132 @@ router.get("/fetch", async (req, res) => {
 });
 
 // ---------- API: accept logic ----------
-router.get("/accept", async (req, res) => {
-  const { CARD_NO } = req.query;
+router.post("/accept", async (req, res) => {
+  const { CARD_NO, EXIT_WEIGHT, SEAL_NO } = req.body || {};
+
   if (!CARD_NO) return res.status(400).json({ error: "CARD_NO is required" });
+  if (EXIT_WEIGHT == null || isNaN(Number(EXIT_WEIGHT)) || Number(EXIT_WEIGHT) <= 0) {
+    return res.status(400).json({ error: "Valid EXIT_WEIGHT is required" });
+  }
 
   try {
     const pool = await sql.connect(dbConfig);
-    const result = await pool.request()
+
+    // 1) Read current status + weights + sealing requirement
+    const sel = await pool.request()
       .input("CARD_NO", sql.VarChar, CARD_NO)
       .query(`
-        SELECT PROCESS_TYPE, PROCESS_STATUS, TARE_WEIGHT, GROSS_WEIGHT
+        SELECT 
+          PROCESS_TYPE,
+          PROCESS_STATUS,
+          TARE_WEIGHT,
+          GROSS_WEIGHT,
+          TRUCK_SEALING_REQUIREMENT
         FROM COMMON_VIEW
         WHERE CARD_NO = @CARD_NO
           AND BATCH_STATUS = 1
       `);
 
-    if (result.recordset.length === 0) {
+    if (sel.recordset.length === 0) {
       return res.status(404).json({ error: "Card not found or batch not active." });
     }
 
-    const row = result.recordset[0];
-    const ps = Number(row.PROCESS_STATUS);
+    const row = sel.recordset[0];
+    const PROCESS_TYPE = Number(row.PROCESS_TYPE);   // 0 = UNLOADING, 1 = LOADING
+    const PROCESS_STATUS = Number(row.PROCESS_STATUS);
+    const TARE_WEIGHT_DB = Number(row.TARE_WEIGHT || 0);
+    const GROSS_WEIGHT_DB = Number(row.GROSS_WEIGHT || 0);
+    const SEAL_REQ = Number(row.TRUCK_SEALING_REQUIREMENT || 0);
 
-    if (ps > 14) {
-      return res.json({ popup: "Exit Weight Already Accepted." });
-    } else if (ps < 14) {
-      return res.json({ popup: "Unauthorised Access." });
-    } else {
-      // ps === 14 (not specified in your text) — return a neutral message.
-      // You can change this to whatever you want to happen at exactly 14.
-      return res.json({
-        message: "Ready to proceed.",
-        data: {
-          PROCESS_TYPE: row.PROCESS_TYPE,
-          PROCESS_STATUS: row.PROCESS_STATUS,
-          TARE_WEIGHT: row.TARE_WEIGHT,
-          GROSS_WEIGHT: row.GROSS_WEIGHT
-        }
-      });
+    // 2) Guards
+    if (PROCESS_STATUS > 14) return res.json({ popup: "Exit Weight Already Accepted." });
+    if (PROCESS_STATUS < 14) return res.json({ popup: "Unauthorised Access." });
+
+    // 3) Sealing requirement
+    if (SEAL_REQ === 1 && (!SEAL_NO || String(SEAL_NO).trim() === "")) {
+      return res.json({ popup: "Fill Information" });
     }
+
+    // 4) Compute & prepare update
+    const ExitWeight = Number(EXIT_WEIGHT);
+    let NetWeightExit = 0;
+    let updateSets = "";
+    let updateInputs = [];
+    let popupText = "";
+
+    if (PROCESS_TYPE === 0) {
+      // UNLOADING: Net = GROSS_WEIGHT (DB) - ExitWeight | store ExitWeight as TARE_WEIGHT
+      NetWeightExit = GROSS_WEIGHT_DB - ExitWeight;
+
+      updateSets = `
+        NET_WEIGHT = @NET_WEIGHT,
+        TARE_WEIGHT = @EXIT_WEIGHT,
+        PROCESS_STATUS = 15,
+        SEAL_NO = @SEAL_NO,
+        EXIT_WEIGHT_TIME = GETDATE()
+      `;
+      updateInputs = [
+        { name: "NET_WEIGHT", type: sql.Decimal(18, 3), value: NetWeightExit },
+        { name: "EXIT_WEIGHT", type: sql.Decimal(18, 3), value: ExitWeight },
+        { name: "SEAL_NO", type: sql.VarChar, value: SEAL_NO || null }
+      ];
+
+      // ✅ Unloading-specific popup
+      popupText = "Exit Weight Updated (Tare Weight)";
+    } else if (PROCESS_TYPE === 1) {
+      // LOADING: Net = ExitWeight - TARE_WEIGHT (DB) | store ExitWeight as GROSS_WEIGHT
+      NetWeightExit = ExitWeight - TARE_WEIGHT_DB;
+
+      updateSets = `
+        NET_WEIGHT = @NET_WEIGHT,
+        GROSS_WEIGHT = @EXIT_WEIGHT,
+        PROCESS_STATUS = 15,
+        SEAL_NO = @SEAL_NO,
+        EXIT_WEIGHT_TIME = GETDATE()
+      `;
+      updateInputs = [
+        { name: "NET_WEIGHT", type: sql.Decimal(18, 3), value: NetWeightExit },
+        { name: "EXIT_WEIGHT", type: sql.Decimal(18, 3), value: ExitWeight },
+        { name: "SEAL_NO", type: sql.VarChar, value: SEAL_NO || null }
+      ];
+
+      // ✅ Loading-specific popup
+      popupText = "Exit Weight Updated (Gross Weight)";
+    } else {
+      return res.status(400).json({ error: "Invalid PROCESS_TYPE." });
+    }
+
+    if (!isFinite(NetWeightExit)) {
+      return res.status(400).json({ error: "Computed net weight is invalid." });
+    }
+
+    // 5) Update DATA_MASTER
+    const updReq = pool.request().input("CARD_NO", sql.VarChar, CARD_NO);
+    updateInputs.forEach(p => updReq.input(p.name, p.type, p.value));
+
+    const upd = await updReq.query(`
+      UPDATE DATA_MASTER
+      SET ${updateSets}
+      WHERE CARD_NO = @CARD_NO
+        AND BATCH_STATUS = 1
+    `);
+
+    // 6) Respond with the correct popup per process type
+    return res.json({
+      popup: popupText,
+      data: {
+        PROCESS_TYPE,
+        NetWeightExit: Number(NetWeightExit.toFixed(3)),
+        ExitWeight: Number(ExitWeight.toFixed(3)),
+        UpdatedRows: upd.rowsAffected?.[0] ?? 0
+      }
+    });
   } catch (err) {
     console.error("SQL error:", err);
     return res.status(500).json({ error: "Database error" });
   }
 });
+
 
 
 router.get;
