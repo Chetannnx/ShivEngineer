@@ -126,10 +126,11 @@ router.get("/", (req, res) => {
       <div class="row"><div class="label">Tare Weight at Entry Time :</div><input id="D_TARE_WEIGHT_AT_ENTRY_TIME" type="text"></div>
       <div class="row"><div class="label">Gross Weight at Exit Time :</div><input id="D_GROSS_WEIGHT_AT_EXIT_TIME" type="text"></div>
       <div class="row"><div class="label">Payment Due Date :</div><input id="DERIVED_DUE" type="date"></div>
-      <div class="row"><div class="label">Amount To Be Paid :</div><input id="DERIVED_AMOUNT" type="number" placeholder="₹"></div>
+      <div class="row"><div class="label">Amount To Be Paid :</div><input id="DERIVED_AMOUNT" type="text" placeholder="₹"></div>
     </div>
   </section>
 
+<button id="invoiceBtn">Invoice Generation</button>
 
 
   <!-- Script to fetch and fill data -->
@@ -256,6 +257,50 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
+
+//===================
+//Invoice Button
+//====================
+// When Invoice Generation button is clicked → calculate Amount
+const invoiceBtn = document.getElementById("invoiceBtn");
+
+if (invoiceBtn) {
+  invoiceBtn.addEventListener("click", () => {
+    const rateEl = document.getElementById("D_RATE");
+    const netWeightEl = document.getElementById("D_NET_WEIGHT");
+    const amountEl = document.getElementById("DERIVED_AMOUNT");
+
+    // read numeric values
+    const rate = parseFloat(rateEl.value) || 0;
+    const netWeight = parseFloat(netWeightEl.value) || 0;
+
+    // check for empty values
+    if (!rate || !netWeight) {
+      alert("Please enter both Rate and Net Weight first.");
+      return;
+    }
+
+    // calculate total
+    const total = rate * netWeight;
+
+    // format total as USD ($)
+    const formatted = total.toLocaleString("en-US", {
+      style: "currency",
+      currency: "USD",
+    });
+
+    // show result in Amount field
+    amountEl.value = formatted;
+    
+
+    // optional: green flash animation to indicate update
+    amountEl.style.transition = "0.3s";
+    amountEl.style.backgroundColor = "#e0ffe0";
+    setTimeout(() => (amountEl.style.backgroundColor = ""), 500);
+  });
+}
+
 
   </script>
 

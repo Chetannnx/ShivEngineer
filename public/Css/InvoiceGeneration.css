@@ -180,3 +180,27 @@ input[readonly], .row .value.readonly{
   .row{ flex-direction:column; align-items:flex-start; }
   .row .label{ text-align:left; margin:0 0 6px 0; }
 }
+
+button {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  font-weight: bold;
+  background-color: rgb(185, 118, 199);
+  border-radius: 10px;
+  padding: 10px 20px;
+  width: 158px;
+  border: none;
+  color: white;
+  position: absolute;     /* enable top/left positioning */
+  top: 55%;               /* move halfway down */
+  left: 88%;              /* move halfway right */
+   transition: all 0.2s ease-in-out;
+  cursor: pointer;
+
+}
+
+/* When clicked (pressed) */
+button:active {
+  transform: translateY(2px);   /* move down slightly */
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
+}
