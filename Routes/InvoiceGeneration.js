@@ -37,7 +37,7 @@ router.get("/", (req, res) => {
   <section class="topbar">
     <div class="card">
       <div class="label">Truck Number :</div>
-      <input type="text" id="D_TRUCK_NO" placeholder="Enter Truck No">
+      <input type="text" id="D_TRUCK_NO" placeholder="Enter Truck No" readonly>
     </div>
 
     <div class="card">
@@ -47,7 +47,7 @@ router.get("/", (req, res) => {
 
     <div class="card">
       <div class="label">Truck Status :</div>
-      <select id="D_PROCESS_STATUS">
+      <select id="D_PROCESS_STATUS" disabled>
         <option value="">-- Select --</option>
         <option value="-1">Registered</option>
         <option value="1">Reported</option>
@@ -120,7 +120,7 @@ router.get("/", (req, res) => {
       </div>
       <div class="row"><div class="label">Seal No :</div><input id="D_SEAL_NO" type="text"></div>
       <div class="row"><div class="label">Net Weight :</div><input id="D_NET_WEIGHT" type="number"></div>
-      <div class="row"><div class="label">Actual Quantity Filled :</div><input id="DERIVED_QTY" type="number"></div>
+      <div class="row"><div class="label">Actual Quantity Filled :</div><input id="D_ACTUAL_WEIGHT_AT_BAY" type="text"></div>
       <div class="row"><div class="label">Tare Weight at Entry :</div><input id="D_TARE_WEIGHT_AT_ENTRY" type="number"></div>
       <div class="row"><div class="label">Gross Weight at Exit :</div><input id="D_GROSS_WEIGHT_AT_EXIT" type="number"></div>
       <div class="row"><div class="label">Tare Weight at Entry Time :</div><input id="D_TARE_WEIGHT_AT_ENTRY_TIME" type="text"></div>
@@ -243,11 +243,16 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       fillFields(data);
+
+       // ⬅️ make Truck Status dropdown read-only
+      $id("D_PROCESS_STATUS").disabled = true;
+      
     } catch (err) {
       console.error("Fetch error:", err);
       alert("Failed to fetch: " + (err && err.message ? err.message : String(err)));
     } finally {
       setLoading(false);
+      $id("D_PROCESS_STATUS").disabled = true;  // keep it read-only
     }
   });
 });
@@ -286,6 +291,7 @@ router.get("/fetch", async (req, res) => {
         d.ITEM_DESCRIPTION,
         d.FAN_TIME_OUT,
         d.SEAL_NO,
+        d.ACTUAL_WEIGHT_AT_BAY        AS D_ACTUAL_WEIGHT_AT_BAY,
         d.TARE_WEIGHT             AS D_TARE_WEIGHT_AT_ENTRY,
         d.GROSS_WEIGHT            AS D_GROSS_WEIGHT_AT_EXIT,
         d.ENTRY_WEIGHT_TIME,
@@ -382,6 +388,7 @@ const formatDateTime = (v) => {
 
       D_SEAL_NO: r.SEAL_NO || "",
       D_NET_WEIGHT: net,  // derived; remove if you don't want auto-calc
+      D_ACTUAL_WEIGHT_AT_BAY: r.D_ACTUAL_WEIGHT_AT_BAY ?? "",
       D_TARE_WEIGHT_AT_ENTRY: r.D_TARE_WEIGHT_AT_ENTRY ?? "",
        D_TARE_WEIGHT_AT_ENTRY_TIME: formatDateTime(r.ENTRY_WEIGHT_TIME),  // formatted
       D_GROSS_WEIGHT_AT_EXIT_TIME: formatDateTime(r.EXIT_WEIGHT_TIME),    // formatted

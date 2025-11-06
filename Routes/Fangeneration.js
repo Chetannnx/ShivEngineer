@@ -56,7 +56,16 @@ router.get("/", async (req, res) => {
         <option value="1">Reported</option>
         <option value="2">Fan Generation</option>
         <option value="4">Fan Reauthorised</option>
+        <option value="5">Entry Weight Accept</option>
+        <option value="6">Truck at bay</option>
+        <option value="7">Earthing Clamp Engaged</option>
+        <option value="8">Loading started</option>
+        <option value="9">Loading stopped</option>
+        <option value="12">Loading Completed: Disengage Earthing Clamp</option>
         <option value="13">Aborted</option>
+        <option value="14">Loading Completed</option>
+        <option value="15">Exit Weight Accepted</option>
+        <option value="16">Invoice Generated</option>
 
       </select>
     </div>
