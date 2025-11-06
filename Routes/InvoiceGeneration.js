@@ -130,7 +130,7 @@ router.get("/", (req, res) => {
     </div>
   </section>
 
-<button id="invoiceBtn">Invoice Generation</button>
+<button id="invoiceBtn" type="button">Invoice Generation</button>
 
 
   <!-- Script to fetch and fill data -->
@@ -263,43 +263,78 @@ document.addEventListener("DOMContentLoaded", () => {
 //Invoice Button
 //====================
 // When Invoice Generation button is clicked → calculate Amount
-const invoiceBtn = document.getElementById("invoiceBtn");
+document.addEventListener("DOMContentLoaded", () => {
+  const BASE_PATH = "/InvoiceGeneration";
 
-if (invoiceBtn) {
-  invoiceBtn.addEventListener("click", () => {
-    const rateEl = document.getElementById("D_RATE");
-    const netWeightEl = document.getElementById("D_NET_WEIGHT");
-    const amountEl = document.getElementById("DERIVED_AMOUNT");
+  const $ = (id) => document.getElementById(id);
 
-    // read numeric values
-    const rate = parseFloat(rateEl.value) || 0;
-    const netWeight = parseFloat(netWeightEl.value) || 0;
+  const btn = $("invoiceBtn");
+  if (!btn) return;
 
-    // check for empty values
+  btn.addEventListener("click", async () => {
+    const rateEl       = $("D_RATE");
+    const netWeightEl  = $("D_NET_WEIGHT");
+    const amountEl     = $("DERIVED_AMOUNT");
+    const invoiceNoEl  = $("D_FISCAL_NO");   // maps to INVOICE_NO
+    const cardEl       = $("D_CARD_NO");     // to find the DATA_MASTER row
+
+    const rate      = parseFloat(rateEl.value);
+    const netWeight = parseFloat(netWeightEl.value);
+    const invoiceNo = (invoiceNoEl.value || "").trim();
+    const card      = (cardEl.value || "").trim();
+
+    if (!card) {
+      alert("Card No is required before generating invoice.");
+      return;
+    }
+    if (!invoiceNo) {
+      alert("Please enter Invoice No (Fiscal No).");
+      return;
+    }
     if (!rate || !netWeight) {
-      alert("Please enter both Rate and Net Weight first.");
+      alert("Please enter both Rate and Net Weight.");
       return;
     }
 
-    // calculate total
+    // 1) Calculate Amount = Rate × Net Weight
     const total = rate * netWeight;
 
-    // format total as USD ($)
-    const formatted = total.toLocaleString("en-US", {
+    // Show in INR (₹) for the UI only
+    amountEl.value = new Intl.NumberFormat("en-IN", {
       style: "currency",
-      currency: "USD",
-    });
+      currency: "INR",
+      maximumFractionDigits: 2
+    }).format(total);
 
-    // show result in Amount field
-    amountEl.value = formatted;
-    
-
-    // optional: green flash animation to indicate update
+    // small UI feedback
     amountEl.style.transition = "0.3s";
     amountEl.style.backgroundColor = "#e0ffe0";
     setTimeout(() => (amountEl.style.backgroundColor = ""), 500);
+
+    // 2) Save INVOICE_NO and RATE to DATA_MASTER (only on click)
+    try {
+      const resp = await fetch(BASE_PATH + "/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          card,               // identifies the row
+          invoiceNo,          // DATA_MASTER.INVOICE_NO
+          rate: Number(rate)  // DATA_MASTER.RATE
+        })
+      });
+
+      const json = await resp.json();
+      if (!resp.ok || json.error) {
+        throw new Error(json.error || ("HTTP " + resp.status));
+      }
+
+      alert("Invoice saved: INVOICE_NO and RATE updated successfully.");
+    } catch (err) {
+      console.error("Save error:", err);
+      alert("Failed to save invoice details: " + (err && err.message ? err.message : String(err)));
+    }
   });
-}
+});
 
 
   </script>
@@ -447,6 +482,50 @@ const formatDateTime = (v) => {
 });
 
 
+// POST /InvoiceGeneration/generate
+// Body: { card, invoiceNo, rate }
+router.post("/generate", async (req, res) => {
+  const card = (req.body.card || "").trim();
+  const invoiceNo = (req.body.invoiceNo || "").trim();
+  const rate = req.body.rate;
+
+  if (!card)      return res.status(400).json({ error: "card is required." });
+  if (!invoiceNo) return res.status(400).json({ error: "invoiceNo is required." });
+  if (rate == null || isNaN(Number(rate))) {
+    return res.status(400).json({ error: "rate must be a valid number." });
+  }
+
+  try {
+    const pool = await sql.connect(dbConfig);
+
+    // Ensure the row exists for this card
+    const exists = await pool.request()
+      .input("card", sql.VarChar, card)
+      .query("SELECT TOP 1 CARD_NO FROM DATA_MASTER WHERE CARD_NO = @card");
+
+    if (exists.recordset.length === 0) {
+      return res.status(404).json({ error: "Card not found in DATA_MASTER." });
+    }
+
+    // Update only INVOICE_NO and RATE
+    await pool.request()
+      .input("invoiceNo", sql.VarChar, invoiceNo)
+      // adjust precision/scale to match your DATA_MASTER.RATE column
+      .input("rate", sql.Decimal(18, 4), Number(rate))
+      .input("card", sql.VarChar, card)
+      .query(`
+        UPDATE DATA_MASTER
+          SET INVOICE_NO = @invoiceNo,
+              RATE       = @rate
+        WHERE CARD_NO = @card
+      `);
+
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error("Error saving invoice:", err);
+    return res.status(500).json({ error: "Server error while saving invoice." });
+  }
+});
 
 
 module.exports = router;
