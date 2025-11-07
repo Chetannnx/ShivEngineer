@@ -28,13 +28,14 @@ app.set('poolPromise', poolPromise);
 // ✅ Use Routers (cleaned duplicates)
 app.use('/', require('./Routes/home'));
 app.use('/tees', require('./Routes/tees'));
-//app.use('/',require('./Routes/tees'))
+app.use('/',require('./Routes/tees'))
 app.use('/truckmaster', require('./Routes/truckMaster'));
 app.use('/truck-master', require('./Routes/truckMaster'));
 app.use('/Fan-Generation', require('./Routes/Fangeneration'));
 app.use('/EntryWeight', require('./Routes/EntryWeight'));
 app.use('/ExitWeigh', require('./Routes/ExitWeigh'));
 app.use('/InvoiceGeneration', require('./Routes/InvoiceGeneration'));
+app.use('/WeighingBill', require('./Routes/WeighingBill'));
 app.use('/Icons', express.static(path.join(__dirname, 'Icons')));
 
 

@@ -9,10 +9,10 @@ router.get("/", (req, res) => {
   const html = `<!DOCTYPE html>
 <html>
 <head>
-  <title>Invoice Generation</title>
+  <title>Weighing Bill</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://fonts.googleapis.com/css?family=DM Sans" rel="stylesheet">
-  <link rel="stylesheet" href="/Css/InvoiceGeneration.css">
+  <link rel="stylesheet" href="/Css/WeighingBill.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
 </head>
 <body style="font-family: 'DM Sans', sans-serif;">
@@ -24,14 +24,14 @@ router.get("/", (req, res) => {
       <li><a href="/Fan-Generation">FAN GENERATION</a></li>
       <li><a href="/EntryWeight">ENTRY BRIDGE</a></li>
       <li><a href="/ExitWeigh">EXIT BRIDGE</a></li>
-      <li><a class="active" href="/InvoiceGeneration">INVOICE GENERATION</a></li>
-      <li><a href="/WeighingBill">WEIGHING BILL</a></li>
+      <li><a href="/InvoiceGeneration">INVOICE GENERATION</a></li>
+      <li><a class="active" href="/WeighingBill">WEIGHING BILL</a></li>
     </ul>
   </nav>
 
   <h2 style="text-align:center;">
     <i class="fa-solid fa-receipt" style="font-size:21px;"></i>
-    INVOICE GENERATION
+    WEIGHING BILL
   </h2>
 
   <!-- TOP BAR -->
@@ -69,7 +69,7 @@ router.get("/", (req, res) => {
 
     <div class="card">
       <div class="label">Fiscal No :</div>
-      <input type="text" id="D_FISCAL_NO" placeholder="Enter Invoice No" >
+      <input type="text" id="D_FISCAL_NO" placeholder="Enter Invoice No">
     </div>
   </section>
 
@@ -77,14 +77,7 @@ router.get("/", (req, res) => {
   <section class="grid">
     <!-- LEFT -->
     <div class="card">
-      <div class="row"><div class="label">Trailer Number :</div><input id="T_TRAILER_NUMBER" type="text" readonly></div>
-      <div class="row"><div class="label">Owner Name :</div><input id="T_OWNER_NAME" type="text" readonly></div>
-      <div class="row"><div class="label">Driver Name :</div><input id="T_DRIVER_NAME" type="text" readonly></div>
-      <div class="row"><div class="label">Helper Name :</div><input id="T_HELPER_NAME" type="text" readonly></div>
-      <div class="row"><div class="label">Carrier Company :</div><input id="T_CARRIER_COMPANY" type="text" readonly></div>
       <div class="row"><div class="label">Customer Name :</div><input id="D_CUSTOMER_NAME" type="text" readonly></div>
-      <div class="row"><div class="label">Customer Address Line1 :</div><input id="D_CUSTOMER_ADDRESS_LINE1" type="text" readonly></div>
-      <div class="row"><div class="label">Customer Address Line2 :</div><input id="D_CUSTOMER_ADDRESS_LINE2" type="text" readonly></div>
       <div class="row"><div class="label">Item Description :</div>
         <select id="D_ITEM_DESCRIPTION" disabled>
           <option value="">-- Select --</option>
@@ -93,11 +86,11 @@ router.get("/", (req, res) => {
           <option value="Jetkero">Jetkero</option>
         </select>
       </div>
-      <div class="row"><div class="label">Rate :</div><input id="D_RATE" type="number" min="0" step="0.01" placeholder="Enter Rate" ></div>
       <div class="row"><div class="label">Fan Timeout :</div><input id="D_FAN_TIMEOUT" type="text" readonly></div>
       <div class="row"><div class="label">Tare Weight :</div><input id="T_TARE_WEIGHT" type="number" min="0" step="0.01" readonly></div>
       <div class="row"><div class="label">Max Weight :</div><input id="T_MAX_WEIGHT" type="number" min="0" step="0.01" readonly></div>
       <div class="row"><div class="label">Max Fuel Capacity :</div><input id="T_MAX_FUEL_CAPACITY" type="number" min="0" step="0.01" readonly></div>
+      <div class="row"><div class="label">Ticket Number :</div><input id="TICKET_NUMBER" type="text"></div>
     </div>
 
     <!-- RIGHT -->
@@ -121,25 +114,17 @@ router.get("/", (req, res) => {
       </div>
       <div class="row"><div class="label">Seal No :</div><input id="D_SEAL_NO" type="text" readonly></div>
       <div class="row"><div class="label">Net Weight :</div><input id="D_NET_WEIGHT" type="number" min="0" step="0.01" readonly></div>
-      <div class="row"><div class="label">Actual Quantity Filled :</div><input id="D_ACTUAL_WEIGHT_AT_BAY" type="text" readonly></div>
-      <div class="row"><div class="label">Tare Weight at Entry :</div><input id="D_TARE_WEIGHT_AT_ENTRY" type="number" min="0" step="0.01" readonly></div>
-      <div class="row"><div class="label">Gross Weight at Exit :</div><input id="D_GROSS_WEIGHT_AT_EXIT" type="number" min="0" step="0.01" readonly></div>
-      <div class="row"><div class="label">Tare Weight at Entry Time :</div><input id="D_TARE_WEIGHT_AT_ENTRY_TIME" type="text" readonly></div>
-      <div class="row"><div class="label">Gross Weight at Exit Time :</div><input id="D_GROSS_WEIGHT_AT_EXIT_TIME" type="text" readonly></div>
-      <div class="row"><div class="label">Payment Due Date :</div><input id="DERIVED_DUE" type="date"></div>
-      <div class="row"><div class="label">Amount To Be Paid :</div><input id="DERIVED_AMOUNT" type="text" placeholder="₹" readonly></div>
+      <div class="row"><div class="label">Gross Weight at Entry :</div><input id="D_GROSS_WEIGHT_AT_ENTRY" type="number" min="0" step="0.01" readonly></div>
+      <div class="row"><div class="label">Tare Weight at Exit :</div><input id="D_TARE_WEIGHT_AT_EXIT" type="number" min="0" step="0.01" readonly></div>
+      <div class="row"><div class="label">Gross Weight at Entry Time :</div><input id="D_GROSS_WEIGHT_AT_ENTRY_TIME" type="text" readonly></div>
+      <div class="row"><div class="label">Tare Weight at Exit Time :</div><input id="D_TARE_WEIGHT_AT_EXIT_TIME" type="text" readonly></div>
     </div>
   </section>
 
-  <button id="invoiceBtn" type="button">Invoice Generation</button>
-
-
-
-  <!-- SCRIPTS -->
-  <script>
-  // ========= Common helpers for fetch-fill =========
+    <script>
+ // ========= Common helpers for fetch-fill =========
   (function () {
-    var BASE_PATH = "/InvoiceGeneration";
+    var BASE_PATH = "/WeighingBill";
 
     function $id(x) { return document.getElementById(x); }
 
@@ -193,8 +178,7 @@ router.get("/", (req, res) => {
         el.disabled = loading;
       }
     }
-
-    // ---- fetch on Enter in Card No ----
+       // ---- fetch on Enter in Card No ----
     var cardInput = $id("D_CARD_NO");
     if (cardInput) {
       cardInput.addEventListener("keydown", function (e) {
@@ -218,6 +202,11 @@ router.get("/", (req, res) => {
             fillFields(data);
             var statusSel = $id("D_PROCESS_STATUS");
             if (statusSel) statusSel.disabled = true;
+            var item = $id("D_ITEM_DESCRIPTION");
+            if (item) item.disabled = true;
+            var status = $id("T_BLACKLIST_STATUS");
+            if (status) status.disabled = true;
+             
           })
           .catch(function(err){
             console.error("Fetch error:", err);
@@ -236,70 +225,16 @@ router.get("/", (req, res) => {
           });
       });
     }
+})();
 
-    // ========= Invoice Button (calculate + save) =========
-    function formatINR(n) {
-      try { return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 }).format(n); }
-      catch(e){ return "INR " + n.toFixed(2); }
-    }
-
-    function generateInvoice() {
-      var rateEl   = $id("D_RATE");
-      var netEl    = $id("D_NET_WEIGHT");
-      var amtEl    = $id("DERIVED_AMOUNT");
-      var invEl    = $id("D_FISCAL_NO");
-      var cardEl   = $id("D_CARD_NO");
-      var statusEl = $id("D_PROCESS_STATUS");
-
-      if (!rateEl || !netEl || !amtEl || !invEl || !cardEl) { alert("Required fields not found in DOM."); return; }
-
-      var rate = parseFloat(rateEl.value);
-      var net  = parseFloat(netEl.value);
-      var invoiceNo = (invEl.value || "").trim();
-      var card      = (cardEl.value || "").trim();
-
-      if (!card) { alert("Enter Card No first."); return; }
-      if (!invoiceNo) { alert("Enter Invoice No (Fiscal No)."); return; }
-      if (!isFinite(rate) || !isFinite(net) || rate <= 0 || net <= 0) { alert("Enter valid positive numbers for Rate and Net Weight."); return; }
-
-      // 1) Calculate amount
-      var amount = Number((rate * net).toFixed(2));
-      amtEl.value = formatINR(amount);
-
-      // 2) Save to server
-      fetch(BASE_PATH + "/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ card: card, invoiceNo: invoiceNo, rate: Number(rate), amount: amount })
-      })
-      .then(function(r){ return r.json().then(function(j){ return { ok: r.ok, body: j }; }); })
-      .then(function(res){
-        if (!res.ok || res.body.error) throw new Error(res.body.error || "Save failed");
-        if (statusEl) statusEl.value = "16";
-        alert("Invoice saved.\\nPROCESS_STATUS=16\\nBATCH_STATUS=0\\nEXIT_GATE_TIME=" + (res.body.exitTime || "(server time set)"));
-      })
-      .catch(function(err){
-        console.error("Save error:", err);
-        alert("Failed to save invoice details: " + (err && err.message ? err.message : String(err)));
-      });
-    }
-
-    var btn = $id("invoiceBtn");
-    if (btn) {
-      btn.disabled = false;           // ensure clickable
-      btn.style.pointerEvents = "auto";
-      btn.addEventListener("click", generateInvoice);
-    }
-  })();
-  </script>
+    </script>
 </body>
 </html>`;
   res.send(html);
 });
 
-// =========================
-// GET /InvoiceGeneration/fetch?card=XXXX
-// =========================
+
+
 router.get("/fetch", async (req, res) => {
   const card = (req.query.card || req.query.CARD_NO || "").trim();
   if (!card) return res.status(400).json({ error: "Card number is required." });
@@ -317,22 +252,15 @@ router.get("/fetch", async (req, res) => {
         d.TRUCK_REG_NO,
         d.PROCESS_STATUS                 AS PROCESS_STATUS,
         d.CUSTOMER_NAME,
-        d.ADDRESS_LINE_1,
-        d.ADDRESS_LINE_2,
         d.ITEM_DESCRIPTION,
         d.FAN_TIME_OUT,
         d.SEAL_NO,
-        d.ACTUAL_WEIGHT_AT_BAY          AS D_ACTUAL_WEIGHT_AT_BAY,
-        d.TARE_WEIGHT                   AS D_TARE_WEIGHT_AT_ENTRY,
-        d.GROSS_WEIGHT                  AS D_GROSS_WEIGHT_AT_EXIT,
+        d.TARE_WEIGHT                   AS D_TARE_WEIGHT_AT_EXIT,
+        d.GROSS_WEIGHT                  AS D_GROSS_WEIGHT_AT_ENTRY,
         d.ENTRY_WEIGHT_TIME,
         d.EXIT_WEIGHT_TIME,
 
-        t.TRAILER_NO,
-        t.OWNER_NAME,
-        t.DRIVER_NAME,
-        t.HELPER_NAME,
-        t.CARRIER_COMPANY,
+        
         t.TARE_WEIGHT                   AS T_TARE_WEIGHT,
         t.MAX_WEIGHT,
         t.MAX_FUEL_CAPACITY,
@@ -380,23 +308,16 @@ router.get("/fetch", async (req, res) => {
     }
 
     const net =
-      (r.D_GROSS_WEIGHT_AT_EXIT || r.D_GROSS_WEIGHT_AT_EXIT === 0) &&
-      (r.D_TARE_WEIGHT_AT_ENTRY || r.D_TARE_WEIGHT_AT_ENTRY === 0)
-        ? Number(r.D_GROSS_WEIGHT_AT_EXIT) - Number(r.D_TARE_WEIGHT_AT_ENTRY)
+      (r.D_GROSS_WEIGHT_AT_ENTRY || r.D_GROSS_WEIGHT_AT_ENTRY === 0) &&
+      (r.D_TARE_WEIGHT_AT_EXIT || r.D_TARE_WEIGHT_AT_EXIT === 0)
+        ? Number(r.D_GROSS_WEIGHT_AT_ENTRY) - Number(r.D_TARE_WEIGHT_AT_EXIT)
         : "";
 
     return res.json({
       D_TRUCK_NO: r.TRUCK_REG_NO || "",
       D_PROCESS_STATUS: r.PROCESS_STATUS ?? "",
 
-      T_TRAILER_NUMBER: r.TRAILER_NO || "",
-      T_OWNER_NAME: r.OWNER_NAME || "",
-      T_DRIVER_NAME: r.DRIVER_NAME || "",
-      T_HELPER_NAME: r.HELPER_NAME || "",
-      T_CARRIER_COMPANY: r.CARRIER_COMPANY || "",
       D_CUSTOMER_NAME: r.CUSTOMER_NAME || "",
-      D_CUSTOMER_ADDRESS_LINE1: r.ADDRESS_LINE_1 || "",
-      D_CUSTOMER_ADDRESS_LINE2: r.ADDRESS_LINE_2 || "",
       D_ITEM_DESCRIPTION: r.ITEM_DESCRIPTION || "",
       D_FAN_TIMEOUT: r.FAN_TIME_OUT || "",
 
@@ -412,103 +333,15 @@ router.get("/fetch", async (req, res) => {
 
       D_SEAL_NO: r.SEAL_NO || "",
       D_NET_WEIGHT: net,
-      D_ACTUAL_WEIGHT_AT_BAY: r.D_ACTUAL_WEIGHT_AT_BAY ?? "",
-      D_TARE_WEIGHT_AT_ENTRY: r.D_TARE_WEIGHT_AT_ENTRY ?? "",
-      D_TARE_WEIGHT_AT_ENTRY_TIME: formatDateTime(r.ENTRY_WEIGHT_TIME),
-      D_GROSS_WEIGHT_AT_EXIT_TIME: formatDateTime(r.EXIT_WEIGHT_TIME),
-      D_GROSS_WEIGHT_AT_EXIT: r.D_GROSS_WEIGHT_AT_EXIT ?? ""
+      D_TARE_WEIGHT_AT_EXIT: r.D_TARE_WEIGHT_AT_EXIT ?? "",
+      D_TARE_WEIGHT_AT_EXIT_TIME: formatDateTime(r.EXIT_WEIGHT_TIME),
+      D_GROSS_WEIGHT_AT_ENTRY_TIME: formatDateTime(r.ENTRY_WEIGHT_TIME),
+      D_GROSS_WEIGHT_AT_ENTRY: r.D_GROSS_WEIGHT_AT_ENTRY ?? ""
     });
   } catch (err) {
     console.error("Error fetching data:", err);
     return res.status(500).json({ error: "Server error while fetching data." });
   }
 });
-
-// =========================
-// POST /InvoiceGeneration/generate
-// Body: { card, invoiceNo, rate, amount }
-// =========================
-// =========================
-// POST /InvoiceGeneration/generate (debug version)
-// =========================
-router.post("/generate", async (req, res) => {
-  const card      = (req.body.card || "").trim();
-  const invoiceNo = (req.body.invoiceNo || "").trim();
-  const rateRaw   = req.body.rate;
-  const amountRaw = req.body.amount;
-
-  // Basic validations
-  if (!card)      return res.status(400).json({ error: "card is required." });
-  if (!invoiceNo) return res.status(400).json({ error: "invoiceNo is required." });
-
-  const rate   = Number(rateRaw);
-  const amount = Number(amountRaw);
-  if (!Number.isFinite(rate))   return res.status(400).json({ error: "rate must be a valid number." });
-  if (!Number.isFinite(amount)) return res.status(400).json({ error: "amount must be a valid number." });
-
-  let pool, tx;
-  try {
-    pool = await sql.connect(dbConfig);
-
-    // 1) verify row exists
-    const exists = await pool.request()
-      .input("card", sql.VarChar(50), card)  // adjust size to your CARD_NO length
-      .query("SELECT TOP 1 CARD_NO FROM DATA_MASTER WHERE CARD_NO = @card");
-
-    if (exists.recordset.length === 0) {
-      return res.status(404).json({ error: "Card not found in DATA_MASTER." });
-    }
-
-    // 2) begin transaction
-    tx = new sql.Transaction(pool);
-    await tx.begin();
-
-    // 3) do the update
-    const reqUp = new sql.Request(tx);
-    reqUp.input("invoiceNo", sql.VarChar(50), invoiceNo);     // adjust length to match INVOICE_NO column
-    reqUp.input("rate",      sql.Decimal(18, 4), rate);       // adjust precision/scale if your column differs
-    reqUp.input("card",      sql.VarChar(50), card);
-
-    // If your amount column isn't AMOUNT_TO_BE_PAID, change it below to the exact name (e.g., AMOUNT or TOTAL_AMOUNT)
-    const updateSql = `
-      UPDATE DATA_MASTER
-         SET INVOICE_NO        = @invoiceNo,
-             RATE              = @rate,
-             PROCESS_STATUS    = 16,
-             BATCH_STATUS      = 0,
-             EXIT_GATE_TIME    = GETDATE()
-       WHERE CARD_NO = @card
-    `;
-
-    await reqUp.query(updateSql);
-
-    // 4) read back EXIT_GATE_TIME for UI
-    const reqTime = new sql.Request(tx);
-    reqTime.input("card", sql.VarChar(50), card);
-    const time = await reqTime.query(`
-      SELECT CONVERT(varchar(19), EXIT_GATE_TIME, 120) AS EXIT_GATE_TIME
-      FROM DATA_MASTER WHERE CARD_NO = @card
-    `);
-
-    await tx.commit();
-    return res.json({ ok: true, exitTime: time.recordset[0]?.EXIT_GATE_TIME || null });
-
-  } catch (err) {
-    // roll back if needed
-    try { if (tx) await tx.rollback(); } catch (e) {}
-
-    // 🔎 Send detailed info to help identify the exact cause
-    const detail = (err && err.originalError && err.originalError.info)
-      ? err.originalError.info.message
-      : (err && err.message) || String(err);
-
-    // TEMPORARY: surface SQL details so you can fix schema/typing issues
-    return res.status(500).json({
-      error: "SQL UPDATE failed",
-      detail
-    });
-  }
-});
-
 
 module.exports = router;

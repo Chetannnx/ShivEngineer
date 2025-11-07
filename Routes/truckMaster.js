@@ -80,6 +80,7 @@ router.get('/', (req, res) => {
       <li><a href="/EntryWeight">ENTRY BRIDGE</a></li>
       <li><a href="/ExitWeigh">EXIT BRIDGE</a></li>
       <li><a href="/InvoiceGeneration">INVOICE GENERATION</a></li>
+      <li><a href="/WeighingBill">WEIGHING BILL</a></li>
     </ul>
   </nav>
 
