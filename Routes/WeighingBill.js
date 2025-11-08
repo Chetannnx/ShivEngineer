@@ -1,9 +1,14 @@
 const express = require("express");
 const sql = require("mssql/msnodesqlv8");
 const dbConfig = require("../Config/dbConfig");
+const path = require("path");
+const fs = require("fs");
 
 const router = express.Router();
 router.use(express.json()); // Needed so req.body works for POST /generate
+
+// === add at top with others ===
+const PDFDocument = require("pdfkit");
 
 router.get("/", async (req, res) => {
   // --- server-side guard: if card belongs to PROCESS_TYPE=1, redirect to InvoiceGeneration
@@ -137,6 +142,7 @@ router.get("/", async (req, res) => {
       <div class="row"><div class="label">Tare Weight at Exit Time :</div><input id="D_TARE_WEIGHT_AT_EXIT_TIME" type="text" readonly></div>
     </div>
   </section>
+  <button id="WeighingBill" type="button">Weighing Bill</button>
 
     <script>
 document.addEventListener("DOMContentLoaded", function () {
@@ -190,7 +196,6 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }
 
-    // ----- core fetch logic (call this instead of faking a keypress) -----
     function fetchByCard(card) {
       if (!card) { alert("Please enter a Card No."); return; }
       setLoading(true);
@@ -199,13 +204,10 @@ document.addEventListener("DOMContentLoaded", function () {
         .then((data) => {
           if (data.popup) { alert(data.popup); return; }
           if (data.error) { alert(data.error); return; }
-
-          // If PROCESS_TYPE is 1, this card belongs to InvoiceGeneration. Bounce back.
           if (String(data.D_PROCESS_TYPE) === "1") {
             window.location.href = "/InvoiceGeneration?card=" + encodeURIComponent(card);
             return;
           }
-
           fillFields(data);
         })
         .catch((err) => {
@@ -215,7 +217,7 @@ document.addEventListener("DOMContentLoaded", function () {
         .finally(() => setLoading(false));
     }
 
-    // ---- Enter key on the Card No field ----
+    // Enter key on the Card No field
     const cardInput = $("D_CARD_NO");
     if (cardInput) {
       cardInput.addEventListener("keydown", function (e) {
@@ -225,20 +227,44 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }
 
-    // ---- Auto-load if redirected with ?card= ----
+    // Auto-load if redirected with ?card=
     const queryCard = getQueryParam("card");
     if (queryCard) {
       if (cardInput) cardInput.value = queryCard;
-      fetchByCard(queryCard); // direct call (no synthetic KeyboardEvent)
+      fetchByCard(queryCard);
+    }
+
+    // ✅ Download PDF on button click (now inside same scope as BASE_PATH)
+    const btn = $("WeighingBill");
+    if (btn) {
+      btn.addEventListener("click", function () {
+        const card = ($("D_CARD_NO")?.value || "").trim();
+        if (!card) { alert("Please enter a Card No."); return; }
+        window.location.href = BASE_PATH + "/pdf?card=" + encodeURIComponent(card);
+      });
     }
   })();
 });
+
+
+// ---- Download PDF on button click ----
+const btn = document.getElementById("WeighingBill");
+if (btn) {
+  btn.addEventListener("click", function () {
+    const card = (document.getElementById("D_CARD_NO")?.value || "").trim();
+    if (!card) { alert("Please enter a Card No."); return; }
+    // Direct download
+    window.location.href = BASE_PATH + "/pdf?card=" + encodeURIComponent(card);
+  });
+}
+
 </script>
 
 </body>
 </html>`;
   res.send(html);
 });
+
 
 
 
@@ -359,5 +385,195 @@ router.get("/fetch", async (req, res) => {
     return res.status(500).json({ error: "Server error while fetching data." });
   }
 });
+
+// ✅ STEP 3: Paste the helper function right here — BEFORE module.exports
+async function getWeighingBillDataByCard(card) {
+  const pool = await sql.connect(dbConfig);
+
+  const query = `
+    WITH d AS (
+      SELECT TOP 1 *
+      FROM DATA_MASTER
+      WHERE CARD_NO = @card
+    )
+    SELECT
+      d.TRUCK_REG_NO,
+      d.PROCESS_STATUS AS PROCESS_STATUS,
+      d.INVOICE_NO,                   
+      d.CUSTOMER_NAME,
+      d.ITEM_DESCRIPTION,
+      d.FAN_TIME_OUT,
+      d.SEAL_NO,
+      d.TARE_WEIGHT AS D_TARE_WEIGHT_AT_EXIT,
+      d.GROSS_WEIGHT AS D_GROSS_WEIGHT_AT_ENTRY,
+      d.ENTRY_WEIGHT_TIME,
+      d.EXIT_WEIGHT_TIME,
+      d.PROCESS_TYPE,
+      d.FAN_NO,
+
+      t.TARE_WEIGHT AS T_TARE_WEIGHT,
+      t.MAX_WEIGHT,
+      t.MAX_FUEL_CAPACITY,
+      t.BLACKLIST_STATUS,
+      t.REASON_FOR_BLACKLIST,
+      t.SAFETY_CERTIFICATION_NO,
+      t.CALIBRATION_CERTIFICATION_NO,
+      t.TRUCK_SEALING_REQUIREMENT
+    FROM d
+    LEFT JOIN TRUCK_MASTER t ON t.TRUCK_REG_NO = d.TRUCK_REG_NO
+  `;
+
+  const result = await pool.request().input("card", sql.VarChar, card).query(query);
+  if (!result.recordset.length) return null;
+
+  const r = result.recordset[0];
+
+  const net =
+    (r.D_GROSS_WEIGHT_AT_ENTRY || r.D_GROSS_WEIGHT_AT_ENTRY === 0) &&
+    (r.D_TARE_WEIGHT_AT_EXIT || r.D_TARE_WEIGHT_AT_EXIT === 0)
+      ? Number(r.D_GROSS_WEIGHT_AT_ENTRY) - Number(r.D_TARE_WEIGHT_AT_EXIT)
+      : "";
+
+   function fmtDate(v) {
+      if (!v) return "";
+      const d = new Date(v);
+      if (Number.isNaN(d.getTime())) return "";
+
+      const dd = String(d.getUTCDate()).padStart(2, "0");
+      const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+      const yyyy = d.getUTCFullYear();
+
+      let hours = d.getUTCHours();
+      const minutes = String(d.getUTCMinutes()).padStart(2, "0");
+      const seconds = String(d.getUTCSeconds()).padStart(2, "0");
+      const ampm = hours >= 12 ? "PM" : "AM";
+      hours = hours % 12 || 12;
+      const hh = String(hours).padStart(2, "0");
+
+      return dd + "-" + mm + "-" + yyyy + " " + hh + ":" + minutes + ":" + seconds + " " + ampm;
+    }
+
+  return {
+    ticketNo: r.FAN_NO || "",
+    fiscalNo: r.INVOICE_NO || "",
+    truckNo: r.TRUCK_REG_NO || "",
+    sealNo: r.SEAL_NO || "",
+
+    customerName: r.CUSTOMER_NAME || "",
+    
+    tareExit: r.D_TARE_WEIGHT_AT_EXIT ?? "",
+    grossEntry: r.D_GROSS_WEIGHT_AT_ENTRY ?? "",
+    netWeight: net === "" ? "" : String(net),
+    grossEntryTime: fmtDate(r.ENTRY_WEIGHT_TIME),
+    tareExitTime: fmtDate(r.EXIT_WEIGHT_TIME),
+    item: r.ITEM_DESCRIPTION || "",
+  };
+}
+
+
+// === PDF route ===
+router.get("/pdf", async (req, res) => {
+  try {
+    const card = (req.query.card || "").trim();
+    if (!card) return res.status(400).send("card query is required");
+
+    const data = await getWeighingBillDataByCard(card);
+    if (!data) return res.status(404).send("Card not found");
+
+    // Create PDF
+    const doc = new PDFDocument({ size: "A4", margin: 36 }); // 595x842 pt, 0.5in margin
+    const filename = `Weighing_Bill_${(data.ticketNo || card).toString().replace(/\s+/g, "_")}.pdf`;
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    doc.pipe(res);
+
+    // (Optional) If you have a logo file in public, you can draw it like:
+    // const logoPath = path.join(__dirname, "../public/Assets/somgas.png");
+    // if (fs.existsSync(logoPath)) doc.image(logoPath, 36, 36, { width: 120 });
+
+    // helper quick draw
+    const LBL = (x, y, t) => { doc.fontSize(10).font("Helvetica-Bold").text(t, x, y); };
+    const VAL = (x, y, t, w=240) => { doc.fontSize(11).font("Helvetica").text(t || "", x, y, { width: w }); };
+    const H2  = (y, t) => { doc.fontSize(14).font("Helvetica-Bold").text(t, 0, y, { align: "center" }); };
+    const line = (y) => { doc.moveTo(36, y).lineTo(559, y).stroke(); };
+
+    function section(yTop) {
+  const logoPath = path.join(__dirname, "../icons/Somgas.png"); // ✅ correct path
+  const hasLogo = fs.existsSync(logoPath);
+
+  if (hasLogo) {
+    // draw logo on the left
+    doc.image(logoPath, 36, yTop, { width: 100 });
+  }
+
+  doc.fontSize(16)
+     .font("Helvetica-Bold")
+     .text("WEIGHING BILL", hasLogo ? 160 : 0, yTop + 20, {
+       align: hasLogo ? "left" : "center",
+     });
+
+  // draw line below header
+  doc.moveTo(36, yTop + 50).lineTo(559, yTop + 50).stroke();
+
+  const y = yTop + 70;;
+
+      // row 1
+      LBL(36, y, "Ticket No:");
+      VAL(120, y, data.ticketNo);
+      LBL(320, y, "Fiscal No:");
+      VAL(400, y, data.fiscalNo);
+
+      // row 2
+      LBL(36, y+20, "Truck No:");
+      VAL(120, y+20, data.truckNo);
+      LBL(320, y+20, "Item:");
+      VAL(400, y+20, data.item);
+
+      // row 3
+      LBL(36, y+40, "Customer Name:");
+      VAL(150, y+40, data.customerName, 380);
+
+      // row 4
+      LBL(36, y+60, "Seal No:");
+      VAL(120, y+60, data.sealNo);
+
+      // weights & times
+      LBL(36, y+92, "Tare Weight:");
+      VAL(120, y+92, data.tareExit ? `${data.tareExit} kg` : "");
+      LBL(320, y+92, "Date & Time:");
+      VAL(400, y+92, data.tareExitTime);
+
+      LBL(36, y+112, "Gross Weight:");
+      VAL(120, y+112, data.grossEntry ? `${data.grossEntry} kg` : "");
+      LBL(320, y+112, "Date & Time:");
+      VAL(400, y+112, data.grossEntryTime);
+
+      LBL(36, y+132, "Net Weight:");
+      VAL(120, y+132, data.netWeight ? `${data.netWeight} kg` : "");
+
+      // signatures
+      const boxY = y+170;
+      doc.rect(36, boxY, 230, 28).stroke();
+      doc.rect(320, boxY, 230, 28).stroke();
+      doc.fontSize(10).font("Helvetica").text("Driver Signature", 36+6, boxY+8);
+      doc.text("Operator Signature", 320+6, boxY+8);
+
+      // bottom cut line
+      line(boxY + 48);
+    }
+
+    // Top copy
+    section(36);
+    // Bottom copy
+    section(420);
+
+    doc.end();
+  } catch (err) {
+    console.error("WeighingBill /pdf error:", err);
+    res.status(500).send("Server error while generating PDF.");
+  }
+});
+
 
 module.exports = router;
