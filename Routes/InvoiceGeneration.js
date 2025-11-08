@@ -5,7 +5,24 @@ const dbConfig = require("../Config/dbConfig");
 const router = express.Router();
 router.use(express.json()); // Needed so req.body works for POST /generate
 
-router.get("/", (req, res) => {
+router.get("/", async (req, res) => {
+  // --- server-side guard: if card belongs to PROCESS_TYPE=0, redirect to WeighingBill
+  const card = (req.query.card || "").trim();
+  if (card) {
+    try {
+      const pool = await sql.connect(dbConfig);
+      const r = await pool.request()
+        .input("card", sql.VarChar(50), card)
+        .query("SELECT TOP 1 PROCESS_TYPE FROM DATA_MASTER WHERE CARD_NO=@card");
+      const type = r.recordset[0]?.PROCESS_TYPE;
+      if (String(type) === "0") {
+        return res.redirect(302, "/WeighingBill?card=" + encodeURIComponent(card));
+      }
+    } catch (e) {
+      console.error("InvoiceGeneration guard error:", e);
+      // If guard fails, we just fall through and render page
+    }
+  }
   const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -14,6 +31,12 @@ router.get("/", (req, res) => {
   <link href="https://fonts.googleapis.com/css?family=DM Sans" rel="stylesheet">
   <link rel="stylesheet" href="/Css/InvoiceGeneration.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
+  <!-- JS libraries (CDN) -->
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+
+<img id="somgasLogo" src="/Icons/Somgas.png" alt="" style="display:none">
+
 </head>
 <body style="font-family: 'DM Sans', sans-serif;">
   <nav>
@@ -136,162 +159,485 @@ router.get("/", (req, res) => {
 
 
   <!-- SCRIPTS -->
+
+
+
   <script>
-  // ========= Common helpers for fetch-fill =========
-  (function () {
-    var BASE_PATH = "/InvoiceGeneration";
+// =====================================================
+// Helper: Collect all invoice data from form fields
+// =====================================================
+function collectInvoiceModel() {
+  const $ = (id) => (document.getElementById(id)?.value ?? "").trim();
 
-    function $id(x) { return document.getElementById(x); }
+  const qty  = parseFloat($("D_NET_WEIGHT")) || 0;
+  const rate = parseFloat($("D_RATE")) || 0;
+  const amount = +(qty * rate).toFixed(2);
 
-    function toDateInput(v) {
-      if (v == null || v === "") return "";
-      var d = (v instanceof Date) ? v : new Date(v);
-      if (isNaN(d.getTime())) return "";
-      var mm = String(d.getMonth() + 1).padStart(2, "0");
-      var dd = String(d.getDate()).padStart(2, "0");
-      return d.getFullYear() + "-" + mm + "-" + dd;
+  return {
+    // For backend save
+    card: $("D_CARD_NO"),
+    invoiceNo: $("D_FISCAL_NO"),
+    rate,
+    netWeight: qty,
+    amount,
+
+    // For PDF
+    company: {
+      name:  "Somgas Company",
+      addr1: "Opposite Berbera Main Road, Near Port,",
+      addr2: "HQ: Hargeisa, Somaliland",
+      email: "somgaslpterminal@gmail.com"
+    },
+    invoice: {
+      number: $("D_FISCAL_NO"),
+      date:   $("DERIVED_DUE") || new Date().toISOString().slice(0,10),
+      terms:  "Due On Receipt",
+      dueDate: $("DERIVED_DUE") || "",
+      currencyLabel: "USD",
+      balanceDue: amount
+    },
+    billTo: {
+      line1: $("D_CUSTOMER_NAME"),
+      line2: $("D_CUSTOMER_ADDRESS_LINE1"),
+      line3: $("D_CUSTOMER_ADDRESS_LINE2")
+    },
+    item: {
+      description: $("D_ITEM_DESCRIPTION"),
+      qty: qty,
+      rate: rate
+    },
+    notes: {
+      ticket:  "",
+      truck:   $("D_TRUCK_NO"),
+      trailer: $("T_TRAILER_NUMBER"),
+      seal:    $("D_SEAL_NO"),
+      driver:  $("T_DRIVER_NAME")
+    }
+  };
+}
+
+// =====================================================
+// Function: Generate invoice, save, then download PDF
+// =====================================================
+function generateInvoice() {
+  const model = collectInvoiceModel();
+
+  if (!model.card) return alert("Enter Card No");
+  if (!model.invoiceNo) return alert("Enter Invoice No");
+
+  // Calculate amount safely
+  const amount = model.rate * model.netWeight || 0;
+  model.amount = amount;
+
+  fetch("/InvoiceGeneration/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      card: model.card,
+      invoiceNo: model.invoiceNo,
+      rate: model.rate,
+      amount: amount
+    })
+  })
+  .then(r => r.json().then(j => ({ ok: r.ok, body: j })))
+  .then(res => {
+    if (!res.ok || res.body.error) throw new Error(res.body.error);
+    alert("Invoice saved successfully!");
+    buildInvoicePDF(model);  // PDF download here
+  })
+  .catch(err => alert("Error saving invoice: " + err.message));
+}
+
+// =====================================================
+// Function: Build PDF exactly like SOMGAS format
+// =====================================================
+function buildInvoicePDF(data = {}) {
+  const jsPDFLib = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+  if (!jsPDFLib) { alert("jsPDF library not loaded"); return; }
+  const doc = new jsPDFLib({ unit: "pt", format: "a4" });
+
+  // ---- Shortcuts ----
+  const W = doc.internal.pageSize.getWidth();
+  const H = doc.internal.pageSize.getHeight();
+  const M = 28;                      // page margin
+  const gridY = 12;                  // vertical rhythm
+  const lineClr = [40, 40, 40];      // dark bar (table header etc.)
+  const gray = [105, 105, 105];
+  const stroke = [170, 170, 170];
+  const lightStroke = [210, 210, 210];
+
+  // ========== Helper Functions ==========
+  function $id(x) { return document.getElementById(x); }
+  function field(id, fallback = "") {
+    const el = $id(id);
+    return (data[id] != null ? data[id] : (el && (el.value || el.textContent) || fallback)).toString().trim();
+  }
+  function val(v, fb="") { return (v == null || v === "") ? fb : v; }
+  function money(n) {
+    if (n == null || n === "") return "0.00";
+    const num = Number(n);
+    if (!isFinite(num)) return "0.00";
+    return num.toFixed(2);
+  }
+
+  // ✅ FIXED: Convert all text to string before drawing
+  function label(x, y, t, size=9, bold=false, align="left") {
+    doc.setFont("DM Sans", bold ? "bold" : "normal");
+    doc.setFontSize(size);
+    doc.text(String(t ?? ""), x, y, { align });
+  }
+  function box(x, y, w, h) {
+    doc.setDrawColor(...stroke);
+    doc.rect(x, y, w, h);
+  }
+  function inputBox(x, y, w, h, text, size=10, pad=8, bold=false) {
+    box(x, y, w, h);
+    doc.setFont("DM Sans", bold ? "bold" : "normal");
+    doc.setFontSize(size);
+    doc.text(String(text ?? ""), x + pad, y + h/2 + (size/2 - 2));
+  }
+  function headerBar(y, textLeft) {
+    doc.setFillColor(...lineClr);
+    doc.rect(0, y, W, 20, "F");
+    doc.setTextColor(255,255,255);
+    label(M, y + 14, textLeft, 10, true);
+    doc.setTextColor(0,0,0);
+  }
+  function dashedLine(x1, y1, x2, y2) {
+    doc.setDrawColor(...lightStroke);
+    doc.setLineDash([2, 2], 0);
+    doc.line(x1, y1, x2, y2);
+    doc.setLineDash(); // reset
+  }
+
+  // ========= Gather data =========
+  const nowStr = new Date().toLocaleString();
+
+  const company = {
+    name:  val(data.company?.name, "Somgas Company"),
+    addr1: val(data.company?.addr1, "Opposite Berbera Main Road, Near Port,"),
+    addr2: val(data.company?.addr2, "HQ: Hargeisa, Somaliland"),
+    email: val(data.company?.email, "somgaslpterminal@gmail.com"),
+  };
+
+  const invoice = {
+    number: val(data.invoice?.number, field("D_FISCAL_NO", "000000000000000001")),
+    date:   val(data.invoice?.date, field("DERIVED_DUE") || new Date().toISOString().slice(0,10)),
+    terms:  val(data.invoice?.terms, "Due On Receipt"),
+    dueDate: val(data.invoice?.dueDate, field("DERIVED_DUE") || "12/31/2002"),
+    currencyLabel: val(data.invoice?.currencyLabel, "USD"),
+    balanceDue: money(val(data.invoice?.balanceDue, "")),
+  };
+
+  const billTo = {
+    line1: val(data.billTo?.line1, field("D_CUSTOMER_NAME", "Bill To Name")),
+    line2: val(data.billTo?.line2, field("D_CUSTOMER_ADDRESS_LINE1", "")),
+    line3: val(data.billTo?.line3, field("D_CUSTOMER_ADDRESS_LINE2", "")),
+  };
+
+  const item = {
+    description: val(data.item?.description, field("D_ITEM_DESCRIPTION", "")),
+    qty: val(data.item?.qty, field("D_NET_WEIGHT", "")),
+    rate: val(data.item?.rate, field("D_RATE", "")),
+  };
+
+  const notes = {
+    ticket: val(data.notes?.ticket, ""),
+    truck:  val(data.notes?.truck, field("D_TRUCK_NO", "")),
+    trailer: val(data.notes?.trailer, field("T_TRAILER_NUMBER", "")),
+    seal: val(data.notes?.seal, field("D_SEAL_NO", "")),
+    driver: val(data.notes?.driver, field("T_DRIVER_NAME", "")),
+  };
+
+  // Derive amount
+  const amountNum = (isFinite(parseFloat(item.qty)) && isFinite(parseFloat(item.rate)))
+    ? +(parseFloat(item.qty) * parseFloat(item.rate)).toFixed(2) : 0;
+  const amountStr = money(amountNum);
+  if (!invoice.balanceDue) invoice.balanceDue = amountStr;
+
+  // ========= HEADER =========
+ // ========= HEADER (logo, title, inv no) =========
+// Tweakable positions:
+const HEADER_TOP = 10;        // push smaller for higher logo
+const LOGO_W = 135, LOGO_H = 40;
+const LOGO_X = M, LOGO_Y = HEADER_TOP;  // move up by reducing HEADER_TOP
+
+const TITLE_Y = HEADER_TOP + 22;        // "Invoice" title
+const INVNO_Y = HEADER_TOP + 18;        // right-side invoice number
+const SEP_Y   = HEADER_TOP + 42;        // thin line under header
+const STRIP_Y = SEP_Y + 6;              // "Detail page 1" strip baseline
+
+const logoEl = document.getElementById("somgasLogo");
+if (logoEl && logoEl.complete) {
+  try { doc.addImage(logoEl, "PNG", LOGO_X, LOGO_Y, LOGO_W, LOGO_H); } catch (e) {}
+}
+label(W/2, TITLE_Y, "Invoice", 16, false, "center");
+label(W - M - 5, INVNO_Y, "# INV - " + invoice.number, 10, true, "right");
+
+// thin top separator
+doc.setDrawColor(...gray);
+doc.line(0, SEP_Y, W, SEP_Y);
+
+// "Detail page 1" gray strip (thin)
+doc.setFillColor(235,235,235);
+doc.rect(0, STRIP_Y, W, 18, "F");
+label(M, STRIP_Y + 13, "Detail page 1", 9, true);
+
+// push body start a bit lower than the strip
+let ye = STRIP_Y + 36;
+
+  // ========= COMPANY + BALANCE =========
+  let y = 90;
+  label(M, y, company.name, 11, true);
+  y += gridY;
+  label(M, y, company.addr1, 10);
+  y += gridY;
+  label(M, y, company.addr2, 10);
+  y += gridY;
+  label(M, y, company.email, 10);
+
+  // Balance Due (top-right)
+const balBoxW = 200, balBoxH = 25;
+const balX = W - M - balBoxW;
+
+// ↓ how much to move everything down (try 6–10)
+const BAL_SHIFT = 4;
+
+// anchor
+const balY = 110 + BAL_SHIFT;
+
+// title (right aligned)
+label(W - M - 5, 85 + BAL_SHIFT, "Balance Due", 10, false, "right");
+
+// currency tag (e.g., USD)
+label(balX, balY - 4, invoice.currencyLabel, 9, true);
+
+// amount box
+inputBox(balX + 50, balY - 18, balBoxW - 40, balBoxH, invoice.balanceDue, 11);
+
+  // ========= BILL TO + right-side Invoice Date/Terms/Due =========
+y += 22;
+
+// Left column: Bill To
+label(M, y, "Bill To:", 10, true);
+y += gridY;
+label(M, y, billTo.line1, 10);
+y += gridY;
+label(M, y, billTo.line2, 10);
+y += gridY;
+label(M, y, billTo.line3, 10);
+
+// Right column (use unique variable names to avoid collisions)
+const billRightStartY = y - gridY * 3;     // top aligned with first Bill To line
+const billRightLabelX = W - M - 240;       // label X
+const billFieldW = 160;
+const billFieldH = 18;
+const billFieldOffset = 90;                // gap from label to box
+
+// Invoice Date
+label(billRightLabelX, billRightStartY, "Invoice Date :", 9, true);
+inputBox(billRightLabelX + billFieldOffset, billRightStartY - 12,
+         billFieldW, billFieldH, invoice.date, 10);
+
+// Terms
+const billTermsY = billRightStartY + gridY + 6;
+label(billRightLabelX, billTermsY, "Terms :", 9, true);
+inputBox(billRightLabelX + billFieldOffset, billTermsY - 12,
+         billFieldW, billFieldH, invoice.terms, 10);
+
+// Due Date
+const billDueY = billTermsY + gridY + 6;
+label(billRightLabelX, billDueY, "Due Date :", 9, true);
+inputBox(billRightLabelX + billFieldOffset, billDueY - 12,
+         billFieldW, billFieldH, invoice.dueDate, 10);
+
+
+  
+
+  // ========= ITEM TABLE =========
+  const tableTop = y + 50;
+  headerBar(tableTop, "");
+
+  const col1X = M, col1W = W - 2*M - 270;
+  const col2X = col1X + col1W, col2W = 90;
+  const col3X = col2X + col2W, col3W = 90;
+  const col4X = col3X + col3W, col4W = 90;
+  const thY  = tableTop + 14;
+
+  doc.setTextColor(255,255,255);
+  label(col1X + 6, thY, "Item & Description", 10, true);
+  label(col2X + 6, thY, "Qty", 10, true);
+  label(col3X + 6, thY, "Rate", 10, true);
+  label(col4X + 6, thY, "Amount", 10, true);
+  doc.setTextColor(0,0,0);
+
+  const rowY = tableTop + 20;
+  const rowH = 38;
+  box(col1X, rowY, col1W, rowH);
+  box(col2X, rowY, col2W, rowH);
+  box(col3X, rowY, col3W, rowH);
+  box(col4X, rowY, col4W, rowH);
+
+  const descLines = doc.splitTextToSize(String(item.description || ""), col1W - 8);
+  doc.text(descLines, col1X + 6, rowY + 14);
+
+  label(col2X + 8, rowY + 18, String(item.qty));
+  label(col2X + 8, rowY + 34, "kg", 9, false);
+  label(col3X + 8, rowY + 18, String(item.rate));
+  label(col3X + 8, rowY + 34, invoice.currencyLabel, 9, false);
+  label(col4X + 8, rowY + 18, amountStr);
+  label(col4X + 8, rowY + 34, invoice.currencyLabel, 9, false);
+
+  const sepY = rowY + rowH + 20;
+  dashedLine(M, sepY, W - M, sepY);
+
+  // ========= NOTES =========
+  const notesTop = sepY + 40;
+  label(M, notesTop, "Notes:", 10, true);
+
+  const leftColX = M + 12, labelW = 90, fieldW = 300, rowGap = 22;
+  let nY = notesTop + 16;
+  function noteRow(lbl, value) {
+    label(leftColX, nY, lbl, 9, true);
+    inputBox(leftColX + labelW, nY - 12, fieldW, 18, value || "", 10);
+    nY += rowGap;
+  }
+  noteRow("Ticket No.:", notes.ticket);
+  noteRow("Truck No.:", notes.truck);
+  noteRow("Trailer No.:", notes.trailer);
+  noteRow("Seal No.:", notes.seal);
+  noteRow("Driver Name", notes.driver);
+
+// ========= Footer + signatures =========
+const BOTTOM_MARGIN = 28;              // 28 is tighter; increase to move higher up
+const SIG_BOX_H = 24;
+const SIG_GAP_X = 20;
+
+const footBaseline = H - BOTTOM_MARGIN;
+const sigTopY = footBaseline - SIG_BOX_H - 10;
+
+doc.setDrawColor(...lightStroke);
+doc.line(0, sigTopY - 12, W, sigTopY - 12);
+
+const sigW = (W - 2*M - SIG_GAP_X) / 2;
+inputBox(M, sigTopY, sigW, SIG_BOX_H, "", 10);
+inputBox(M + sigW + SIG_GAP_X, sigTopY, sigW, SIG_BOX_H, "", 10);
+
+label(M + 4, footBaseline, "Driver Signature", 9);
+label(M + sigW + SIG_GAP_X + 4, footBaseline, "Operator Signature", 9);
+
+label(M, H - 10, "Generated on " + nowStr, 8);
+
+  // Save PDF
+  const filename = "Invoice_" + (invoice.number || Date.now()) + ".pdf";
+  doc.save(filename);
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  // Base path
+  const BASE_PATH = "/InvoiceGeneration";
+
+  // Helper to get element by id
+  function $(id) { return document.getElementById(id); }
+
+  // When Enter key is pressed in Card No field
+  const cardInput = $("D_CARD_NO");
+  cardInput.addEventListener("keydown", function(e) {
+    if (e.key !== "Enter") return;  // only on Enter key
+    e.preventDefault();
+
+    const card = cardInput.value.trim();
+    if (!card) {
+      alert("Please enter a Card No.");
+      return;
     }
 
-    function fillFields(data) {
-      Object.keys(data).forEach(function (id) {
-        var val = data[id];
-        var el = $id(id);
-        if (!el) return;
+    // Show loading cursor
+    document.body.style.cursor = "progress";
 
-        if (el.type === "date") {
-          el.value = toDateInput(val);
+    // Fetch data from backend
+    fetch(BASE_PATH + "/fetch?card=" + encodeURIComponent(card))
+      .then(response => response.json())
+      .then(data => {
+        document.body.style.cursor = "auto";
+
+        if (data.error) {
+          alert("Error: " + data.error);
           return;
         }
 
-        if (el.tagName === "SELECT") {
-          var v = String(val == null ? "" : val);
-          var exists = false, i;
-          for (i = 0; i < el.options.length; i++) {
-            if (el.options[i].value === v) { exists = true; break; }
-          }
-          if (!exists && v !== "") {
-            var opt = document.createElement("option");
-            opt.value = v;
-            opt.textContent = v;
-            el.appendChild(opt);
-          }
-          el.value = v;
+        if (data.popup) {
+          alert(data.popup);
           return;
         }
 
-        el.value = (val == null ? "" : val);
-      });
-    }
+        // ✅ Fill fetched data in textboxes
+        for (const key in data) {
+          const el = $(key);
+          if (el) el.value = data[key];
+        }
 
-    function setLoading(loading) {
-      document.body.style.cursor = loading ? "progress" : "auto";
-      // Do NOT disable buttons; keep the Invoice button always clickable
-      var els = document.querySelectorAll("input, select, textarea");
-      var i; for (i = 0; i < els.length; i++) {
-        var el = els[i];
-        if (el.id === "D_CARD_NO") continue; // keep card editable if you want
-        el.disabled = loading;
-      }
-    }
+        // ✅ Redirect if wrong process type
+        if (String(data.D_PROCESS_TYPE) === "0") {
+          window.location.href = "/WeighingBill?card=" + encodeURIComponent(card);
+          return;
+        }
 
-    // ---- fetch on Enter in Card No ----
-    var cardInput = $id("D_CARD_NO");
-    if (cardInput) {
-      cardInput.addEventListener("keydown", function (e) {
-        if (e.key !== "Enter") return;
-        e.preventDefault();
-
-        var card = cardInput.value.trim();
-        if (!card) { alert("Please enter a Card No."); return; }
-
-        var url = BASE_PATH + "/fetch?card=" + encodeURIComponent(card);
-
-        setLoading(true);
-        fetch(url, { method: "GET" })
-          .then(function(resp){
-            if (!resp.ok) return resp.text().then(function(t){ throw new Error(t || ("HTTP " + resp.status)); });
-            return resp.json();
-          })
-          .then(function(data){
-            if (data.popup) { alert(data.popup); return; }
-            if (data.error) { alert(data.error); return; }
-            fillFields(data);
-            var statusSel = $id("D_PROCESS_STATUS");
-            if (statusSel) statusSel.disabled = true;
-          })
-          .catch(function(err){
-            console.error("Fetch error:", err);
-            alert("Failed to fetch: " + (err && err.message ? err.message : String(err)));
-          })
-          .finally(function(){
-            setLoading(false);
-            var statusSel = $id("D_PROCESS_STATUS");
-            if (statusSel) statusSel.disabled = true;
-            var item = $id("D_ITEM_DESCRIPTION");
-            if (item) item.disabled = true;
-            var status = $id("T_BLACKLIST_STATUS");
-            if (status) status.disabled = true;
-            var truck = $id("T_TRUCK_SEALING_REQUIREMENT");
-            if (truck) truck.disabled = true;
-          });
-      });
-    }
-
-    // ========= Invoice Button (calculate + save) =========
-    function formatINR(n) {
-      try { return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 }).format(n); }
-      catch(e){ return "INR " + n.toFixed(2); }
-    }
-
-    function generateInvoice() {
-      var rateEl   = $id("D_RATE");
-      var netEl    = $id("D_NET_WEIGHT");
-      var amtEl    = $id("DERIVED_AMOUNT");
-      var invEl    = $id("D_FISCAL_NO");
-      var cardEl   = $id("D_CARD_NO");
-      var statusEl = $id("D_PROCESS_STATUS");
-
-      if (!rateEl || !netEl || !amtEl || !invEl || !cardEl) { alert("Required fields not found in DOM."); return; }
-
-      var rate = parseFloat(rateEl.value);
-      var net  = parseFloat(netEl.value);
-      var invoiceNo = (invEl.value || "").trim();
-      var card      = (cardEl.value || "").trim();
-
-      if (!card) { alert("Enter Card No first."); return; }
-      if (!invoiceNo) { alert("Enter Invoice No (Fiscal No)."); return; }
-      if (!isFinite(rate) || !isFinite(net) || rate <= 0 || net <= 0) { alert("Enter valid positive numbers for Rate and Net Weight."); return; }
-
-      // 1) Calculate amount
-      var amount = Number((rate * net).toFixed(2));
-      amtEl.value = formatINR(amount);
-
-      // 2) Save to server
-      fetch(BASE_PATH + "/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ card: card, invoiceNo: invoiceNo, rate: Number(rate), amount: amount })
+        alert("Data fetched successfully!");
       })
-      .then(function(r){ return r.json().then(function(j){ return { ok: r.ok, body: j }; }); })
-      .then(function(res){
-        if (!res.ok || res.body.error) throw new Error(res.body.error || "Save failed");
-        if (statusEl) statusEl.value = "16";
-        alert("Invoice saved.\\nPROCESS_STATUS=16\\nBATCH_STATUS=0\\nEXIT_GATE_TIME=" + (res.body.exitTime || "(server time set)"));
-      })
-      .catch(function(err){
-        console.error("Save error:", err);
-        alert("Failed to save invoice details: " + (err && err.message ? err.message : String(err)));
+      .catch(err => {
+        document.body.style.cursor = "auto";
+        alert("Failed to fetch: " + err.message);
+        console.error(err);
       });
+  });
+
+  // ===== Invoice Button =====
+  const btn = $("invoiceBtn");
+  btn.addEventListener("click", function() {
+    const rate = parseFloat($("D_RATE").value);
+    const net = parseFloat($("D_NET_WEIGHT").value);
+    const invoiceNo = $("D_FISCAL_NO").value.trim();
+    const card = $("D_CARD_NO").value.trim();
+
+    if (!card) { alert("Enter Card No first."); return; }
+    if (!invoiceNo) { alert("Enter Invoice No first."); return; }
+    if (!isFinite(rate) || !isFinite(net) || rate <= 0 || net <= 0) {
+      alert("Enter valid numbers for Rate and Net Weight.");
+      return;
     }
 
-    var btn = $id("invoiceBtn");
-    if (btn) {
-      btn.disabled = false;           // ensure clickable
-      btn.style.pointerEvents = "auto";
-      btn.addEventListener("click", generateInvoice);
-    }
-  })();
-  </script>
+    const amount = (rate * net).toFixed(2);
+    $("DERIVED_AMOUNT").value = "₹" + amount;
+
+    fetch(BASE_PATH + "/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ card, invoiceNo, rate, amount })
+    })
+      .then(r => r.json())
+      .then(res => {
+        if (res.error) {
+          alert("Save failed: " + res.error);
+          return;
+        }
+          
+  // ✅ Build and download PDF in SOMGAS format
+  const model = collectInvoiceModel();
+  buildInvoicePDF(model);
+
+  alert("Invoice saved and PDF downloaded.");
+       
+
+      })
+      .catch(err => {
+        alert("Error saving invoice: " + err.message);
+      });
+  });
+});
+</script>
+
+
 </body>
 </html>`;
   res.send(html);
@@ -327,6 +673,7 @@ router.get("/fetch", async (req, res) => {
         d.GROSS_WEIGHT                  AS D_GROSS_WEIGHT_AT_EXIT,
         d.ENTRY_WEIGHT_TIME,
         d.EXIT_WEIGHT_TIME,
+        d.PROCESS_TYPE,
 
         t.TRAILER_NO,
         t.OWNER_NAME,
@@ -388,6 +735,7 @@ router.get("/fetch", async (req, res) => {
     return res.json({
       D_TRUCK_NO: r.TRUCK_REG_NO || "",
       D_PROCESS_STATUS: r.PROCESS_STATUS ?? "",
+      D_PROCESS_TYPE: r.PROCESS_TYPE ?? null,   // <<< ADD THIS
 
       T_TRAILER_NUMBER: r.TRAILER_NO || "",
       T_OWNER_NAME: r.OWNER_NAME || "",

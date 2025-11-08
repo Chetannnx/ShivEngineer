@@ -5,7 +5,24 @@ const dbConfig = require("../Config/dbConfig");
 const router = express.Router();
 router.use(express.json()); // Needed so req.body works for POST /generate
 
-router.get("/", (req, res) => {
+router.get("/", async (req, res) => {
+  // --- server-side guard: if card belongs to PROCESS_TYPE=1, redirect to InvoiceGeneration
+  const card = (req.query.card || "").trim();
+  if (card) {
+    try {
+      const pool = await sql.connect(dbConfig);
+      const r = await pool.request()
+        .input("card", sql.VarChar(50), card)
+        .query("SELECT TOP 1 PROCESS_TYPE FROM DATA_MASTER WHERE CARD_NO=@card");
+      const type = r.recordset[0]?.PROCESS_TYPE;
+      if (String(type) === "1") {
+        return res.redirect(302, "/InvoiceGeneration?card=" + encodeURIComponent(card));
+      }
+    } catch (e) {
+      console.error("WeighingBill guard error:", e);
+      // If guard fails, we just fall through and render page
+    }
+  }
   const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -26,6 +43,7 @@ router.get("/", (req, res) => {
       <li><a href="/ExitWeigh">EXIT BRIDGE</a></li>
       <li><a href="/InvoiceGeneration">INVOICE GENERATION</a></li>
       <li><a class="active" href="/WeighingBill">WEIGHING BILL</a></li>
+      <li><a href="/GenerateReport">Generate Report</a></li>
     </ul>
   </nav>
 
@@ -122,112 +140,102 @@ router.get("/", (req, res) => {
   </section>
 
     <script>
- // ========= Common helpers for fetch-fill =========
+document.addEventListener("DOMContentLoaded", function () {
   (function () {
-    var BASE_PATH = "/WeighingBill";
+    const BASE_PATH = "/WeighingBill";
 
-    function $id(x) { return document.getElementById(x); }
+    const $ = (id) => document.getElementById(id);
 
-    function toDateInput(v) {
-      if (v == null || v === "") return "";
-      var d = (v instanceof Date) ? v : new Date(v);
+    const getQueryParam = (name) => {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name) || "";
+    };
+
+    const toDateInput = (v) => {
+      if (!v) return "";
+      const d = new Date(v);
       if (isNaN(d.getTime())) return "";
-      var mm = String(d.getMonth() + 1).padStart(2, "0");
-      var dd = String(d.getDate()).padStart(2, "0");
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
       return d.getFullYear() + "-" + mm + "-" + dd;
-    }
+    };
 
     function fillFields(data) {
-      Object.keys(data).forEach(function (id) {
-        var val = data[id];
-        var el = $id(id);
+      Object.keys(data).forEach((id) => {
+        const el = $(id);
         if (!el) return;
+        const val = data[id];
 
-        if (el.type === "date") {
-          el.value = toDateInput(val);
-          return;
-        }
+        if (el.type === "date") { el.value = toDateInput(val); return; }
 
         if (el.tagName === "SELECT") {
-          var v = String(val == null ? "" : val);
-          var exists = false, i;
-          for (i = 0; i < el.options.length; i++) {
-            if (el.options[i].value === v) { exists = true; break; }
-          }
-          if (!exists && v !== "") {
-            var opt = document.createElement("option");
-            opt.value = v;
-            opt.textContent = v;
+          const v = String(val ?? "");
+          if (![...el.options].some(o => o.value === v) && v !== "") {
+            const opt = document.createElement("option");
+            opt.value = v; opt.textContent = v;
             el.appendChild(opt);
           }
           el.value = v;
           return;
         }
 
-        el.value = (val == null ? "" : val);
+        el.value = val ?? "";
       });
     }
 
     function setLoading(loading) {
       document.body.style.cursor = loading ? "progress" : "auto";
-      // Do NOT disable buttons; keep the Invoice button always clickable
-      var els = document.querySelectorAll("input, select, textarea");
-      var i; for (i = 0; i < els.length; i++) {
-        var el = els[i];
-        if (el.id === "D_CARD_NO") continue; // keep card editable if you want
+      document.querySelectorAll("input, select, textarea").forEach((el) => {
+        if (el.id === "D_CARD_NO") return;
         el.disabled = loading;
-      }
+      });
     }
-       // ---- fetch on Enter in Card No ----
-    var cardInput = $id("D_CARD_NO");
+
+    // ----- core fetch logic (call this instead of faking a keypress) -----
+    function fetchByCard(card) {
+      if (!card) { alert("Please enter a Card No."); return; }
+      setLoading(true);
+      fetch(BASE_PATH + "/fetch?card=" + encodeURIComponent(card))
+        .then((resp) => resp.ok ? resp.json() : resp.text().then(t => { throw new Error(t || ("HTTP " + resp.status)); }))
+        .then((data) => {
+          if (data.popup) { alert(data.popup); return; }
+          if (data.error) { alert(data.error); return; }
+
+          // If PROCESS_TYPE is 1, this card belongs to InvoiceGeneration. Bounce back.
+          if (String(data.D_PROCESS_TYPE) === "1") {
+            window.location.href = "/InvoiceGeneration?card=" + encodeURIComponent(card);
+            return;
+          }
+
+          fillFields(data);
+        })
+        .catch((err) => {
+          console.error("WeighingBill fetch error:", err);
+          alert("Failed to fetch: " + (err && err.message ? err.message : String(err)));
+        })
+        .finally(() => setLoading(false));
+    }
+
+    // ---- Enter key on the Card No field ----
+    const cardInput = $("D_CARD_NO");
     if (cardInput) {
       cardInput.addEventListener("keydown", function (e) {
         if (e.key !== "Enter") return;
         e.preventDefault();
-
-        var card = cardInput.value.trim();
-        if (!card) { alert("Please enter a Card No."); return; }
-
-        var url = BASE_PATH + "/fetch?card=" + encodeURIComponent(card);
-
-        setLoading(true);
-        fetch(url, { method: "GET" })
-          .then(function(resp){
-            if (!resp.ok) return resp.text().then(function(t){ throw new Error(t || ("HTTP " + resp.status)); });
-            return resp.json();
-          })
-          .then(function(data){
-            if (data.popup) { alert(data.popup); return; }
-            if (data.error) { alert(data.error); return; }
-            fillFields(data);
-            var statusSel = $id("D_PROCESS_STATUS");
-            if (statusSel) statusSel.disabled = true;
-            var item = $id("D_ITEM_DESCRIPTION");
-            if (item) item.disabled = true;
-            var status = $id("T_BLACKLIST_STATUS");
-            if (status) status.disabled = true;
-             
-          })
-          .catch(function(err){
-            console.error("Fetch error:", err);
-            alert("Failed to fetch: " + (err && err.message ? err.message : String(err)));
-          })
-          .finally(function(){
-            setLoading(false);
-            var statusSel = $id("D_PROCESS_STATUS");
-            if (statusSel) statusSel.disabled = true;
-            var item = $id("D_ITEM_DESCRIPTION");
-            if (item) item.disabled = true;
-            var status = $id("T_BLACKLIST_STATUS");
-            if (status) status.disabled = true;
-            var truck = $id("T_TRUCK_SEALING_REQUIREMENT");
-            if (truck) truck.disabled = true;
-          });
+        fetchByCard(cardInput.value.trim());
       });
     }
-})();
 
-    </script>
+    // ---- Auto-load if redirected with ?card= ----
+    const queryCard = getQueryParam("card");
+    if (queryCard) {
+      if (cardInput) cardInput.value = queryCard;
+      fetchByCard(queryCard); // direct call (no synthetic KeyboardEvent)
+    }
+  })();
+});
+</script>
+
 </body>
 </html>`;
   res.send(html);
@@ -251,6 +259,7 @@ router.get("/fetch", async (req, res) => {
       SELECT
         d.TRUCK_REG_NO,
         d.PROCESS_STATUS                 AS PROCESS_STATUS,
+        d.INVOICE_NO,                     
         d.CUSTOMER_NAME,
         d.ITEM_DESCRIPTION,
         d.FAN_TIME_OUT,
@@ -259,6 +268,9 @@ router.get("/fetch", async (req, res) => {
         d.GROSS_WEIGHT                  AS D_GROSS_WEIGHT_AT_ENTRY,
         d.ENTRY_WEIGHT_TIME,
         d.EXIT_WEIGHT_TIME,
+        d.PROCESS_TYPE,
+        
+
 
         
         t.TARE_WEIGHT                   AS T_TARE_WEIGHT,
@@ -316,6 +328,8 @@ router.get("/fetch", async (req, res) => {
     return res.json({
       D_TRUCK_NO: r.TRUCK_REG_NO || "",
       D_PROCESS_STATUS: r.PROCESS_STATUS ?? "",
+      D_FISCAL_NO: r.INVOICE_NO || "",
+      D_PROCESS_TYPE: r.PROCESS_TYPE ?? null,   // <<< ADD THIS
 
       D_CUSTOMER_NAME: r.CUSTOMER_NAME || "",
       D_ITEM_DESCRIPTION: r.ITEM_DESCRIPTION || "",
