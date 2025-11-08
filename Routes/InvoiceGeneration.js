@@ -163,6 +163,8 @@ router.get("/", async (req, res) => {
 
 
   <script>
+  let FETCHED = {}; // store last SQL response
+
 // =====================================================
 // Helper: Collect all invoice data from form fields
 // =====================================================
@@ -207,7 +209,7 @@ function collectInvoiceModel() {
       rate: rate
     },
     notes: {
-      ticket:  "",
+      ticket:   String(FETCHED.FAN_NO || ""),  // ✅ SQL FAN_NO shown as Ticket No
       truck:   $("D_TRUCK_NO"),
       trailer: $("T_TRAILER_NUMBER"),
       seal:    $("D_SEAL_NO"),
@@ -523,8 +525,8 @@ const sigW = (W - 2*M - SIG_GAP_X) / 2;
 inputBox(M, sigTopY, sigW, SIG_BOX_H, "", 10);
 inputBox(M + sigW + SIG_GAP_X, sigTopY, sigW, SIG_BOX_H, "", 10);
 
-label(M + 4, footBaseline, "Driver Signature", 9);
-label(M + sigW + SIG_GAP_X + 4, footBaseline, "Operator Signature", 9);
+label(M + 4, footBaseline, "Driver Signature", 9, true);
+label(M + sigW + SIG_GAP_X + 4, footBaseline, "Operator Signature", 9, true);
 
 label(M, H - 10, "Generated on " + nowStr, 8);
 
@@ -576,6 +578,7 @@ document.addEventListener("DOMContentLoaded", function() {
           const el = $(key);
           if (el) el.value = data[key];
         }
+FETCHED = data;  // ✅ Save all fetched SQL data for PDF
 
         // ✅ Redirect if wrong process type
         if (String(data.D_PROCESS_TYPE) === "0") {
@@ -674,6 +677,7 @@ router.get("/fetch", async (req, res) => {
         d.ENTRY_WEIGHT_TIME,
         d.EXIT_WEIGHT_TIME,
         d.PROCESS_TYPE,
+        d.FAN_NO,
 
         t.TRAILER_NO,
         t.OWNER_NAME,
@@ -751,6 +755,7 @@ router.get("/fetch", async (req, res) => {
       T_TARE_WEIGHT: r.T_TARE_WEIGHT ?? "",
       T_MAX_WEIGHT: r.MAX_WEIGHT ?? "",
       T_MAX_FUEL_CAPACITY: r.MAX_FUEL_CAPACITY ?? "",
+      FAN_NO: r.FAN_NO || "",
 
       T_BLACKLIST_STATUS: r.BLACKLIST_STATUS ?? "",
       T_BLACKLIST_REASON: r.REASON_FOR_BLACKLIST || "",

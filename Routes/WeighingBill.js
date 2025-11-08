@@ -43,7 +43,6 @@ router.get("/", async (req, res) => {
       <li><a href="/ExitWeigh">EXIT BRIDGE</a></li>
       <li><a href="/InvoiceGeneration">INVOICE GENERATION</a></li>
       <li><a class="active" href="/WeighingBill">WEIGHING BILL</a></li>
-      <li><a href="/GenerateReport">Generate Report</a></li>
     </ul>
   </nav>
 
@@ -269,6 +268,7 @@ router.get("/fetch", async (req, res) => {
         d.ENTRY_WEIGHT_TIME,
         d.EXIT_WEIGHT_TIME,
         d.PROCESS_TYPE,
+        d.FAN_NO,
         
 
 
@@ -337,6 +337,8 @@ router.get("/fetch", async (req, res) => {
 
       T_TARE_WEIGHT: r.T_TARE_WEIGHT ?? "",
       T_MAX_WEIGHT: r.MAX_WEIGHT ?? "",
+      TICKET_NUMBER: r.FAN_NO || "",
+
       T_MAX_FUEL_CAPACITY: r.MAX_FUEL_CAPACITY ?? "",
 
       T_BLACKLIST_STATUS: r.BLACKLIST_STATUS ?? "",
