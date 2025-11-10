@@ -235,6 +235,33 @@ document.getElementById("acceptBtn").addEventListener("click", async function ()
 })();
 
 
+//========================================================================================
+//In your EntryWeight HTML, add this script at the bottom of the page (after all inputs):
+//========================================================================================
+// Listen for messages from Unified control
+  window.addEventListener('message', function (event) {
+    const data = event.data || {};
+    if (data.source !== 'EntryWeightBridge') return; // ignore unrelated messages
+
+    // If CardNo updated
+    if (data.type === 'CardNo') {
+      const cardInput = document.getElementById('CARD_NO') || document.getElementById('card_no');
+      if (cardInput) cardInput.value = data.value ?? '';
+    }
+
+    // If MeasuredWeight updated from PLC
+    if (data.type === 'MeasuredWeight') {
+      const weightInput = document.getElementById('max_weight_entry');
+      if (weightInput) {
+        weightInput.value = data.value ?? '';
+        // Optional: flash animation for feedback
+        weightInput.style.transition = 'background 0.3s';
+        weightInput.style.background = 'rgba(0, 255, 0, 0.2)';
+        setTimeout(() => (weightInput.style.background = 'transparent'), 300);
+      }
+    }
+  });
+
 </script>
 </body>
 </html>`;

@@ -482,8 +482,9 @@ setBtnState(decideStateFromData(data));
 
 
 
-
+  //===============
   //find Using URL
+  //==============
     (function () {
   // Parse query parameters from URL
   const params = new URLSearchParams(window.location.search);
@@ -1616,6 +1617,7 @@ router.get("/api/fan-generation/card/:cardNo", async (req, res) => {
             ITEM_DESCRIPTION, FAN_TIME_OUT, FAN_EXPIRY, WEIGHT_TO_FILLED, PROCESS_STATUS
         FROM DATA_MASTER 
         WHERE CARD_NO = @cardNo 
+        AND BATCH_STATUS = 1
         ORDER BY FAN_TIME_OUT DESC
       `);
 
