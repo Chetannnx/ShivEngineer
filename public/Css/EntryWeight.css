@@ -119,8 +119,9 @@ nav ul li a.active::after {
   font-weight: bold;
   font-size: 16px;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  box-sizing: border-box;
+  min-width: 0;
 }
-
 
 /* ✅ Center the button at the bottom of the form-container */
 .button-container {
@@ -146,7 +147,6 @@ nav ul li a.active::after {
 #acceptBtn:hover {
   background-color: #45a049;
 }
-
 
 .form-group input:focus,
 .form-group select:focus {
@@ -183,32 +183,4 @@ nav ul li a.active::after {
 #closePopup:hover {
   color: #ff4444;
   transform: rotate(45deg);
-}
-
-/* === RESPONSIVE DESIGN === */
-@media (max-width: 1024px) {
-  .form-container {
-    flex-direction: column;
-    gap: 25px;
-    max-width: 90%;
-    padding: 20px;
-  }
-
-  .form-group {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .form-group label {
-    flex: none;
-    width: 100%;
-  }
-
-  .form-group input,
-  .form-group select {
-    width: 20%;
-  }
-}
-.form-group input {
-width: 30%;
 }
