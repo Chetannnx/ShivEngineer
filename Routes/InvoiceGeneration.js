@@ -535,109 +535,131 @@ label(M, H - 10, "Generated on " + nowStr, 8);
   doc.save(filename);
 }
 
-document.addEventListener("DOMContentLoaded", function() {
-  // Base path
-  const BASE_PATH = "/InvoiceGeneration";
 
-  // Helper to get element by id
+//=============
+//FETCH DATA 
+//=============
+
+document.addEventListener("DOMContentLoaded", function () {
+  var BASE_PATH = "/InvoiceGeneration";
+
+  // simple helper
   function $(id) { return document.getElementById(id); }
 
-  // When Enter key is pressed in Card No field
-  const cardInput = $("D_CARD_NO");
-  cardInput.addEventListener("keydown", function(e) {
-    if (e.key !== "Enter") return;  // only on Enter key
-    e.preventDefault();
+  // ===== Fetch + fill =====
+  function fetchAndFill(card) {
+    if (!card) { alert("Please enter a Card No."); return; }
 
-    const card = cardInput.value.trim();
-    if (!card) {
-      alert("Please enter a Card No.");
-      return;
-    }
-
-    // Show loading cursor
     document.body.style.cursor = "progress";
 
-    // Fetch data from backend
     fetch(BASE_PATH + "/fetch?card=" + encodeURIComponent(card))
-      .then(response => response.json())
-      .then(data => {
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
         document.body.style.cursor = "auto";
 
-        if (data.error) {
-          alert("Error: " + data.error);
-          return;
+        if (data.error) { alert("Error: " + data.error); return; }
+        if (data.popup) { alert(data.popup); return; }
+
+        // fill fields by matching IDs
+        for (var k in data) {
+          if (!Object.prototype.hasOwnProperty.call(data, k)) continue;
+          var el = $(k);
+          if (el) el.value = data[k];
         }
 
-        if (data.popup) {
-          alert(data.popup);
-          return;
-        }
+        // stash for PDF
+        FETCHED = data;  
 
-        // ✅ Fill fetched data in textboxes
-        for (const key in data) {
-          const el = $(key);
-          if (el) el.value = data[key];
-        }
-FETCHED = data;  // ✅ Save all fetched SQL data for PDF
-
-        // ✅ Redirect if wrong process type
+        // redirect if process type is UNLOADING
         if (String(data.D_PROCESS_TYPE) === "0") {
           window.location.href = "/WeighingBill?card=" + encodeURIComponent(card);
-          return;
         }
-
-        alert("Data fetched successfully!");
       })
-      .catch(err => {
+      .catch(function (err) {
         document.body.style.cursor = "auto";
         alert("Failed to fetch: " + err.message);
         console.error(err);
       });
-  });
+  }
 
-  // ===== Invoice Button =====
-  const btn = $("invoiceBtn");
-  btn.addEventListener("click", function() {
-    const rate = parseFloat($("D_RATE").value);
-    const net = parseFloat($("D_NET_WEIGHT").value);
-    const invoiceNo = $("D_FISCAL_NO").value.trim();
-    const card = $("D_CARD_NO").value.trim();
+  // ===== Enter key on Card No =====
+  var cardInput = $("D_CARD_NO");
+  if (cardInput) {
+    cardInput.addEventListener("keydown", function (e) {
+      var key = e.key || e.code || "";
+      if (key === "Enter" || key === "NumpadEnter") {
+        e.preventDefault();
+        fetchAndFill(cardInput.value.trim());
+      }
+    });
+  }
 
-    if (!card) { alert("Enter Card No first."); return; }
-    if (!invoiceNo) { alert("Enter Invoice No first."); return; }
-    if (!isFinite(rate) || !isFinite(net) || rate <= 0 || net <= 0) {
-      alert("Enter valid numbers for Rate and Net Weight.");
-      return;
+  // ===== Auto-fetch if URL has ?card= or ?CARD_NO= =====
+  (function () {
+    var params = new URLSearchParams(window.location.search);
+    var card = (params.get("card") || params.get("CARD_NO") || "").trim();
+    if (card && cardInput) {
+      cardInput.value = card;
+      fetchAndFill(card);
     }
+  })();
 
-    const amount = (rate * net).toFixed(2);
-    $("DERIVED_AMOUNT").value = "₹" + amount;
+  // ===== Invoice Button (put INSIDE the same block) =====
+  var btn = $("invoiceBtn");
+  if (btn) {
+    btn.addEventListener("click", function () {
+      var rate = parseFloat(($("D_RATE").value || "").trim());
+      var net  = parseFloat(($("D_NET_WEIGHT").value || "").trim());
+      var invoiceNo = ($("D_FISCAL_NO").value || "").trim();
+      var card = ($("D_CARD_NO").value || "").trim();
 
-    fetch(BASE_PATH + "/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ card, invoiceNo, rate, amount })
-    })
-      .then(r => r.json())
-      .then(res => {
-        if (res.error) {
-          alert("Save failed: " + res.error);
-          return;
-        }
-          
-  // ✅ Build and download PDF in SOMGAS format
-  const model = collectInvoiceModel();
-  buildInvoicePDF(model);
+      if (!card) { alert("Enter Card No first."); return; }
+      if (!invoiceNo) { alert("Enter Invoice No first."); return; }
+      if (!isFinite(rate) || !isFinite(net) || rate <= 0 || net <= 0) {
+        alert("Enter valid numbers for Rate and Net Weight.");
+        return;
+      }
 
-  alert("Invoice saved and PDF downloaded.");
-       
+      var amount = (rate * net).toFixed(2);
+      $("DERIVED_AMOUNT").value = "₹" + amount;
 
+      fetch(BASE_PATH + "/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ card: card, invoiceNo: invoiceNo, rate: rate, amount: amount })
       })
-      .catch(err => {
+      .then(function (r) { return r.json(); })
+      .then(function (res) {
+        if (res.error) { alert("Save failed: " + res.error); return; }
+
+        // build + download PDF
+        var model = collectInvoiceModel();
+        buildInvoicePDF(model);
+        alert("Invoice saved and PDF downloaded.");
+      })
+      .catch(function (err) {
         alert("Error saving invoice: " + err.message);
       });
-  });
+    });
+  }
 });
+
+
+
+//=================
+//URL THROW SEARCH 
+//==================
+// (function () {
+//   const params = new URLSearchParams(window.location.search);
+//   const cardNo = params.get('CARD_NO');
+//   if (cardNo) {
+//     const cardInput = document.getElementById('D_CARD_NO');
+//     if (cardInput) {
+//       cardInput.value = cardNo;
+//       fetchByCard(cardNo); // ✅ Auto-fetch on load
+//     }
+//   }
+// })();
 </script>
 
 

@@ -112,12 +112,11 @@ router.get("/", (req, res) => {
   // Fetch Truck + Process info
   // =============================
   // fetch truck + process on card input
-document.getElementById("card_no").addEventListener("input", async function() {
-  const cardNo = this.value.trim();
+async function fetchByCard(cardNo) {
   const truckField = document.getElementById("truck_reg");
   const processField = document.getElementById("process_type");
 
-  if (cardNo.length === 0) {
+  if (!cardNo) {
     truckField.value = "";
     processField.value = "";
     return;
@@ -126,10 +125,8 @@ document.getElementById("card_no").addEventListener("input", async function() {
   try {
     const url = "/ExitWeigh/fetch?CARD_NO=" + encodeURIComponent(cardNo);
     const res = await fetch(url);
-
     const data = await res.json();
 
-    // ✅ If backend says FAN not generated, show alert and stop
     if (data.warning) {
       showPopup(data.warning);
       truckField.value = "";
@@ -137,11 +134,9 @@ document.getElementById("card_no").addEventListener("input", async function() {
       return;
     }
 
-    // ✅ Fill data only if TRUCK_REG_NO exists
     if (data && data.TRUCK_REG_NO) {
       truckField.value = data.TRUCK_REG_NO;
 
-      // Convert process type to readable text
       if (data.PROCESS_TYPE === 1 || data.PROCESS_TYPE === "1") {
         processField.value = "LOADING";
       } else if (data.PROCESS_TYPE === 0 || data.PROCESS_TYPE === "0") {
@@ -155,6 +150,18 @@ document.getElementById("card_no").addEventListener("input", async function() {
     }
   } catch (err) {
     console.error("Fetch error:", err);
+    showPopup("Error fetching data.");
+  }
+}
+
+// =============================
+// Trigger fetch ONLY on Enter
+// =============================
+const cardInput = document.getElementById("card_no");
+cardInput.addEventListener("keydown", async (e) => {
+  if (e.key === "Enter" || e.key === "NumpadEnter") {
+    e.preventDefault();
+    await fetchByCard(cardInput.value.trim());
   }
 });
 
@@ -227,6 +234,22 @@ document.getElementById("acceptBtn").addEventListener("click", async function ()
     showPopup("Network error");
   }
 });
+
+
+//=================
+//URL THROW SEARCH 
+//==================
+(function () {
+  const params = new URLSearchParams(window.location.search);
+  const cardNo = params.get('CARD_NO');
+  if (cardNo) {
+    const cardInput = document.getElementById('card_no');
+    if (cardInput) {
+      cardInput.value = cardNo;
+      fetchByCard(cardNo); // 🔹 Auto-fetch on page load
+    }
+  }
+})();
 
 </script>
 

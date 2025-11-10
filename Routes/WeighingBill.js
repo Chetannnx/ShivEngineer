@@ -510,7 +510,7 @@ router.get("/pdf", async (req, res) => {
   doc.fontSize(16)
      .font("Helvetica-Bold")
      .text("WEIGHING BILL", hasLogo ? 160 : 0, yTop + 20, {
-       align: hasLogo ? "left" : "center",
+       align: hasLogo ? "center" : "center",
      });
 
   // draw line below header
