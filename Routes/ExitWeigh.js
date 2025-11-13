@@ -251,6 +251,49 @@ document.getElementById("acceptBtn").addEventListener("click", async function ()
   }
 })();
 
+
+//====================
+//In your ExitWeight HTML, add this script at the bottom of the page (after all inputs):
+//====================
+  // Optional: prefill from URL for first load
+  (function prefill() {
+    const p = new URLSearchParams(window.location.search);
+    const w = p.get('MEASURED_WEIGHT');
+    if (w && !isNaN(w)) {
+      const el = document.getElementById('measured_weight');
+      if (el) el.value = Number(w);
+    }
+  })();
+
+  // Live updates from the Unified custom control
+  window.addEventListener('message', function (evt) {
+    const data = evt.data || {};
+    // For production, also validate evt.origin
+    if (data.source !== 'ExitWeightBridge') return;
+
+    if (data.type === 'CardNo') {
+      // if you also have a CardNo field in Exit page, set it here
+      const cardEl = document.getElementById('CARD_NO') || document.getElementById('card_no');
+      if (cardEl) cardEl.value = data.value ?? '';
+    }
+
+    if (data.type === 'MeasuredWeight') {
+      const el = document.getElementById('measured_weight');
+      if (!el) return;
+      const v = data.value;
+      if (v == null || isNaN(v)) {
+        el.value = '';
+      } else {
+        const n = Number(v);
+        el.value = Number.isInteger(n) ? String(n) : n.toFixed(2);
+      }
+      // optional visual feedback
+      el.style.transition = 'background 0.25s';
+      el.style.background = 'rgba(0, 255, 0, 0.18)';
+      setTimeout(() => (el.style.background = 'transparent'), 250);
+    }
+  });
+
 </script>
 
 
