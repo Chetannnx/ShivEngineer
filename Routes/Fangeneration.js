@@ -499,26 +499,88 @@ async function fetchTruckData() {
   //===============
   //find Using URL
   //==============
-    (function () {
-  // Parse query parameters from URL
+//     (function () {
+//   // Parse query parameters from URL
+//   const params = new URLSearchParams(window.location.search);
+//   const cardNo = params.get('CARD_NO');
+
+//   // If CARD_NO is present, fill the input and optionally trigger fetch
+//   if (cardNo) {
+//     const input = document.getElementById('CARD_NO');
+//     if (input) {
+//       input.value = cardNo;
+
+//       // Optional: call your fetch function to load related data
+//       if (typeof fetchTruckData === "function") {
+//         fetchTruckData();
+//       }
+//     } else {
+//       console.warn('CARD_NO field not found in iframe.');
+//     }
+//   }
+// })();
+
+
+//=================
+// URL-THROW SEARCH (uses TRUCK_NO)
+//==================
+(function () {
   const params = new URLSearchParams(window.location.search);
-  const cardNo = params.get('CARD_NO');
-
-  // If CARD_NO is present, fill the input and optionally trigger fetch
-  if (cardNo) {
-    const input = document.getElementById('CARD_NO');
-    if (input) {
-      input.value = cardNo;
-
-      // Optional: call your fetch function to load related data
-      if (typeof fetchTruckData === "function") {
-        fetchTruckData();
+  const truckNo = params.get('TRUCK_NO');
+  if (truckNo) {
+    const truckInput = document.getElementById('truckRegInput');
+    if (truckInput) {
+      truckInput.value = truckNo;
+      // call your fetch function for truck (rename accordingly)
+      if (typeof fetchByTruck === 'function') {
+        fetchByTruck(truckNo); // Auto-fetch on page load
+      } else {
+        console.warn('fetchByTruck is not defined — ensure you renamed fetchByCard to fetchByTruck.');
       }
-    } else {
-      console.warn('CARD_NO field not found in iframe.');
     }
   }
 })();
+
+
+//========================================================================================
+// Listen for messages from Unified control (EntryWeightBridge)
+//========================================================================================
+window.addEventListener('message', function (event) {
+  const data = event.data || {};
+  if (data.source !== 'EntryWeightBridge') return;
+
+  // Truck number update
+  if (data.type === 'TruckNo') {
+    const truckInput = document.getElementById('truckRegInput');
+    if (truckInput) {
+      truckInput.value = data.value ?? '';
+
+      // Optional visual flash to indicate an update
+      truckInput.style.transition = 'background 0.25s';
+      truckInput.style.background = 'rgba(0, 200, 255, 0.18)';
+      setTimeout(() => (truckInput.style.background = 'transparent'), 250);
+    }
+
+    // Trigger fetch (if your page has fetchByTruck)
+    if (data.value && typeof fetchByTruck === 'function') {
+      fetchByTruck(data.value);
+    }
+  }
+
+  // ---- Replaced MeasuredWeight with CardNo (behavior unchanged) ----
+  if (data.type === 'CardNo') {
+    const cardInput = document.getElementById('CARD_NO'); // your element id
+    if (cardInput) {
+      // show empty string if null/undefined
+      cardInput.value = data.value == null ? '' : data.value;
+
+      // Flash indicator (optional)
+      cardInput.style.transition = 'background 0.25s';
+      cardInput.style.background = 'rgba(0, 255, 0, 0.18)';
+      setTimeout(() => (cardInput.style.background = 'transparent'), 250);
+    }
+  }
+});
 
 
 

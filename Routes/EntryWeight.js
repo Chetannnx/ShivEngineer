@@ -219,48 +219,107 @@ document.getElementById("acceptBtn").addEventListener("click", async function ()
 });
 
 
+// //=================
+// //URL THROW SEARCH 
+// //==================
+// (function () {
+//   const params = new URLSearchParams(window.location.search);
+//   const cardNo = params.get('CARD_NO');
+//   if (cardNo) {
+//     const cardInput = document.getElementById('card_no');
+//     if (cardInput) {
+//       cardInput.value = cardNo;
+//       fetchByCard(cardNo); // 🔹 Auto-fetch on page load
+//     }
+//   }
+// })();
+
+
+// //========================================================================================
+// //In your EntryWeight HTML, add this script at the bottom of the page (after all inputs):
+// //========================================================================================
+// // Listen for messages from Unified control
+//  window.addEventListener('message', function (event) {
+//   const data = event.data || {};
+//   if (data.source !== 'EntryWeightBridge') return;
+
+//   if (data.type === 'MeasuredWeight') {
+//     const weightInput = document.getElementById('max_weight_entry');
+//     if (weightInput) {
+//       weightInput.value = data.value ?? '';
+
+//       // Flash indicator (optional)
+//       weightInput.style.transition = 'background 0.3s';
+//       weightInput.style.background = 'rgba(0, 255, 0, 0.2)';
+//       setTimeout(() => (weightInput.style.background = 'transparent'), 300);
+//     }
+//   }
+// });
+
+
 //=================
-//URL THROW SEARCH 
+// URL-THROW SEARCH (uses TRUCK_NO)
 //==================
 (function () {
   const params = new URLSearchParams(window.location.search);
-  const cardNo = params.get('CARD_NO');
-  if (cardNo) {
-    const cardInput = document.getElementById('card_no');
-    if (cardInput) {
-      cardInput.value = cardNo;
-      fetchByCard(cardNo); // 🔹 Auto-fetch on page load
+  const truckNo = params.get('TRUCK_NO');
+  if (truckNo) {
+    const truckInput = document.getElementById('truck_reg');
+    if (truckInput) {
+      truckInput.value = truckNo;
+      // call your fetch function for truck (rename accordingly)
+      if (typeof fetchByTruck === 'function') {
+        fetchByTruck(truckNo); // Auto-fetch on page load
+      } else {
+        console.warn('fetchByTruck is not defined — ensure you renamed fetchByCard to fetchByTruck.');
+      }
     }
   }
 })();
 
 
 //========================================================================================
-//In your EntryWeight HTML, add this script at the bottom of the page (after all inputs):
+// Listen for messages from Unified control (EntryWeightBridge)
 //========================================================================================
-// Listen for messages from Unified control
-  window.addEventListener('message', function (event) {
-    const data = event.data || {};
-    if (data.source !== 'EntryWeightBridge') return; // ignore unrelated messages
+window.addEventListener('message', function (event) {
+  const data = event.data || {};
+  if (data.source !== 'EntryWeightBridge') return;
 
-    // If CardNo updated
-    if (data.type === 'CardNo') {
-      const cardInput = document.getElementById('CARD_NO') || document.getElementById('card_no');
-      if (cardInput) cardInput.value = data.value ?? '';
+  // Truck number update
+  if (data.type === 'TruckNo') {
+    const truckInput = document.getElementById('truck_reg');
+    if (truckInput) {
+      truckInput.value = data.value ?? '';
+
+      // Optional visual flash to indicate an update
+      truckInput.style.transition = 'background 0.25s';
+      truckInput.style.background = 'rgba(0, 200, 255, 0.18)';
+      setTimeout(() => (truckInput.style.background = 'transparent'), 250);
     }
 
-    // If MeasuredWeight updated from PLC
-    if (data.type === 'MeasuredWeight') {
-      const weightInput = document.getElementById('max_weight_entry');
-      if (weightInput) {
-        weightInput.value = data.value ?? '';
-        // Optional: flash animation for feedback
-        weightInput.style.transition = 'background 0.3s';
-        weightInput.style.background = 'rgba(0, 255, 0, 0.2)';
-        setTimeout(() => (weightInput.style.background = 'transparent'), 300);
-      }
+    // Trigger fetch (if your page has fetchByTruck)
+    if (data.value && typeof fetchByTruck === 'function') {
+      fetchByTruck(data.value);
     }
-  });
+  }
+
+  // ---- Replaced MeasuredWeight with CardNo (behavior unchanged) ----
+  if (data.type === 'CardNo') {
+    const cardInput = document.getElementById('card_no'); // your element id
+    if (cardInput) {
+      // show empty string if null/undefined
+      cardInput.value = data.value == null ? '' : data.value;
+
+      // Flash indicator (optional)
+      cardInput.style.transition = 'background 0.25s';
+      cardInput.style.background = 'rgba(0, 255, 0, 0.18)';
+      setTimeout(() => (cardInput.style.background = 'transparent'), 250);
+    }
+  }
+});
+ 
+
+
 
 </script>
 </body>
@@ -316,7 +375,7 @@ router.post("/accept", async (req, res) => {
         SELECT 
           PROCESS_TYPE,
           TARE_WEIGHT_TM,
-          MAX_FUEL_CAPACITY,
+          MAX_WEIGHT,
           PROCESS_STATUS,
           FAN_EXPIRY,
           TRUCK_REG_NO,
@@ -339,7 +398,7 @@ router.post("/accept", async (req, res) => {
 
     // 🔹 Compute max fuel capacity
     const maxFuelCapacity =
-      parseFloat(row.MAX_FUEL_CAPACITY) - enteredMaxWeight;
+      parseFloat(row.MAX_WEIGHT) - enteredMaxWeight;
 
     // 🔹 FAN expiry & process status checks (keep your existing ones)
     const fanExpiryMinutes = Math.floor(
