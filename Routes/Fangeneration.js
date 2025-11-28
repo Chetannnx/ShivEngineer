@@ -346,7 +346,8 @@ async function fetchTruckData() {
     }
 
     // Otherwise fill all fields (card is assigned or truck lookup)
-    setBtnState(decideStateFromData(data));
+      updateButtonsFromData(data);
+
 
     const allFields = [
       "TRUCK_REG_NO","TRAILER_NO","OWNER_NAME","DRIVER_NAME","HELPER_NAME","CARRIER_COMPANY",
@@ -376,6 +377,9 @@ async function fetchTruckData() {
     if(ts) ts.value = data.PROCESS_STATUS ?? "-1";
     const pt = document.getElementById("processType");
     if(pt && data.PROCESS_TYPE != null) pt.value = data.PROCESS_TYPE;
+
+    toggleWeightField();
+
 
     // Fill top Truck Reg No input
     document.getElementById("truckRegInput").value = data.TRUCK_REG_NO || "";
@@ -911,7 +915,8 @@ document.getElementById("assignBayBtn").addEventListener("click", async function
 
     const data = await res.json();
     if (res.ok) {
-      showCenterPopup("Bay Assigned Successfully!");
+      const assigned = data?.BAY_NO || bayNo || "N/A";
+      showCenterPopup("Bay Assigned Successfully! — Bay: " + assigned);
       closeBayPopup();
     } else {
       alert("Error: " + data.message); 
@@ -1538,10 +1543,182 @@ function confirmPopup(message) {
 
 </script>
 <script>
-document.addEventListener("DOMContentLoaded", () => setBtnState("LOADED_ONLY_ASSIGN")); // will flip once data loads
-</script>
-<script>
-// helper to enable/disable buttons in one place
+// document.addEventListener("DOMContentLoaded", () => setBtnState("LOADED_ONLY_ASSIGN")); // will flip once data loads
+// </script>
+// <script>
+// // helper to enable/disable buttons in one place
+// function setBtnState(state){
+//   const $ = (id) => document.getElementById(id);
+//   const btns = {
+//     assign: $("assignCardBtn"),
+//     reassign: $("ReassignCardBtn"),
+//     fanGen: $("FanGeneration"),
+//     abort: $("FanAbortBtn"),
+//     reauth: $("ReAuthBtn"),
+//     reallocate: $("reAllocateBtn"),
+//     checkAbort: $("checkBtn")
+//   };
+
+//   // default: all disabled
+//   Object.values(btns).forEach(b => b && (b.disabled = true));
+
+//   // states
+//   if (state === "LOADED_ONLY_ASSIGN") {
+//     btns.assign.disabled = false;
+//   }
+//   if (state === "ASSIGNED_CAN_FANGEN") {
+//     btns.reassign.disabled = false;
+//     btns.fanGen.disabled = false;
+//   }
+//   if (state === "FAN_GENERATED") {
+//     btns.reassign.disabled = false;
+//     btns.abort.disabled = false;
+//     btns.reauth.disabled = false;
+//     btns.reallocate.disabled = false;
+//   }
+//   if (state === "ABORTED") {
+//     // everything remains disabled
+//   }
+// }
+
+// // decide state from current data
+// function decideStateFromData(data){
+//   // PROCESS_STATUS: -1 Registered, 1 Reported, 2 Fan Generation, 4 Reauthorised, 13 Aborted
+//   const ps = Number(data?.PROCESS_STATUS ?? -1);
+//   const hasCard = !!data?.CARD_NO;
+
+//   if (ps === 13) return "ABORTED";
+//   if (ps === 2 || ps === 4) return "FAN_GENERATED";
+//   if (hasCard) return "ASSIGNED_CAN_FANGEN";
+//   return "LOADED_ONLY_ASSIGN";
+// }
+
+
+
+// -----------------------------
+// New: button logic using PROCESS_STATUS + other checks
+// -----------------------------
+function getBtnRefs(){
+  return {
+    assign: document.getElementById("assignCardBtn"),
+    reassign: document.getElementById("ReassignCardBtn"),
+    fanGen: document.getElementById("FanGeneration"),
+    abort: document.getElementById("FanAbortBtn"),
+    reauth: document.getElementById("ReAuthBtn"),
+    reallocate: document.getElementById("reAllocateBtn"),
+    checkAbort: document.getElementById("checkBtn")
+  };
+}
+
+/**
+ * applyButtonLogic(data)
+ * data should be the object you get from backend (combined DATA_MASTER + TRUCK_MASTER)
+ * Ensures every button's enabled/disabled state considers PROCESS_STATUS, CARD_NO, blacklisting etc.
+ */
+function applyButtonLogic(data){
+  const btns = getBtnRefs();
+  // fallback: if button refs missing, do nothing
+  if(!btns.assign) return;
+
+  // Normalize values
+  const ps = Number(data?.PROCESS_STATUS ?? -1); // -1 = Registered / no process
+  const hasCard = Boolean(data?.CARD_NO && String(data.CARD_NO).trim() !== "");
+  const batchActive = data?.BATCH_STATUS != null ? Boolean(data.BATCH_STATUS) : true;
+  const blacklisted = Number(data?.BLACKLIST_STATUS) === 1;
+  const invoicedOrCompleted = (ps === 14 || ps === 16); // treat these as final/completed states
+
+  // Default: disable everything first
+  Object.values(btns).forEach(b => b && (b.disabled = true));
+
+  // If blacklisted or record not active -> only allow assign (if no card) otherwise nothing
+  if (blacklisted) {
+    // If blacklisted but no card assigned allow assign? usually no — keep all disabled and show popup externally
+    // Keep all disabled to prevent actions
+    return;
+  }
+
+  // If aborted -> disable all
+  if (ps === 13) {
+    return;
+  }
+
+  // If completed/invoiced -> disable all
+  if (invoicedOrCompleted) {
+    return;
+  }
+
+  // If no active batch (BATCH_STATUS != 1) -> only allow assign
+  if (!batchActive && !hasCard) {
+    btns.assign.disabled = false;
+    return;
+  }
+
+  // Decision rules (common-sense defaults):
+  // - If there is NO card: allow Assign (user must allocate card)
+  if (!hasCard) {
+    btns.assign.disabled = false;
+    return;
+  }
+
+  // From here, card exists
+  // If PROCESS_STATUS < 2  (i.e. Reported or Registered) -> allow Reassign and Fan Generation
+  if (ps === -1 || ps === 1) {
+    btns.reassign.disabled = false;
+    btns.fanGen.disabled = false;
+    // Allow check/abort if logically allowed (abort only if not loading)
+    btns.checkAbort.disabled = (ps === 8); // if loading (8) disable abort check
+    return;
+  }
+
+  // If Fan Generated (2) or Reauthorised (4):
+  if (ps === 2 || ps === 4) {
+    btns.reassign.disabled = false;
+    btns.fanGen.disabled = true;     // already generated
+    btns.reauth.disabled = false;    // allow reauth (if needed)
+    btns.abort.disabled = false;     // allow abort unless loading
+    btns.reallocate.disabled = false;
+    btns.checkAbort.disabled = false;
+    return;
+  }
+
+  // If truck is at bay or loading started (6 or 8) -> restrict some actions
+  if (ps === 6) { // truck at bay
+    btns.reassign.disabled = false;
+    btns.reallocate.disabled = false;
+    btns.abort.disabled = false;
+    return;
+  }
+
+  if (ps === 8) { // Loading started - DO NOT allow abort, do not reauth
+    btns.reassign.disabled = true;
+    btns.reauth.disabled = true;
+    btns.abort.disabled = true;
+    btns.reallocate.disabled = false; // reallocate maybe allowed depending on policy
+    btns.checkAbort.disabled = true;
+    return;
+  }
+
+  // Exit weight accepted or further states -> restrictive
+  if (ps === 15 || ps === 9 || ps === 12) {
+    // allow minimal actions only (maybe reassign not allowed)
+    btns.reassign.disabled = true;
+    btns.reallocate.disabled = false;
+    btns.abort.disabled = true;
+    btns.reauth.disabled = true;
+    return;
+  }
+
+  // Default fallback: if we reach here, enable safe read-only actions
+  btns.reassign.disabled = false;
+  btns.reallocate.disabled = false;
+  btns.checkAbort.disabled = false;
+}
+
+// -----------------------------
+// Backwards-compatible helper:
+// keep your original setBtnState(state) for quick state strings you used elsewhere.
+// But we'll keep it simpler and call applyButtonLogic when you have real data.
+// -----------------------------
 function setBtnState(state){
   const $ = (id) => document.getElementById(id);
   const btns = {
@@ -1557,7 +1734,6 @@ function setBtnState(state){
   // default: all disabled
   Object.values(btns).forEach(b => b && (b.disabled = true));
 
-  // states
   if (state === "LOADED_ONLY_ASSIGN") {
     btns.assign.disabled = false;
   }
@@ -1572,21 +1748,55 @@ function setBtnState(state){
     btns.reallocate.disabled = false;
   }
   if (state === "ABORTED") {
-    // everything remains disabled
+    // keep all disabled
   }
 }
 
-// decide state from current data
-function decideStateFromData(data){
-  // PROCESS_STATUS: -1 Registered, 1 Reported, 2 Fan Generation, 4 Reauthorised, 13 Aborted
-  const ps = Number(data?.PROCESS_STATUS ?? -1);
-  const hasCard = !!data?.CARD_NO;
-
-  if (ps === 13) return "ABORTED";
-  if (ps === 2 || ps === 4) return "FAN_GENERATED";
-  if (hasCard) return "ASSIGNED_CAN_FANGEN";
-  return "LOADED_ONLY_ASSIGN";
+// -----------------------------
+// Small util: call this after you have fetched the data object
+// It will prefer applyButtonLogic(data) but fall back to decideStateFromData for compatibility
+// -----------------------------
+function updateButtonsFromData(data){
+  try {
+    if (data && typeof data === "object") {
+      applyButtonLogic(data);
+    } else {
+      // fallback to old behaviour if no data
+      setBtnState(decideStateFromData(data || {}));
+    }
+  } catch (err) {
+    console.error("updateButtonsFromData error:", err);
+    setBtnState("LOADED_ONLY_ASSIGN");
+  }
 }
+
+
+
+// ===============================
+// Enable / Disable Weight To Filled field
+// ===============================
+function toggleWeightField() {
+    const pt = document.getElementById("processType").value;
+    const weight = document.getElementById("WEIGHT_TO_FILLED");
+
+    if (!weight) return;
+
+    if (pt === "0") {         
+        // UNLOADING → DISABLE
+        weight.disabled = true;
+        weight.value = ""; // optional clear
+        weight.style.background = "#e8e8e8";
+    } else {
+        // LOADING → ENABLE
+        weight.disabled = false;
+        weight.style.background = "";
+    }
+}
+
+// ===============================
+// Trigger on dropdown change
+// ===============================
+document.getElementById("processType").addEventListener("change", toggleWeightField);
 
 
 </script>
@@ -1718,7 +1928,6 @@ router.get("/api/fan-generation/card/:cardNo", async (req, res) => {
             ITEM_DESCRIPTION, FAN_TIME_OUT, FAN_EXPIRY, WEIGHT_TO_FILLED, PROCESS_STATUS
         FROM DATA_MASTER 
         WHERE CARD_NO = @cardNo
-          AND BATCH_STATUS = 1
         ORDER BY FAN_TIME_OUT DESC
       `);
 
