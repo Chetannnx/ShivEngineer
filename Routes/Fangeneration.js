@@ -820,7 +820,41 @@ document.getElementById("fanSavePdfBtn").addEventListener("click", async functio
     doc.text("Generated on " + new Date().toLocaleString(), M, H - 24);
 
     // ====== save ======
-    doc.save("FAN_" + (data.fanNo || Date.now()) + ".pdf");
+    const pdfBlob = doc.output("blob"); // get the generated PDF as a Blob
+    const fileName = "FAN_" + (data.fanNo || Date.now()) + ".pdf";
+
+    if (window.showSaveFilePicker) {
+      // Preferred: File System Access API (Chrome/Edge on HTTPS/localhost)
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: fileName,
+          types: [{
+            description: "PDF File",
+            accept: { "application/pdf": [".pdf"] }
+          }]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(pdfBlob);
+        await writable.close();
+      } catch (err) {
+        // user likely cancelled — ignore silently
+        console.warn("Save cancelled or failed (showSaveFilePicker):", err);
+      }
+    } else if (navigator.msSaveOrOpenBlob) {
+      // IE / old Edge
+      navigator.msSaveOrOpenBlob(pdfBlob, fileName);
+    } else {
+      // Fallback: anchor download (may not show Save As depending on browser settings)
+      const url = URL.createObjectURL(pdfBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      // free memory shortly after
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    }
 
     // ====== your existing flow (unchanged) ======
     closeFanPopup(); // close the fan popup
