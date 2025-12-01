@@ -237,16 +237,80 @@ document.addEventListener("DOMContentLoaded", function () {
     // ✅ Download PDF on button click (now inside same scope as BASE_PATH)
     const btn = $("WeighingBill");
     if (btn) {
-      btn.addEventListener("click", function () {
+  btn.addEventListener("click", async function () {
   const card = ($("D_CARD_NO")?.value || "").trim();
   if (!card) { alert("Please enter a Card No."); return; }
   const fiscal = ($("D_FISCAL_NO")?.value || "").trim();
   const url = BASE_PATH + "/pdf?card=" + encodeURIComponent(card) + (fiscal ? ("&fiscal=" + encodeURIComponent(fiscal)) : "");
-  window.location.href = url;
+
+  try {
+    document.body.style.cursor = "progress";
+
+    const resp = await fetch(url, {
+      method: "GET",
+      headers: { "Accept": "application/pdf" }
+    });
+
+    if (!resp.ok) throw new Error("Server returned " + resp.status);
+
+    const blob = await resp.blob();
+
+    // Parse filename from Content-Disposition (if provided)
+    const cd = resp.headers.get("Content-Disposition") || "";
+    let suggestedName = "Weighing_Bill.pdf";
+    const m = cd.match(/filename\*?=(?:UTF-8'')?["']?([^;"']+)["']?/i);
+    if (m && m[1]) {
+      try { suggestedName = decodeURIComponent(m[1]); } catch(e) { suggestedName = m[1]; }
+    } else {
+      // fallback to card-based name
+      suggestedName = "Weighing_Bill_+{card || Date.now()}.pdf";
+    }
+
+    // 1) Preferred: File System Access API (Chrome/Edge, secure contexts)
+    if (window.showSaveFilePicker) {
+      const opts = {
+        suggestedName,
+        types: [{
+          description: "PDF File",
+          accept: { "application/pdf": [".pdf"] }
+        }]
+      };
+      const handle = await window.showSaveFilePicker(opts);
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      return;
+    }
+
+    // 2) IE/Old Edge: navigator.msSaveOrOpenBlob
+    if (navigator.msSaveOrOpenBlob) {
+      navigator.msSaveOrOpenBlob(blob, suggestedName);
+      return;
+    }
+
+    // 3) Fallback: anchor download (may not show Save As depending on browser settings)
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = suggestedName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    // release URL after a short delay to ensure download started
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+
+  } catch (err) {
+    console.error("PDF save error:", err);
+    //alert("Failed to save PDF: " + (err && err.message ? err.message : err));
+  } finally {
+    document.body.style.cursor = "auto";
+  }
 });
+
     }
   })();
 });
+
 
 
 // ---- Download PDF on button click ----
