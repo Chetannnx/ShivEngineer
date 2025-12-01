@@ -1702,10 +1702,10 @@ function applyButtonLogic(data){
   // Exit weight accepted or further states -> restrictive
   if (ps === 15 || ps === 9 || ps === 12) {
     // allow minimal actions only (maybe reassign not allowed)
-    btns.reassign.disabled = true;
+    btns.reassign.disabled = false;
     btns.reallocate.disabled = false;
-    btns.abort.disabled = true;
-    btns.reauth.disabled = true;
+    btns.abort.disabled = false;
+    btns.reauth.disabled = false;
     return;
   }
 

@@ -238,25 +238,27 @@ document.addEventListener("DOMContentLoaded", function () {
     const btn = $("WeighingBill");
     if (btn) {
       btn.addEventListener("click", function () {
-        const card = ($("D_CARD_NO")?.value || "").trim();
-        if (!card) { alert("Please enter a Card No."); return; }
-        window.location.href = BASE_PATH + "/pdf?card=" + encodeURIComponent(card);
-      });
+  const card = ($("D_CARD_NO")?.value || "").trim();
+  if (!card) { alert("Please enter a Card No."); return; }
+  const fiscal = ($("D_FISCAL_NO")?.value || "").trim();
+  const url = BASE_PATH + "/pdf?card=" + encodeURIComponent(card) + (fiscal ? ("&fiscal=" + encodeURIComponent(fiscal)) : "");
+  window.location.href = url;
+});
     }
   })();
 });
 
 
 // ---- Download PDF on button click ----
-const btn = document.getElementById("WeighingBill");
-if (btn) {
-  btn.addEventListener("click", function () {
-    const card = (document.getElementById("D_CARD_NO")?.value || "").trim();
-    if (!card) { alert("Please enter a Card No."); return; }
-    // Direct download
-    window.location.href = BASE_PATH + "/pdf?card=" + encodeURIComponent(card);
-  });
-}
+// const btn = document.getElementById("WeighingBill");
+// if (btn) {
+//   btn.addEventListener("click", function () {
+//     const card = (document.getElementById("D_CARD_NO")?.value || "").trim();
+//     if (!card) { alert("Please enter a Card No."); return; }
+//     // Direct download
+//     window.location.href = BASE_PATH + "/pdf?card=" + encodeURIComponent(card);
+//   });
+// }
 
 </script>
 
@@ -476,6 +478,29 @@ router.get("/pdf", async (req, res) => {
   try {
     const card = (req.query.card || "").trim();
     if (!card) return res.status(400).send("card query is required");
+
+    const fiscal = (req.query.fiscal || "").trim(); // <-- fiscal from client
+
+    const pool = await sql.connect(dbConfig);
+
+    // If fiscal provided, update the DB first (use parameterized query)
+    if (fiscal) {
+      const updateResult = await pool.request()
+        .input("fiscal", sql.VarChar(100), fiscal)
+        .input("card", sql.VarChar(50), card)
+        .query(`
+          UPDATE DATA_MASTER
+          SET INVOICE_NO = @fiscal,
+              PROCESS_STATUS = 16
+          WHERE CARD_NO = @card
+        `);
+
+      // Optional: check rowsAffected
+      if (!updateResult.rowsAffected || updateResult.rowsAffected[0] === 0) {
+        // card not found or update failed — you may choose to continue or return 404
+        console.warn(`PDF route: no rows updated for card ${card}`);
+      }
+    }
 
     const data = await getWeighingBillDataByCard(card);
     if (!data) return res.status(404).send("Card not found");
