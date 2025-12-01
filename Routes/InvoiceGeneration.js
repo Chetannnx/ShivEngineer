@@ -191,13 +191,14 @@ function collectInvoiceModel() {
       email: "somgaslpterminal@gmail.com"
     },
     invoice: {
-      number: $("D_FISCAL_NO"),
-      date:   $("DERIVED_DUE") || new Date().toISOString().slice(0,10),
-      terms:  "Due On Receipt",
-      dueDate: $("DERIVED_DUE") || "",
-      currencyLabel: "USD",
-      balanceDue: amount
-    },
+  number: $("D_FISCAL_NO"),
+  // Always use current date for invoice date (YYYY-MM-DD)
+  date:   new Date().toISOString().slice(0,10),
+  terms:  "Due On Receipt",
+  dueDate: $("DERIVED_DUE") || "",
+  currencyLabel: "USD",
+  balanceDue: amount
+},
     billTo: {
       line1: $("D_CUSTOMER_NAME"),
       line2: $("D_CUSTOMER_ADDRESS_LINE1"),
@@ -324,9 +325,9 @@ function buildInvoicePDF(data = {}) {
 
   const invoice = {
     number: val(data.invoice?.number, field("D_FISCAL_NO", "000000000000000001")),
-    date:   val(data.invoice?.date, field("DERIVED_DUE") || new Date().toISOString().slice(0,10)),
+    date:   val(data.invoice?.date, new Date().toISOString().slice(0,10)),
     terms:  val(data.invoice?.terms, "Due On Receipt"),
-    dueDate: val(data.invoice?.dueDate, field("DERIVED_DUE") || "12/31/2002"),
+    dueDate: val(data.invoice?.dueDate, field("DERIVED_DUE") || ""),
     currencyLabel: val(data.invoice?.currencyLabel, "USD"),
     balanceDue: money(val(data.invoice?.balanceDue, "")),
   };

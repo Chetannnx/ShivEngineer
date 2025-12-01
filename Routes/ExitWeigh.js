@@ -210,6 +210,7 @@ document.getElementById("acceptBtn").addEventListener("click", async function ()
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         CARD_NO: cardNo,
+  
         EXIT_WEIGHT: exitWeight,
         SEAL_NO: sealNo
       })

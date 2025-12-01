@@ -1341,7 +1341,8 @@ document.getElementById("assignBayBtn1").addEventListener("click", async functio
 
     const data = await res.json();
     if (res.ok) {
-      showCenterPopup("Bay Reallocated Successfully!");
+      const assigned = data?.BAY_NO || bayNo || "N/A";
+      showCenterPopup("Bay Assigned Successfully! — Bay: " + assigned);
       closeBayPopup1();
     } else {
       alert("Error: " + data.message);
