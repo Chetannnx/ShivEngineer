@@ -277,6 +277,19 @@ async function buildInvoicePDF(data = {}) {
     return (data[id] != null ? data[id] : (el && (el.value || el.textContent) || fallback)).toString().trim();
   }
   function val(v, fb="") { return (v == null || v === "") ? fb : v; }
+
+   // ---- Indian number formatter ----
+  function formatIndianNumber(n, fractionDigits = 2) {
+    const num = Number(n);
+    if (!isFinite(num)) return (0).toFixed(fractionDigits);
+    const opts = { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits, useGrouping: true };
+    return new Intl.NumberFormat('en-IN', opts).format(num);
+  }
+    // money helper kept for compatibility but outputs Indian format with 2 decimals
+  function moneyIndian(n) {
+    return formatIndianNumber(n, 2);
+  }
+  
   function money(n) {
     if (n == null || n === "") return "0.00";
     const num = Number(n);
@@ -355,8 +368,16 @@ async function buildInvoicePDF(data = {}) {
   // Derive amount
   const amountNum = (isFinite(parseFloat(item.qty)) && isFinite(parseFloat(item.rate)))
     ? +(parseFloat(item.qty) * parseFloat(item.rate)).toFixed(2) : 0;
-  const amountStr = money(amountNum);
-  if (!invoice.balanceDue) invoice.balanceDue = amountStr;
+  const amountStr =  moneyIndian(amountNum); 
+  const rateNum = isFinite(parseFloat(item.rate)) ? parseFloat(item.rate) : 0;
+  const rateStr = moneyIndian(rateNum);
+
+  // ensure invoice.balanceDue shows formatted rupee (if provided numeric) else fallback to computed
+  if (invoice.balanceDue === "" || invoice.balanceDue == null) {
+    invoice.balanceDue = amountNum;
+  }
+  // store formatted balance for display
+  const balanceFormatted = "₹" + moneyIndian(invoice.balanceDue);
 
   // ========= HEADER (logo, title, inv no) =========
   const HEADER_TOP = 10;
