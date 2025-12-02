@@ -699,12 +699,34 @@ if (!fanGenRes.ok) throw new Error(fanGenData.message || "Failed to generate FAN
         document.getElementById("POP_CARD_NO").textContent = data.CARD_NO||"";
         document.getElementById("DATE_TIME").textContent = dateTime;
 
-        if(data.FAN_EXPIRY){
-          const dt = new Date(data.FAN_EXPIRY);
-          document.getElementById("FAN_EXPIRY").textContent = pad(dt.getUTCDate())+'/'+pad(dt.getUTCMonth()+1)+'/'+dt.getUTCFullYear()+' '+pad(dt.getUTCHours())+':'+pad(dt.getUTCMinutes());
-        } else {
-          document.getElementById("FAN_EXPIRY").textContent = "";
-        }
+        if (data.FAN_EXPIRY) {
+  const dt = new Date(data.FAN_EXPIRY);
+
+  function pad(n) {
+    return n < 10 ? "0" + n : n;
+  }
+
+  // --- Time formatting with AM/PM ---
+  let hrs = dt.getUTCHours();
+  let mins = dt.getUTCMinutes();
+  let secs = dt.getUTCSeconds();
+
+  let ampm = hrs >= 12 ? "PM" : "AM";
+  hrs = hrs % 12;
+  if (hrs === 0) hrs = 12;
+
+  const timeStr = pad(hrs) + ":" + pad(mins) + ":" + pad(secs) + " " + ampm;
+
+  document.getElementById("FAN_EXPIRY").textContent =
+    pad(dt.getUTCDate()) + '/' +
+    pad(dt.getUTCMonth() + 1) + '/' +
+    dt.getUTCFullYear() + ' ' +
+    timeStr;
+
+} else {
+  document.getElementById("FAN_EXPIRY").textContent = "";
+}
+
 
         document.getElementById("POP_TRUCK_REG_NO").textContent = data.TRUCK_REG_NO||"";
         document.getElementById("POP_CUSTOMER_NAME").textContent = data.CUSTOMER_NAME||"";
@@ -1130,13 +1152,33 @@ function showFanPopup(data) {
   document.getElementById("DATE_TIME").textContent = dateTime;
 
   if (data.FAN_EXPIRY) {
-    const dt = new Date(data.FAN_EXPIRY);
-    document.getElementById("FAN_EXPIRY").textContent =
-      pad(dt.getUTCDate()) + '/' + pad(dt.getUTCMonth() + 1) + '/' + dt.getUTCFullYear() + ' ' +
-      pad(dt.getUTCHours()) + ':' + pad(dt.getUTCMinutes());
-  } else {
-    document.getElementById("FAN_EXPIRY").textContent = "";
+  const dt = new Date(data.FAN_EXPIRY);
+
+  function pad(n) {
+    return n < 10 ? "0" + n : n;
   }
+
+  // --- Time formatting with AM/PM ---
+  let hrs = dt.getUTCHours();
+  let mins = dt.getUTCMinutes();
+  let secs = dt.getUTCSeconds();
+
+  let ampm = hrs >= 12 ? "PM" : "AM";
+  hrs = hrs % 12;
+  if (hrs === 0) hrs = 12;
+
+  const timeStr = pad(hrs) + ":" + pad(mins) + ":" + pad(secs) + " " + ampm;
+
+  document.getElementById("FAN_EXPIRY").textContent =
+    pad(dt.getUTCDate()) + '/' +
+    pad(dt.getUTCMonth() + 1) + '/' +
+    dt.getUTCFullYear() + ' ' +
+    timeStr;
+
+} else {
+  document.getElementById("FAN_EXPIRY").textContent = "";
+}
+
 
   document.getElementById("POP_TRUCK_REG_NO").textContent = data.TRUCK_REG_NO || "";
   document.getElementById("POP_CUSTOMER_NAME").textContent = data.CUSTOMER_NAME || "";
