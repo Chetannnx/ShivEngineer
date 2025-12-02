@@ -1744,6 +1744,10 @@ function applyButtonLogic(data){
   const batchActive = data?.BATCH_STATUS != null ? Boolean(data.BATCH_STATUS) : true;
   const blacklisted = Number(data?.BLACKLIST_STATUS) === 1;
   const invoicedOrCompleted = (ps === 14 || ps === 16); // treat these as final/completed states
+  const allowReassign = (ps >= 1 && ps <= 15);
+
+   // NEW: single source of truth for checkAbort
+  const allowCheckAbort = (ps >= 6 && ps <= 12);
 
   // Default: disable everything first
   Object.values(btns).forEach(b => b && (b.disabled = true));
@@ -1756,18 +1760,19 @@ function applyButtonLogic(data){
   }
 
   // If aborted -> disable all
-  if (ps === 13) {
-    return;
-  }
+  // if (ps === 13) {
+  //   return;
+  // }
 
   // If completed/invoiced -> disable all
-  if (invoicedOrCompleted) {
-    return;
-  }
+  // if (invoicedOrCompleted) {
+  //   return;
+  // }
 
   // If no active batch (BATCH_STATUS != 1) -> only allow assign
   if (!batchActive && !hasCard) {
     btns.assign.disabled = false;
+    btns.checkAbort.disabled = !allowCheckAbort;
     return;
   }
 
@@ -1775,6 +1780,7 @@ function applyButtonLogic(data){
   // - If there is NO card: allow Assign (user must allocate card)
   if (!hasCard) {
     btns.assign.disabled = false;
+    btns.checkAbort.disabled = !allowCheckAbort;
     return;
   }
 
@@ -1784,52 +1790,51 @@ function applyButtonLogic(data){
     btns.reassign.disabled = false;
     btns.fanGen.disabled = false;
     // Allow check/abort if logically allowed (abort only if not loading)
-    btns.checkAbort.disabled = (ps === 8); // if loading (8) disable abort check
+    btns.checkAbort.disabled = !allowCheckAbort; // if loading (8) disable abort check
     return;
   }
 
   // If Fan Generated (2) or Reauthorised (4):
-  if (ps === 2 || ps === 4) {
-    btns.reassign.disabled = false;
+  if (ps >= 2 && ps <= 5) {
+    btns.reassign.disabled = !allowReassign;
     btns.fanGen.disabled = true;     // already generated
     btns.reauth.disabled = false;    // allow reauth (if needed)
     btns.abort.disabled = false;     // allow abort unless loading
     btns.reallocate.disabled = false;
-    btns.checkAbort.disabled = false;
+    btns.checkAbort.disabled = !allowCheckAbort;
     return;
   }
 
   // If truck is at bay or loading started (6 or 8) -> restrict some actions
   if (ps === 6) { // truck at bay
     btns.reassign.disabled = false;
-    btns.reallocate.disabled = false;
-    btns.abort.disabled = false;
-    return;
+    btns.checkAbort.disabled = !allowCheckAbort;
+    return;4
   }
 
   if (ps === 8) { // Loading started - DO NOT allow abort, do not reauth
-    btns.reassign.disabled = true;
+    btns.reassign.disabled = false;
     btns.reauth.disabled = true;
     btns.abort.disabled = true;
-    btns.reallocate.disabled = false; // reallocate maybe allowed depending on policy
-    btns.checkAbort.disabled = true;
+    btns.reallocate.disabled = true; // reallocate maybe allowed depending on policy
+   btns.checkAbort.disabled = !allowCheckAbort;
     return;
   }
 
   // Exit weight accepted or further states -> restrictive
-  if (ps === 15 || ps === 9 || ps === 12) {
-    // allow minimal actions only (maybe reassign not allowed)
-    btns.reassign.disabled = false;
-    btns.reallocate.disabled = false;
-    btns.abort.disabled = false;
-    btns.reauth.disabled = false;
-    return;
-  }
+  // if (ps === 15 || ps === 9 || ps === 12) {
+  //   // allow minimal actions only (maybe reassign not allowed)
+  //   btns.reassign.disabled = false;
+  //   btns.reallocate.disabled = false;
+  //   btns.abort.disabled = false;
+  //   btns.reauth.disabled = false;
+  //   return;
+  // }
 
   // Default fallback: if we reach here, enable safe read-only actions
-  btns.reassign.disabled = false;
-  btns.reallocate.disabled = false;
-  btns.checkAbort.disabled = false;
+   btns.reassign.disabled = false;
+  // btns.reallocate.disabled = false;
+   btns.checkAbort.disabled = !allowCheckAbort;
 }
 
 // -----------------------------
@@ -1865,9 +1870,9 @@ function setBtnState(state){
     btns.reauth.disabled = false;
     btns.reallocate.disabled = false;
   }
-  if (state === "ABORTED") {
-    // keep all disabled
-  }
+  // if (state === "ABORTED") {
+  //   // keep all disabled
+  // }
 }
 
 // -----------------------------
