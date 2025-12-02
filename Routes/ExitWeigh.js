@@ -71,6 +71,13 @@ router.get("/", (req, res) => {
         For Unloading – Measured Weight will be <strong>Gross Weight</strong>
       </p>
     </div>
+    <div class="form-group">
+      <select id="truckSealingreq" disabled>
+      <option>--Select--</option>
+      <option value="1">YES</option>
+      <option value="0">NO</option>
+      </select>
+    </div>
   </div>
    <!-- ✅ ACCEPT BUTTON inside the form-container -->
   <div class="button-container">
@@ -115,10 +122,12 @@ router.get("/", (req, res) => {
 async function fetchByCard(cardNo) {
   const truckField = document.getElementById("truck_reg");
   const processField = document.getElementById("process_type");
+  const sealingSelect = document.getElementById("truckSealingreq");
 
   if (!cardNo) {
     truckField.value = "";
     processField.value = "";
+    if (sealingSelect) sealingSelect.value = "0";
     return;
   }
 
@@ -131,6 +140,7 @@ async function fetchByCard(cardNo) {
       showPopup(data.warning);
       truckField.value = "";
       processField.value = "";
+      if (sealingSelect) sealingSelect.value = "0";
       return;
     }
 
@@ -147,6 +157,22 @@ async function fetchByCard(cardNo) {
     } else {
       truckField.value = "";
       processField.value = "";
+    }
+      // === set truck sealing requirement into dropdown ===
+    if (sealingSelect) {
+      // data.TRUCK_SEALING_REQUIREMENT may be null, 0, or 1
+      if (data.TRUCK_SEALING_REQUIREMENT === 1 || data.TRUCK_SEALING_REQUIREMENT === "1") {
+        sealingSelect.value = "1";
+      } else if (data.TRUCK_SEALING_REQUIREMENT === 0 || data.TRUCK_SEALING_REQUIREMENT === "0") {
+        sealingSelect.value = "0";
+      } else {
+        // not found: leave default or set to 0
+        sealingSelect.value = "0";
+      }
+
+      // keep it disabled if you don't want users to change it:
+      sealingSelect.disabled = true;
+      // if you want user to be able to override, comment the line above.
     }
   } catch (err) {
     console.error("Fetch error:", err);
@@ -308,6 +334,7 @@ document.getElementById("acceptBtn").addEventListener("click", async function ()
 // API Endpoint: Fetch Truck Data
 // =============================
 // ---------- API: fetch truck/process by card ----------
+// ---------- API: fetch truck/process by card ----------
 router.get("/fetch", async (req, res) => {
   const { CARD_NO } = req.query;
 
@@ -315,32 +342,65 @@ router.get("/fetch", async (req, res) => {
 
   try {
     const pool = await sql.connect(dbConfig);
-    const result = await pool.request().input("CARD_NO", sql.VarChar, CARD_NO)
+
+    // 1) get basic data from DATA_MASTER (as before)
+    const result = await pool.request()
+      .input("CARD_NO", sql.VarChar, CARD_NO)
       .query(`
         SELECT TRUCK_REG_NO, PROCESS_TYPE, PROCESS_STATUS
         FROM DATA_MASTER
         WHERE CARD_NO = @CARD_NO
       `);
 
-    if (result.recordset.length > 0) {
-      const record = result.recordset[0];
-
-      // ✅ If PROCESS_STATUS < 2, return a warning instead of data
-      if (record.PROCESS_STATUS < 2) {
-        return res.status(200).json({
-          warning: "FAN is not Generated",
-        });
-      }
-
-      res.json(record);
-    } else {
-      res.json({});
+    if (result.recordset.length === 0) {
+      return res.json({});
     }
+
+    const record = result.recordset[0];
+
+    // If PROCESS_STATUS < 2, return a warning like you had
+    if (record.PROCESS_STATUS < 2) {
+      return res.status(200).json({
+        warning: "FAN is not Generated",
+      });
+    }
+
+    // 2) Try to fetch sealing requirement from TRUCK_MASTER using TRUCK_REG_NO
+    let sealingReq = null; // null = unknown / not found
+    if (record.TRUCK_REG_NO) {
+      try {
+        const truckRes = await pool.request()
+          .input("TRUCK_REG_NO", sql.VarChar, record.TRUCK_REG_NO)
+          .query(`
+            SELECT TOP 1 TRUCK_SEALING_REQUIREMENT
+            FROM TRUCK_MASTER
+            WHERE TRUCK_REG_NO = @TRUCK_REG_NO
+          `);
+
+        if (truckRes.recordset.length > 0) {
+          // normalize to number 0 or 1 if possible
+          const val = truckRes.recordset[0].TRUCK_SEALING_REQUIREMENT;
+          sealingReq = (val === null || val === undefined) ? null : Number(val);
+        }
+      } catch (truckErr) {
+        console.warn("Error fetching TRUCK_MASTER:", truckErr);
+        // proceed without sealing info
+      }
+    }
+
+    // 3) Return combined object. Include TRUCK_SEALING_REQUIREMENT (may be null)
+    res.json({
+      TRUCK_REG_NO: record.TRUCK_REG_NO,
+      PROCESS_TYPE: record.PROCESS_TYPE,
+      PROCESS_STATUS: record.PROCESS_STATUS,
+      TRUCK_SEALING_REQUIREMENT: sealingReq // 1,0 or null
+    });
   } catch (err) {
     console.error("SQL error:", err);
     res.status(500).json({ error: "Database error" });
   }
 });
+
 
 // ---------- API: accept logic ----------
 router.post("/accept", async (req, res) => {

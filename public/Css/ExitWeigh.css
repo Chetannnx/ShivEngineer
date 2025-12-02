@@ -156,12 +156,16 @@ nav ul li a.active::after {
 /* === NOTE BOX === */
 .form-note {
   margin-top: 20px;
+  margin-bottom: 15px;
   background: #f8f9fa;
   padding: 12px 15px;
   border-left: 4px solid #007bff;
   border-radius: 6px;
   font-size: 14px;
   color: #333;
+}
+#truckSealingreq {
+  width: 20px;
 }
 
 /* === POPUP CLOSE BUTTON === */
