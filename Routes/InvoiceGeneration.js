@@ -254,7 +254,8 @@ function generateInvoice() {
 // =====================================================
 // Function: Build PDF exactly like SOMGAS format
 // =====================================================
-function buildInvoicePDF(data = {}) {
+// Async version of buildInvoicePDF that shows a Save As dialog and saves the blob.
+async function buildInvoicePDF(data = {}) {
   const jsPDFLib = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
   if (!jsPDFLib) { alert("jsPDF library not loaded"); return; }
   const doc = new jsPDFLib({ unit: "pt", format: "a4" });
@@ -283,7 +284,6 @@ function buildInvoicePDF(data = {}) {
     return num.toFixed(2);
   }
 
-  // ✅ FIXED: Convert all text to string before drawing
   function label(x, y, t, size=9, bold=false, align="left") {
     doc.setFont("DM Sans", bold ? "bold" : "normal");
     doc.setFontSize(size);
@@ -358,36 +358,30 @@ function buildInvoicePDF(data = {}) {
   const amountStr = money(amountNum);
   if (!invoice.balanceDue) invoice.balanceDue = amountStr;
 
-  // ========= HEADER =========
- // ========= HEADER (logo, title, inv no) =========
-// Tweakable positions:
-const HEADER_TOP = 10;        // push smaller for higher logo
-const LOGO_W = 135, LOGO_H = 40;
-const LOGO_X = M, LOGO_Y = HEADER_TOP;  // move up by reducing HEADER_TOP
+  // ========= HEADER (logo, title, inv no) =========
+  const HEADER_TOP = 10;
+  const LOGO_W = 135, LOGO_H = 40;
+  const LOGO_X = M, LOGO_Y = HEADER_TOP;
+  const TITLE_Y = HEADER_TOP + 22;
+  const INVNO_Y = HEADER_TOP + 18;
+  const SEP_Y   = HEADER_TOP + 42;
+  const STRIP_Y = SEP_Y + 6;
 
-const TITLE_Y = HEADER_TOP + 22;        // "Invoice" title
-const INVNO_Y = HEADER_TOP + 18;        // right-side invoice number
-const SEP_Y   = HEADER_TOP + 42;        // thin line under header
-const STRIP_Y = SEP_Y + 6;              // "Detail page 1" strip baseline
+  const logoEl = document.getElementById("somgasLogo");
+  if (logoEl && logoEl.complete) {
+    try { doc.addImage(logoEl, "PNG", LOGO_X, LOGO_Y, LOGO_W, LOGO_H); } catch (e) {}
+  }
+  label(W/2, TITLE_Y, "Invoice", 16, false, "center");
+  label(W - M - 5, INVNO_Y, "# INV - " + invoice.number, 10, true, "right");
 
-const logoEl = document.getElementById("somgasLogo");
-if (logoEl && logoEl.complete) {
-  try { doc.addImage(logoEl, "PNG", LOGO_X, LOGO_Y, LOGO_W, LOGO_H); } catch (e) {}
-}
-label(W/2, TITLE_Y, "Invoice", 16, false, "center");
-label(W - M - 5, INVNO_Y, "# INV - " + invoice.number, 10, true, "right");
+  doc.setDrawColor(...gray);
+  doc.line(0, SEP_Y, W, SEP_Y);
 
-// thin top separator
-doc.setDrawColor(...gray);
-doc.line(0, SEP_Y, W, SEP_Y);
+  doc.setFillColor(235,235,235);
+  doc.rect(0, STRIP_Y, W, 18, "F");
+  label(M, STRIP_Y + 13, "Detail page 1", 9, true);
 
-// "Detail page 1" gray strip (thin)
-doc.setFillColor(235,235,235);
-doc.rect(0, STRIP_Y, W, 18, "F");
-label(M, STRIP_Y + 13, "Detail page 1", 9, true);
-
-// push body start a bit lower than the strip
-let ye = STRIP_Y + 36;
+  let ye = STRIP_Y + 36;
 
   // ========= COMPANY + BALANCE =========
   let y = 90;
@@ -399,63 +393,43 @@ let ye = STRIP_Y + 36;
   y += gridY;
   label(M, y, company.email, 10);
 
-  // Balance Due (top-right)
-const balBoxW = 200, balBoxH = 25;
-const balX = W - M - balBoxW;
-
-// ↓ how much to move everything down (try 6–10)
-const BAL_SHIFT = 4;
-
-// anchor
-const balY = 110 + BAL_SHIFT;
-
-// title (right aligned)
-label(W - M - 5, 85 + BAL_SHIFT, "Balance Due", 10, false, "right");
-
-// currency tag (e.g., USD)
-label(balX, balY - 4, invoice.currencyLabel, 9, true);
-
-// amount box
-inputBox(balX + 50, balY - 18, balBoxW - 40, balBoxH, invoice.balanceDue, 11);
+  const balBoxW = 200, balBoxH = 25;
+  const balX = W - M - balBoxW;
+  const BAL_SHIFT = 4;
+  const balY = 110 + BAL_SHIFT;
+  label(W - M - 5, 85 + BAL_SHIFT, "Balance Due", 10, false, "right");
+  label(balX, balY - 4, invoice.currencyLabel, 9, true);
+  inputBox(balX + 50, balY - 18, balBoxW - 40, balBoxH, invoice.balanceDue, 11);
 
   // ========= BILL TO + right-side Invoice Date/Terms/Due =========
-y += 22;
+  y += 22;
+  label(M, y, "Bill To:", 10, true);
+  y += gridY;
+  label(M, y, billTo.line1, 10);
+  y += gridY;
+  label(M, y, billTo.line2, 10);
+  y += gridY;
+  label(M, y, billTo.line3, 10);
 
-// Left column: Bill To
-label(M, y, "Bill To:", 10, true);
-y += gridY;
-label(M, y, billTo.line1, 10);
-y += gridY;
-label(M, y, billTo.line2, 10);
-y += gridY;
-label(M, y, billTo.line3, 10);
+  const billRightStartY = y - gridY * 3;
+  const billRightLabelX = W - M - 240;
+  const billFieldW = 160;
+  const billFieldH = 18;
+  const billFieldOffset = 90;
 
-// Right column (use unique variable names to avoid collisions)
-const billRightStartY = y - gridY * 3;     // top aligned with first Bill To line
-const billRightLabelX = W - M - 240;       // label X
-const billFieldW = 160;
-const billFieldH = 18;
-const billFieldOffset = 90;                // gap from label to box
+  label(billRightLabelX, billRightStartY, "Invoice Date :", 9, true);
+  inputBox(billRightLabelX + billFieldOffset, billRightStartY - 12,
+           billFieldW, billFieldH, invoice.date, 10);
 
-// Invoice Date
-label(billRightLabelX, billRightStartY, "Invoice Date :", 9, true);
-inputBox(billRightLabelX + billFieldOffset, billRightStartY - 12,
-         billFieldW, billFieldH, invoice.date, 10);
+  const billTermsY = billRightStartY + gridY + 6;
+  label(billRightLabelX, billTermsY, "Terms :", 9, true);
+  inputBox(billRightLabelX + billFieldOffset, billTermsY - 12,
+           billFieldW, billFieldH, invoice.terms, 10);
 
-// Terms
-const billTermsY = billRightStartY + gridY + 6;
-label(billRightLabelX, billTermsY, "Terms :", 9, true);
-inputBox(billRightLabelX + billFieldOffset, billTermsY - 12,
-         billFieldW, billFieldH, invoice.terms, 10);
-
-// Due Date
-const billDueY = billTermsY + gridY + 6;
-label(billRightLabelX, billDueY, "Due Date :", 9, true);
-inputBox(billRightLabelX + billFieldOffset, billDueY - 12,
-         billFieldW, billFieldH, invoice.dueDate, 10);
-
-
-  
+  const billDueY = billTermsY + gridY + 6;
+  label(billRightLabelX, billDueY, "Due Date :", 9, true);
+  inputBox(billRightLabelX + billFieldOffset, billDueY - 12,
+           billFieldW, billFieldH, invoice.dueDate, 10);
 
   // ========= ITEM TABLE =========
   const tableTop = y + 50;
@@ -511,30 +485,85 @@ inputBox(billRightLabelX + billFieldOffset, billDueY - 12,
   noteRow("Seal No.:", notes.seal);
   noteRow("Driver Name", notes.driver);
 
-// ========= Footer + signatures =========
-const BOTTOM_MARGIN = 28;              // 28 is tighter; increase to move higher up
-const SIG_BOX_H = 24;
-const SIG_GAP_X = 20;
+  // ========= Footer + signatures =========
+  const BOTTOM_MARGIN = 28;
+  const SIG_BOX_H = 24;
+  const SIG_GAP_X = 20;
 
-const footBaseline = H - BOTTOM_MARGIN;
-const sigTopY = footBaseline - SIG_BOX_H - 10;
+  const footBaseline = H - BOTTOM_MARGIN;
+  const sigTopY = footBaseline - SIG_BOX_H - 10;
 
-doc.setDrawColor(...lightStroke);
-doc.line(0, sigTopY - 12, W, sigTopY - 12);
+  doc.setDrawColor(...lightStroke);
+  doc.line(0, sigTopY - 12, W, sigTopY - 12);
 
-const sigW = (W - 2*M - SIG_GAP_X) / 2;
-inputBox(M, sigTopY, sigW, SIG_BOX_H, "", 10);
-inputBox(M + sigW + SIG_GAP_X, sigTopY, sigW, SIG_BOX_H, "", 10);
+  const sigW = (W - 2*M - SIG_GAP_X) / 2;
+  inputBox(M, sigTopY, sigW, SIG_BOX_H, "", 10);
+  inputBox(M + sigW + SIG_GAP_X, sigTopY, sigW, SIG_BOX_H, "", 10);
 
-label(M + 4, footBaseline, "Driver Signature", 9, true);
-label(M + sigW + SIG_GAP_X + 4, footBaseline, "Operator Signature", 9, true);
+  label(M + 4, footBaseline, "Driver Signature", 9, true);
+  label(M + sigW + SIG_GAP_X + 4, footBaseline, "Operator Signature", 9, true);
 
-label(M, H - 10, "Generated on " + nowStr, 8);
+  label(M, H - 10, "Generated on " + nowStr, 8);
 
-  // Save PDF
+  // ----------------- Save PDF using Save As dialog -----------------
   const filename = "Invoice_" + (invoice.number || Date.now()) + ".pdf";
-  doc.save(filename);
+
+  // create blob from jsPDF
+  const pdfBlob = doc.output("blob");
+
+  // Helper to save blob using File System Access API, msSaveOrOpenBlob, or anchor fallback
+  async function saveBlobWithDialog(blob, suggestedName) {
+    // Modern File System Access API
+    if (window.showSaveFilePicker) {
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: suggestedName,
+          types: [{
+            description: "PDF File",
+            accept: { "application/pdf": [".pdf"] }
+          }]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        return;
+      } catch (err) {
+        // user probably cancelled - just return silently
+        console.warn("Save cancelled or failed (File System Access):", err);
+        return;
+      }
+    }
+
+    // IE / old Edge
+    if (navigator.msSaveOrOpenBlob) {
+      try {
+        navigator.msSaveOrOpenBlob(blob, suggestedName);
+        return;
+      } catch (err) {
+        console.warn("msSaveOrOpenBlob failed:", err);
+      }
+    }
+
+    // Generic anchor fallback
+    try {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = suggestedName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    } catch (err) {
+      console.error("Fallback download failed:", err);
+      alert("Unable to save file automatically. You can try printing or saving from the browser's PDF viewer.");
+    }
+  }
+
+  // call helper
+  await saveBlobWithDialog(pdfBlob, filename);
 }
+
 
 
 //=============
@@ -636,7 +665,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // build + download PDF
         var model = collectInvoiceModel();
         buildInvoicePDF(model);
-        alert("Invoice saved and PDF downloaded.");
+        // alert("Invoice saved and PDF downloaded.");
       })
       .catch(function (err) {
         alert("Error saving invoice: " + err.message);
