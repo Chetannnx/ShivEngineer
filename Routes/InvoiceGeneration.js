@@ -634,46 +634,112 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   })();
 
+  //==============================
+  //auto fetch amount to be paid
+  //================================
+  
+
   // ===== Invoice Button (put INSIDE the same block) =====
   var btn = $("invoiceBtn");
-  if (btn) {
-    btn.addEventListener("click", function () {
-      var rate = parseFloat(($("D_RATE").value || "").trim());
-      var net  = parseFloat(($("D_NET_WEIGHT").value || "").trim());
-      var invoiceNo = ($("D_FISCAL_NO").value || "").trim();
-      var card = ($("D_CARD_NO").value || "").trim();
+if (btn) {
+  btn.addEventListener("click", function () {
+    var rate = parseFloat(($("D_RATE").value || "").trim());
+    var net  = parseFloat(($("D_NET_WEIGHT").value || "").trim());
+    var invoiceNo = ($("D_FISCAL_NO").value || "").trim();
+    var card = ($("D_CARD_NO").value || "").trim();
 
-      if (!card) { alert("Enter Card No first."); return; }
-      if (!invoiceNo) { alert("Enter Invoice No first."); return; }
-      if (!isFinite(rate) || !isFinite(net) || rate <= 0 || net <= 0) {
-        alert("Enter valid numbers for Rate and Net Weight.");
-        return;
-      }
+    if (!card) { alert("Enter Card No first."); return; }
+    if (!invoiceNo) { alert("Enter Invoice No first."); return; }
+    if (!isFinite(rate) || !isFinite(net) || rate <= 0 || net <= 0) {
+      alert("Enter valid numbers for Rate and Net Weight.");
+      return;
+    }
 
-      var amount = (rate * net).toFixed(2);
-      $("DERIVED_AMOUNT").value = "₹" + amount;
+    // *** REMOVED amount auto-display ***
+    // var amount = (rate * net).toFixed(2);
+    // $("DERIVED_AMOUNT").value = "₹" + amount;
 
-      fetch(BASE_PATH + "/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ card: card, invoiceNo: invoiceNo, rate: rate, amount: amount })
-      })
-      .then(function (r) { return r.json(); })
-      .then(function (res) {
-        if (res.error) { alert("Save failed: " + res.error); return; }
+    var amount = (rate * net).toFixed(2); // only for backend
 
-        // build + download PDF
-        var model = collectInvoiceModel();
-        buildInvoicePDF(model);
-        // alert("Invoice saved and PDF downloaded.");
-      })
-      .catch(function (err) {
-        alert("Error saving invoice: " + err.message);
-      });
+    fetch(BASE_PATH + "/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ card: card, invoiceNo: invoiceNo, rate: rate, amount: amount })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (res) {
+      if (res.error) { alert("Save failed: " + res.error); return; }
+
+      // build + download PDF
+      var model = collectInvoiceModel();
+      buildInvoicePDF(model);
+    })
+    .catch(function (err) {
+      alert("Error saving invoice: " + err.message);
     });
-  }
+  });
+}
 });
 
+// ====== Immediate amount calculation ======
+// ====== Indian-format money helper ======
+function formatIndianAmount(num) {
+  // ensure a number
+  const n = Number(num);
+  if (!isFinite(n)) return "";
+
+  // decide whether to show decimals: show 0 decimals for integer amounts,
+  // otherwise show up to 2 decimal places.
+  const isInt = Math.abs(n - Math.trunc(n)) < 1e-9;
+  const options = {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: isInt ? 0 : 2,
+    useGrouping: true
+  };
+  // 'en-IN' gives the grouping style you want: 30,000 and 1,24,500
+  return n.toLocaleString("en-IN", options);
+}
+
+// ====== Immediate amount calculation (Indian format display) ======
+function recalcAmount() {
+  const get = (id) => (document.getElementById(id)?.value || "").trim();
+  const rate = parseFloat(get("D_RATE")) || 0;
+  const net  = parseFloat(get("D_NET_WEIGHT")) || 0;
+
+  if (!isFinite(rate) || !isFinite(net) || rate <= 0 || net <= 0) {
+    document.getElementById("DERIVED_AMOUNT").value = ""; // blank when invalid
+    return;
+  }
+  const amount = rate * net;
+  // Display with ₹ and Indian grouping
+  document.getElementById("DERIVED_AMOUNT").value = "₹" + formatIndianAmount(amount);
+}
+
+// wire up listeners (if not already wired)
+const rateEl = document.getElementById("D_RATE");
+const netEl  = document.getElementById("D_NET_WEIGHT");
+if (rateEl) rateEl.addEventListener("input", recalcAmount);
+if (netEl)  netEl.addEventListener("input", recalcAmount);
+
+// ensure recalc occurs after fetch fills the fields
+// inside your fetchAndFill success handler, after you set input values:
+setTimeout(recalcAmount, 0);
+
+
+// also call recalc after fetching data so DERIVED_AMOUNT shows when NET weight is filled
+function fetchAndFill(card) {
+  // ... existing fetch code ...
+  fetch(BASE_PATH + "/fetch?card=" + encodeURIComponent(card))
+    .then(function (res) { return res.json(); })
+    .then(function (data) {
+      // ... existing fill logic ...
+      FETCHED = data;
+      // recalc after filling fields (net weight may have been set)
+      setTimeout(recalcAmount, 0); // ensure DOM inputs updated first
+      // redirect if process type is UNLOADING...
+    })
+    // ...
+}
 
 
 //=================
