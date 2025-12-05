@@ -112,7 +112,7 @@ router.get("/", async (req, res) => {
       <div class="row"><div class="label">Tare Weight :</div><input id="T_TARE_WEIGHT" type="number" min="0" step="0.01" readonly></div>
       <div class="row"><div class="label">Max Weight :</div><input id="T_MAX_WEIGHT" type="number" min="0" step="0.01" readonly></div>
       <div class="row"><div class="label">Max Fuel Capacity :</div><input id="T_MAX_FUEL_CAPACITY" type="number" min="0" step="0.01" readonly></div>
-      <div class="row"><div class="label">Ticket Number :</div><input id="TICKET_NUMBER" type="text"></div>
+      <div class="row"><div class="label">Ticket Number :</div><input id="TICKET_NUMBER" type="text" readonly></div>
     </div>
 
     <!-- RIGHT -->
@@ -192,7 +192,7 @@ document.addEventListener("DOMContentLoaded", function () {
       document.body.style.cursor = loading ? "progress" : "auto";
       document.querySelectorAll("input, select, textarea").forEach((el) => {
         if (el.id === "D_CARD_NO") return;
-        el.disabled = loading;
+        el.disabled = true;
       });
     }
 

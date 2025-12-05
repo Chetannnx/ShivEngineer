@@ -184,3 +184,7 @@ nav ul li a.active::after {
   color: #ff4444;
   transform: rotate(45deg);
 }
+/* Readonly look */
+input[readonly], .row .value.readonly{
+  background:#f3f3f3; color:#000; cursor:not-allowed; pointer-events:none;
+}
