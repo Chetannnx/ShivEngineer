@@ -38,18 +38,7 @@ router.get("/", async (req, res) => {
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
 </head>
 <body style="font-family: 'DM Sans', sans-serif;">
-  <nav>
-    <ul>
-      <li><a href="/">HOME</a></li>
-      <li><a href="/tees">CARD MASTER</a></li>
-      <li><a href="/truck-master">TRUCK MASTER</a></li>
-      <li><a href="/Fan-Generation">FAN GENERATION</a></li>
-      <li><a href="/EntryWeight">ENTRY BRIDGE</a></li>
-      <li><a href="/ExitWeigh">EXIT BRIDGE</a></li>
-      <li><a href="/InvoiceGeneration">INVOICE GENERATION</a></li>
-      <li><a class="active" href="/WeighingBill">WEIGHING BILL</a></li>
-    </ul>
-  </nav>
+  <div id="navbar"></div>
 
   <h2 style="text-align:center;">
     <i class="fa-solid fa-receipt" style="font-size:21px;"></i>
@@ -145,6 +134,22 @@ router.get("/", async (req, res) => {
   <button id="WeighingBill" type="button">Weighing Bill</button>
 
     <script>
+ fetch('/Css/navbar.html')
+  .then(res => res.text())
+  .then(html => {
+    document.getElementById('navbar').innerHTML = html;
+
+    // ⭐ ADD THIS PART ⭐
+    const currentPath = window.location.pathname;
+
+    document.querySelectorAll('#navbar a').forEach(link => {
+      if (link.getAttribute('href') === currentPath) {
+        link.classList.add('active');
+      }
+    });
+  });
+
+
 document.addEventListener("DOMContentLoaded", function () {
   (function () {
     const BASE_PATH = "/WeighingBill";

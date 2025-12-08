@@ -23,8 +23,6 @@ router.get("/", (req, res) => {
     </ul>
   </nav>
   <h2 style="font-family: 'DM Sans', sans-serif;">SHIV ENGINEERING</h2>
-
-  
 <script>
  
 

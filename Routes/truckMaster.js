@@ -71,18 +71,7 @@ router.get('/', (req, res) => {
   <link href='https://fonts.googleapis.com/css?family=DM Sans' rel='stylesheet'>
 </head>
 <body>
-  <nav  style="font-family: 'DM Sans', sans-serif;">
-    <ul>
-      <li><a href="/">HOME</a></li>
-      <li><a href="/tees">CARD MASTER</a></li>
-      <li><a href="/truck-master" class="active">TRUCK MASTER</a></li>
-      <li><a href="/Fan-Generation">FAN GENERATION</a></li>
-      <li><a href="/EntryWeight">ENTRY BRIDGE</a></li>
-      <li><a href="/ExitWeigh">EXIT BRIDGE</a></li>
-      <li><a href="/InvoiceGeneration">INVOICE GENERATION</a></li>
-      <li><a href="/WeighingBill">WEIGHING BILL</a></li>
-    </ul>
-  </nav>
+  <div id="navbar"></div>
 
  <h2 style="text-align:center;font-family: 'DM Sans', sans-serif;">
   <i class="fa-solid fa-truck-fast" style="font-size: 21px;"></i>
@@ -217,7 +206,25 @@ router.get('/', (req, res) => {
   <div id="truckPopupText"></div>
 </div>
 
+
+
   <script>
+ fetch('/Css/navbar.html')
+  .then(res => res.text())
+  .then(html => {
+    document.getElementById('navbar').innerHTML = html;
+
+    // ⭐ ADD THIS PART ⭐
+    const currentPath = window.location.pathname;
+
+    document.querySelectorAll('#navbar a').forEach(link => {
+      if (link.getAttribute('href') === currentPath) {
+        link.classList.add('active');
+      }
+    });
+  });
+
+
 (function () {
     // Get query parameters
     const params = new URLSearchParams(window.location.search);

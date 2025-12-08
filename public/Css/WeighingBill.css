@@ -20,7 +20,7 @@ nav ul li a::after{
   content:""; position:absolute; left:0; bottom:-5px; width:0; height:3px; background:#2563eb; transition:width .4s;
 }
 nav ul li a:hover::after, nav ul li a.active::after{ width:100%; }
-nav ul li a.active{ color:#2563eb; font-weight:600; }
+nav ul li a.active{ color:#2563eb; }
 
 /* === Topbar: 2x2 layout, no background === */
 .topbar{
