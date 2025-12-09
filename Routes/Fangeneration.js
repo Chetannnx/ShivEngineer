@@ -122,7 +122,7 @@ router.get("/", async (req, res) => {
 
             <!-- RIGHT: DATA_MASTER (editable fields) -->
             <div>
-              <div class="form-group"><label>Customer Name :</label><input id="CUSTOMER_NAME" name="CUSTOMER_NAME" type="text"></div>
+              <div class="form-group"><label>Customer Name :</label><input id="CUSTOMER_NAME" name="CUSTOMER_NAME" type="text" autofocus></div>
               <div class="form-group"><label>Address Line 1 :</label><input id="ADDRESS_LINE_1" name="ADDRESS_LINE_1" type="text"></div>
               <div class="form-group"><label>Address Line 2 :</label><input id="ADDRESS_LINE_2" name="ADDRESS_LINE_2" type="text"></div>
               <div class="form-group">
@@ -264,6 +264,13 @@ router.get("/", async (req, res) => {
   
           <!-- Inline Script -->
           <script>
+           document.addEventListener("DOMContentLoaded", function () {
+    const customerInput = document.getElementById("CUSTOMER_NAME");
+    if (customerInput) {
+      customerInput.focus();
+      customerInput.select();   // optional: selects existing text
+    }
+  });
 
           fetch('/Css/navbar.html')
   .then(res => res.text())

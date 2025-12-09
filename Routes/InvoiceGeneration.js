@@ -81,7 +81,7 @@ router.get("/", async (req, res) => {
 
     <div class="card">
       <div class="label">Fiscal No :</div>
-      <input type="text" id="D_FISCAL_NO" placeholder="Enter Invoice No" >
+      <input type="text" id="D_FISCAL_NO" placeholder="Enter Invoice No" autofocus>
     </div>
   </section>
 
@@ -152,6 +152,15 @@ router.get("/", async (req, res) => {
 
 
   <script>
+document.addEventListener("DOMContentLoaded", function () {
+    const FiscalNo = document.getElementById("D_FISCAL_NO");
+    if (FiscalNo) {
+      FiscalNo.focus();
+      FiscalNo.select();   // optional: selects existing text
+    }
+  });
+
+
  fetch('/Css/navbar.html')
   .then(res => res.text())
   .then(html => {

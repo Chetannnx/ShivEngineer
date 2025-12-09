@@ -42,7 +42,7 @@ router.get("/", (req, res) => {
 
     <div class="form-group">
       <label for="SEAL_NO">SEAL NO :</label>
-      <input id="seal_no" name="SEAL_NO" type="text">
+      <input id="seal_no" name="SEAL_NO" type="text" autofocus>
     </div>
   </div>
 
@@ -103,6 +103,14 @@ router.get("/", (req, res) => {
 </div>
   
 <script>
+document.addEventListener("DOMContentLoaded", function () {
+    const SealNo = document.getElementById("seal_no");
+    if (SealNo) {
+      SealNo.focus();
+      SealNo.select();   // optional: selects existing text
+    }
+  });
+
  fetch('/Css/navbar.html')
   .then(res => res.text())
   .then(html => {

@@ -209,6 +209,14 @@ router.get('/', (req, res) => {
 
 
   <script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const TruckNO = document.getElementById("TRUCK_REG_NO");
+    if (TruckNO) {
+      TruckNO.focus();
+      TruckNO.select();   // optional: selects existing text
+    }
+  });
+
  fetch('/Css/navbar.html')
   .then(res => res.text())
   .then(html => {
