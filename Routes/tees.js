@@ -523,7 +523,7 @@ function openEditPopup(cardNo, status) {
 }
 function closeEditPopup() { document.getElementById('editPopup').style.display = 'none'; }
 
-//url throug find cardno
+//url through find cardno
 
 (function () {
     // Get query parameters
