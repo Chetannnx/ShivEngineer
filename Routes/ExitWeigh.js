@@ -173,11 +173,14 @@ async function fetchByCard(cardNo) {
       // data.TRUCK_SEALING_REQUIREMENT may be null, 0, or 1
       if (data.TRUCK_SEALING_REQUIREMENT === 1 || data.TRUCK_SEALING_REQUIREMENT === "1") {
         sealingSelect.value = "1";
+        document.getElementById("seal_no").disabled = false; // ✅ enable
       } else if (data.TRUCK_SEALING_REQUIREMENT === 0 || data.TRUCK_SEALING_REQUIREMENT === "0") {
         sealingSelect.value = "0";
       } else {
         // not found: leave default or set to 0
         sealingSelect.value = "0";
+        document.getElementById("seal_no").value = "";       // clear value
+    document.getElementById("seal_no").disabled = true; // ✅ disable
       }
 
       // keep it disabled if you don't want users to change it:
@@ -330,6 +333,12 @@ document.getElementById("acceptBtn").addEventListener("click", async function ()
       setTimeout(() => (el.style.background = 'transparent'), 250);
     }
   });
+
+
+  document.addEventListener("DOMContentLoaded", function () {
+  const seal = document.getElementById("seal_no");
+  if (seal) seal.disabled = true;
+});
 
 </script>
 

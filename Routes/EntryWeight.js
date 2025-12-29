@@ -211,9 +211,18 @@ document.getElementById("acceptBtn").addEventListener("click", async function ()
 
     const data = await res.json();
 
-    if (data.warning) showPopup(data.warning);
-    else if (data.success) showPopup(data.success);
-    else if (data.error) showPopup(data.error);
+    if (data.warning) {
+  showPopup(data.warning);
+}
+else if (data.success) {
+  showPopup(data.success);
+
+  // ✅ CLEAR PAGE AFTER SUCCESS
+  clearEntryForm();
+}
+else if (data.error) {
+  showPopup(data.error);
+}
 
   } catch (err) {
     console.error("Accept error:", err);
@@ -322,7 +331,15 @@ document.getElementById("acceptBtn").addEventListener("click", async function ()
 // });
  
 
+function clearEntryForm() {
+  document.getElementById("card_no").value = "";
+  document.getElementById("truck_reg").value = "";
+  document.getElementById("max_weight_entry").value = "";
+  document.getElementById("process_type").value = "";
 
+  // Optional: focus back to card input
+  document.getElementById("card_no").focus();
+}
 
 </script>
 </body>

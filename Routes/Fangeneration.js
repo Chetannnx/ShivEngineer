@@ -330,6 +330,14 @@ async function fetchTruckData() {
 
     // If backend says NOT FOUND and user searched by card -> show only card
     if (!res.ok) {
+    // 🔴 CARD NOT FOUND IN MASTER
+  if (res.status === 404 && data?.message?.includes("not found")) {
+    clearFieldsExceptCard();
+    document.getElementById("CARD_NO").value = cardNo;
+
+    showPopup("Card No " + cardNo + " does not exist in Card Master.");
+    return;
+  }
       if (res.status === 404 && isCardSearch()) {
         document.getElementById("CARD_NO").value = cardNo;
         clearFieldsExceptCard();
@@ -987,6 +995,9 @@ document.getElementById("assignBayBtn").addEventListener("click", async function
       const assigned = data?.BAY_NO || bayNo || "N/A";
       showCenterPopup("Bay Assigned Successfully! — Bay: " + assigned);
       closeBayPopup();
+      setTimeout(() => {
+  clearTruckForm();
+}, 800);
     } else {
       alert("Error: " + data.message); 
     }
@@ -1474,6 +1485,9 @@ document.getElementById("assignBayBtn1").addEventListener("click", async functio
       const assigned = data?.BAY_NO || bayNo || "N/A";
       showCenterPopup("Bay Assigned Successfully! — Bay: " + assigned);
       closeBayPopup1();
+      setTimeout(() => {
+  clearTruckForm();
+}, 800);
     } else {
       alert("Error: " + data.message);
     }
@@ -1934,6 +1948,24 @@ function toggleWeightField() {
 // ===============================
 document.getElementById("processType").addEventListener("change", toggleWeightField);
 
+function clearTruckForm() {
+  // Clear all input & select fields
+  document.querySelectorAll("input, select").forEach(el => {
+    if (el.type === "text" || el.type === "number") el.value = "";
+    if (el.tagName === "SELECT") el.selectedIndex = 0;
+  });
+
+  // Reset buttons
+  setBtnState("LOADED_ONLY_ASSIGN");
+
+  // Hide popups if open
+  document.getElementById("fanPopup").style.display = "none";
+  document.getElementById("bayPopup").style.display = "none";
+  document.getElementById("bayPopup1").style.display = "none";
+
+  // Optional visual confirmation
+  console.log("✅ Truck data cleared after Bay assignment");
+}
 
 </script>
 
@@ -2059,12 +2091,11 @@ router.get("/api/fan-generation/card/:cardNo", async (req, res) => {
     const cardResult = await pool.request()
       .input("cardNo", sql.VarChar, cardNo)
       .query(`
-        SELECT TOP 1 
-            FAN_NO, TRUCK_REG_NO, CARD_NO, PROCESS_TYPE, CUSTOMER_NAME, ADDRESS_LINE_1, ADDRESS_LINE_2, 
-            ITEM_DESCRIPTION, FAN_TIME_OUT, FAN_EXPIRY, WEIGHT_TO_FILLED, PROCESS_STATUS
-        FROM DATA_MASTER 
-        WHERE CARD_NO = @cardNo
-        ORDER BY FAN_TIME_OUT DESC
+        SELECT TOP 1 *
+    FROM DATA_MASTER
+    WHERE CARD_NO = @cardNo
+      AND BATCH_STATUS = 1
+    ORDER BY FAN_TIME_OUT DESC
       `);
 
     // If no active DATA_MASTER row => card exists but not assigned right now
@@ -2177,7 +2208,7 @@ router.post("/api/assign-card", async (req, res) => {
       .request()
       .input("truckRegNo", sql.VarChar, truckRegNo)
       .query(
-        "SELECT CARD_NO FROM DATA_MASTER WHERE TRUCK_REG_NO = @truckRegNo"
+        "SELECT CARD_NO FROM DATA_MASTER WHERE TRUCK_REG_NO = @truckRegNo AND BATCH_STATUS=1" 
       );
 
     if (existing.recordset.length > 0) {
@@ -2191,7 +2222,7 @@ router.post("/api/assign-card", async (req, res) => {
     const existingCard = await pool
       .request()
       .input("cardNo", sql.VarChar, cardNo)
-      .query("SELECT TRUCK_REG_NO FROM DATA_MASTER WHERE CARD_NO = @cardNo");
+      .query("SELECT TRUCK_REG_NO FROM DATA_MASTER WHERE CARD_NO = @cardNo AND BATCH_STATUS=1"  );
 
     if (existingCard.recordset.length > 0) {
       return res.status(400).json({

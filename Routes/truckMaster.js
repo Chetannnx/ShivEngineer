@@ -470,6 +470,73 @@ function closeTruckPopup() {
 closeBtn.addEventListener("click", closeTruckPopup);
 
 
+
+//==========
+//auto date 
+//==========
+document.addEventListener("DOMContentLoaded", function () {
+
+  const popup = document.getElementById("popup");
+
+  if (popup) {
+    const today = new Date().toISOString().split("T")[0];
+
+    const safetyDate = popup.querySelector('input[name="SAFETY_CERTIFICATION_NO"]');
+    const calibrationDate = popup.querySelector('input[name="CALIBRATION_CERTIFICATION_NO"]');
+
+    if (safetyDate && !safetyDate.value) {
+      safetyDate.value = today;
+    }
+
+    if (calibrationDate && !calibrationDate.value) {
+      calibrationDate.value = today;
+    }
+  }
+
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+
+  const popup = document.getElementById("popup");
+  if (!popup) return;
+
+  const blacklistSelect = popup.querySelector('select[name="BLACKLIST_STATUS"]');
+  const reasonInput     = popup.querySelector('input[name="REASON_FOR_BLACKLIST"]');
+  const sealingSelect   = popup.querySelector('select[name="TRUCK_SEALING_REQUIREMENT"]');
+
+  /* ==============================
+     DEFAULT VALUES ON POPUP OPEN
+  ============================== */
+
+  // ✅ Blacklist → NOT_BLACKLIST
+  if (blacklistSelect) {
+    blacklistSelect.value = "0";
+  }
+
+  // ✅ Truck Sealing → NO
+  if (sealingSelect) {
+    sealingSelect.value = "0";
+  }
+
+  // ✅ Handle Reason field
+  function toggleReasonField() {
+    if (blacklistSelect.value === "1") {
+      reasonInput.removeAttribute("readonly");
+      reasonInput.focus();
+    } else {
+      reasonInput.value = "";
+      reasonInput.setAttribute("readonly", true);
+    }
+  }
+
+  // Run once on load
+  toggleReasonField();
+
+  // Run when user changes blacklist
+  blacklistSelect.addEventListener("change", toggleReasonField);
+
+});
+
 </script>
 
 
@@ -490,7 +557,8 @@ router.post('/insert-truck', async (req, res) => {
     const pool = await sql.connect(dbConfig);
     const data = req.body;
 
-    const truckSealingReq = data.TRUCK_SEALING_REQUIREMENT; // ✅ 1 or 0
+    const truckSealingReq =
+  data.TRUCK_SEALING_REQUIREMENT === "1" ? 1 : 0; // ✅ 1 or 0
 
     await pool.request()
       .input('TRUCK_REG_NO', sql.VarChar, data.TRUCK_REG_NO)

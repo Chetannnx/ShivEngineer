@@ -145,7 +145,33 @@ router.get("/", async (req, res) => {
 
   <button id="invoiceBtn" type="button">Invoice Generation</button>
 
-
+  <div id="overlay"></div>
+<div id="popupMsg" style="
+    display:none;
+    position:fixed;
+    top:50%;
+    left:50%;
+    transform:translate(-50%, -50%);
+    background:#fff;
+    border:1px solid #ccc;
+    padding:30px 40px;
+    z-index:1000;
+    box-shadow:0 0 15px rgba(0,0,0,0.3);
+    border-radius:8px;
+    font-weight:bold;
+    width:250px;
+    max-width: 90%;
+    overflow-wrap: break-word;  /* Wrap long words */
+    word-wrap: break-word;
+    word-break: break-word;
+    text-align:center;
+    box-sizing:border-box;
+">
+  <!-- Close button top-right -->
+  <button id="closePopup"
+  ">✖</button>
+  <div id="popupText"></div>
+</div>
 
   <!-- SCRIPTS -->
 
@@ -625,6 +651,18 @@ document.addEventListener("DOMContentLoaded", function () {
         if (data.error) { alert("Error: " + data.error); return; }
         if (data.popup) { alert(data.popup); return; }
 
+        // 🚫 BLOCK UNAUTHORIZED ACCESS
+    if (data.unauthorized) {
+      showPopup(data.message || "Unauthorized access!");
+      return; // ⛔ STOP EXECUTION
+    }
+
+    // ❌ Normal error
+    if (data.error) {
+      showPopup(data.error);
+      return;
+    }
+
         // fill fields by matching IDs
         for (var k in data) {
           if (!Object.prototype.hasOwnProperty.call(data, k)) continue;
@@ -675,7 +713,7 @@ document.addEventListener("DOMContentLoaded", function () {
   
 
   // ===== Invoice Button (put INSIDE the same block) =====
-  var btn = $("invoiceBtn");
+  var btn = document.getElementById("invoiceBtn");
 if (btn) {
   btn.addEventListener("click", function () {
     var rate = parseFloat(($("D_RATE").value || "").trim());
@@ -707,7 +745,7 @@ if (btn) {
 
       // build + download PDF
       var model = collectInvoiceModel();
-      buildInvoicePDF(model);
+      buildInvoicePDF(model); 
     })
     .catch(function (err) {
       alert("Error saving invoice: " + err.message);
@@ -791,6 +829,24 @@ function fetchAndFill(card) {
 //     }
 //   }
 // })();
+
+
+const popup = document.getElementById("popupMsg");
+const overlay = document.getElementById("overlay");
+const closeBtn = document.getElementById("closePopup");
+
+function showPopup(msg) {
+    document.getElementById("popupText").textContent = msg;
+    popup.style.display = "block";
+    overlay.style.display = "block"; // show blur
+}
+
+function closePopup() {
+    popup.style.display = "none";
+    overlay.style.display = "none"; // hide blur
+}
+
+closeBtn.addEventListener("click", closePopup);
 </script>
 
 
@@ -814,6 +870,7 @@ router.get("/fetch", async (req, res) => {
         SELECT TOP 1 *
         FROM DATA_MASTER
         WHERE CARD_NO = @card
+        AND BATCH_STATUS = 1
       )
       SELECT
         d.TRUCK_REG_NO,
@@ -850,9 +907,16 @@ router.get("/fetch", async (req, res) => {
     `;
 
     const result = await pool.request().input("card", sql.VarChar, card).query(query);
-    if (result.recordset.length === 0) return res.json({ popup: "Card not found" });
+    if (result.recordset.length === 0) return ;
 
     const r = result.recordset[0];
+    // ❌ BLOCK IF PROCESS_STATUS IS NOT 15
+if (Number(r.PROCESS_STATUS) !== 15) {
+  return res.json({
+    unauthorized: true,
+    message: "Unauthorized access. Invoice allowed only after Exit Weight Accepted."
+  });
+}
 
     function toDateInput(v) {
       if (!v) return "";
@@ -1015,6 +1079,5 @@ router.post("/generate", async (req, res) => {
     });
   }
 });
-
 
 module.exports = router;
