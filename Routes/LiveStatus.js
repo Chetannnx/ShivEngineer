@@ -67,21 +67,6 @@ router.get("/", async (req, res) => {
 
 <script>
   setTimeout(() => location.reload(), 10000);
-  
-  fetch('/Css/navbar.html')
-  .then(res => res.text())
-  .then(html => {
-    document.getElementById('navbar').innerHTML = html;
-
-    // ⭐ ADD THIS PART ⭐
-    const currentPath = window.location.pathname;
-
-    document.querySelectorAll('#navbar a').forEach(link => {
-      if (link.getAttribute('href') === currentPath) {
-        link.classList.add('active');
-      }
-    });
-  });
 </script>
 
 </body>

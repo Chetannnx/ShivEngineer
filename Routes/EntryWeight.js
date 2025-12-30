@@ -361,7 +361,8 @@ router.get("/fetch", async (req, res) => {
       .query(`
         SELECT TRUCK_REG_NO, PROCESS_TYPE, PROCESS_STATUS
         FROM DATA_MASTER
-        WHERE CARD_NO = @CARD_NO
+        WHERE CARD_NO = @CARD_NO AND BATCH_STATUS = 1
+
       `);
 
     if (result.recordset.length > 0) {
