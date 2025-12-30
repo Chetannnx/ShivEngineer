@@ -1,11 +1,13 @@
 {
   "dependencies": {
     "escape-html": "^1.0.3",
+    "exceljs": "^4.4.0",
     "express": "^5.1.0",
     "fs": "^0.0.1-security",
     "msnodesqlv8": "^5.1.1",
     "mssql": "^11.0.1",
     "pdfkit": "^0.17.2",
+    "pdfmake": "^0.2.21",
     "selfsigned": "^3.0.1"
   },
   "devDependencies": {

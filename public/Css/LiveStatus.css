@@ -1,0 +1,76 @@
+/* ===== LIVE STATUS TABLE FIX ===== */
+body {
+  font-family: 'DM Sans', sans-serif;
+  padding: 10px;
+  background: #F5F5F5;
+
+}
+
+table {
+  width: 100%;
+  font-family: 'DM Sans', sans-serif;
+  table-layout: fixed;   /* ✅ IMPORTANT */
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+}
+th, td {
+  border: none;
+  border-bottom: 1px solid #ddd;
+  padding: 10px;
+  font-weight: bold;
+  word-wrap: break-word;
+  height: 10px;
+  border-bottom: 1px solid #EAEAEA;
+
+}
+
+/* Header */
+th {
+font-family: 'DM Sans', sans-serif;
+  background: #6F6F6F;
+  color: #fff;
+  padding: 10px;
+  font-weight: bold;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Cells */
+td {
+  font-family: 'DM Sans', sans-serif;
+  padding: 8px;
+  text-align: center;
+  font-size: 16px;
+  white-space: nowrap;        /* ✅ Prevent line break */
+  overflow: hidden;           /* ✅ Prevent overflow */
+  text-overflow: ellipsis;    /* ✅ Show ... */
+  border-bottom: 1px solid #e0e0e0;
+}
+
+
+/* Column Widths */
+th.col-sr, td.col-sr { width: 60px; }
+th.col-truck, td.col-truck { width: 180px; }
+th.col-card, td.col-card { width: 160px; }
+th.col-status, td.col-status { width: 120px; }
+th.col-type, td.col-type { width: 120px; }
+th.col-bay, td.col-bay { width: 80px; }
+th.col-time, td.col-time { width: 180px; }
+
+/* Status colors */
+.status-running {
+  color: green;
+  font-weight: bold;
+}
+
+.status-pending {
+  color: orange;
+  font-weight: bold;
+}
+
+/* Hover */
+tr:hover {
+  background: #f4f7ff;
+}

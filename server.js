@@ -38,6 +38,11 @@ app.use('/InvoiceGeneration', require('./Routes/InvoiceGeneration'));
 app.use('/WeighingBill', require('./Routes/WeighingBill'));
 app.use('/Icons', express.static(path.join(__dirname, 'Icons')));
 
+const liveTruckStatusRoutes = require("./Routes/LiveTruckStatus");
+
+app.use("/", liveTruckStatusRoutes);
+const liveStatus = require('./Routes/LiveStatus');
+app.use('/live-status', liveStatus);
 
 // ✅ Generate self-signed certificate dynamically
 const attrs = [{ name: 'commonName', value: 'localhost' }];

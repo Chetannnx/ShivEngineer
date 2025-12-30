@@ -2095,6 +2095,7 @@ router.get("/api/fan-generation/card/:cardNo", async (req, res) => {
     FROM DATA_MASTER
     WHERE CARD_NO = @cardNo
       AND BATCH_STATUS = 1
+       AND PROCESS_STATUS <> 16
     ORDER BY FAN_TIME_OUT DESC
       `);
 
