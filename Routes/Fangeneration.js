@@ -129,9 +129,9 @@ router.get("/", async (req, res) => {
   <label for="ITEM_DESCRIPTION">Item Description :</label>
   <select id="ITEM_DESCRIPTION" name="ITEM_DESCRIPTION">
     <option value="">-- Select --</option>
-    <option value="Petrol">Petrol</option>
-    <option value="Diesel">Diesel</option>
-    <option value="Jetkero">Jetkero</option>
+    <option value="Petrol">PETROL</option>
+    <option value="Diesel">DIESEL</option>
+    <option value="Jetkero">CONDENSATE</option>
     
   </select>
 </div>
@@ -958,6 +958,10 @@ document.getElementById("assignBayBtn").addEventListener("click", async function
 
   if (!truckRegNo) return alert("Truck Reg No missing");
   if (bayType === "manual" && !bayNo) return alert("Enter Bay No");
+  if (bayType === "manual" && !bayNo) {
+  alert("Please enter Bay Number");
+  return;
+}
 
   try {
     const res = await fetch('/Fan-Generation/api/assign-bay', {

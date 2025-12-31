@@ -241,9 +241,12 @@ setTimeout(() => {
 }, 3000);
 </script>
 
-
+<h2>
+  <i class="fa-solid fa-credit-card" style="font-size: 21px;"></i> 
+  CARD MASTER DATA</h2>
 <div class="top-bar" style="padding-top:10px;">
-  <h2 style="margin:0;  text-align: center;"><i class="fa-solid fa-credit-card" style="font-size: 21px;"></i> CARD MASTER DATA</h2>
+  
+  
   <button 
   style="width: 130px; font-family: 'DM Sans', sans-serif; border-radius: 13px; font-size: 16px; height: 40px; display: flex; align-items: center; justify-content: center; gap: 8px;" 
   class="btn btn-add" 

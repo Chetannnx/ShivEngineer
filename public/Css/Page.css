@@ -4,6 +4,9 @@ body {
   background: #F5F5F5;
 
 }
+h2 {
+  text-align: center;
+}
 
 
 /* === Top Bar (Search + Buttons + Dropdown) === */
