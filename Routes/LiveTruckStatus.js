@@ -142,13 +142,13 @@ function formatDateTime(d) {
 }
 
 function renderValue(col, val) {
-  if (!val) return "";
+  if (val === null || val === undefined) return "";
 
-  if (col.includes("DATE") && !col.includes("TIME")) {
+  if (DATE_ONLY_COLS.has(col)) {
     return formatDate(val);
   }
 
-  if (col.includes("TIME")) {
+  if (DATETIME_COLS.has(col)) {
     return formatDateTime(val);
   }
 
@@ -303,7 +303,7 @@ function openExportModal(e,id){
   closeAllModals();
   const m=document.getElementById(id);
   m.style.display='block';
-  const r=e.target.getBoundingClientRect();
+  const r=e.target.getBoundingClientRect();x
   m.querySelector('.modal-content').style.marginTop =
     (r.bottom + window.scrollY + 10) + 'px';
 }
