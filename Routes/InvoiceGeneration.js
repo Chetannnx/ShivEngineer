@@ -573,56 +573,20 @@ async function buildInvoicePDF(data = {}) {
   const pdfBlob = doc.output("blob");
 
   // Helper to save blob using File System Access API, msSaveOrOpenBlob, or anchor fallback
-  async function saveBlobWithDialog(blob, suggestedName) {
-    // Modern File System Access API
-    if (window.showSaveFilePicker) {
-      try {
-        const handle = await window.showSaveFilePicker({
-          suggestedName: suggestedName,
-          types: [{
-            description: "PDF File",
-            accept: { "application/pdf": [".pdf"] }
-          }]
-        });
-        const writable = await handle.createWritable();
-        await writable.write(blob);
-        await writable.close();
-        return;
-      } catch (err) {
-        // user probably cancelled - just return silently
-        console.warn("Save cancelled or failed (File System Access):", err);
-        return;
-      }
-    }
-
-    // IE / old Edge
-    if (navigator.msSaveOrOpenBlob) {
-      try {
-        navigator.msSaveOrOpenBlob(blob, suggestedName);
-        return;
-      } catch (err) {
-        console.warn("msSaveOrOpenBlob failed:", err);
-      }
-    }
-
-    // Generic anchor fallback
-    try {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = suggestedName;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
-    } catch (err) {
-      console.error("Fallback download failed:", err);
-      alert("Unable to save file automatically. You can try printing or saving from the browser's PDF viewer.");
-    }
-  }
+  // ✅ FORCE DIRECT DOWNLOAD (NO POPUP)
+function saveBlobDirect(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;   // forces auto download
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
   // call helper
-  await saveBlobWithDialog(pdfBlob, filename);
+  saveBlobDirect(pdfBlob, filename);
 }
 
 
@@ -847,6 +811,20 @@ function closePopup() {
 }
 
 closeBtn.addEventListener("click", closePopup);
+
+
+document.addEventListener("DOMContentLoaded", function () {
+  const due = document.getElementById("DERIVED_DUE");
+
+  if (due) {
+    const d = new Date();
+d.setDate(d.getDate());
+    due.value =
+      d.getFullYear() + "-" +
+      String(d.getMonth() + 1).padStart(2, "0") + "-" +
+      String(d.getDate()).padStart(2, "0");
+  }
+});
 </script>
 
 

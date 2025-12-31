@@ -264,6 +264,10 @@ document.getElementById("acceptBtn").addEventListener("click", async function ()
 
     if (data.popup) {
       showPopup(data.popup);
+       // ✅ Clear form after successful accept
+  setTimeout(() => {
+    clearEntryForm();
+  }, 300); // small delay so popup shows properly
       return;
     }
 
@@ -339,6 +343,25 @@ document.getElementById("acceptBtn").addEventListener("click", async function ()
   const seal = document.getElementById("seal_no");
   if (seal) seal.disabled = true;
 });
+
+
+function clearEntryForm() {
+  document.getElementById("card_no").value = "";
+  document.getElementById("truck_reg").value = "";
+  document.getElementById("measured_weight").value = "";
+  document.getElementById("seal_no").value = "";
+  document.getElementById("process_type").value = "";
+
+  // Reset sealing dropdown
+  const sealReq = document.getElementById("truckSealingreq");
+  if (sealReq) sealReq.value = "0";
+
+  // Disable seal input again
+  document.getElementById("seal_no").disabled = true;
+
+  // Focus back to Card No
+  document.getElementById("card_no").focus();
+}
 
 </script>
 

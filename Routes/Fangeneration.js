@@ -739,8 +739,8 @@ if (!fanGenRes.ok) throw new Error(fanGenData.message || "Failed to generate FAN
   const timeStr = pad(hrs) + ":" + pad(mins) + ":" + pad(secs) + " " + ampm;
 
   document.getElementById("FAN_EXPIRY").textContent =
-    pad(dt.getUTCDate()) + '/' +
     pad(dt.getUTCMonth() + 1) + '/' +
+    pad(dt.getUTCDate()) + '/' +
     dt.getUTCFullYear() + ' ' +
     timeStr;
 
@@ -866,38 +866,14 @@ document.getElementById("fanSavePdfBtn").addEventListener("click", async functio
     const pdfBlob = doc.output("blob"); // get the generated PDF as a Blob
     const fileName = "FAN_" + (data.fanNo || Date.now()) + ".pdf";
 
-    if (window.showSaveFilePicker) {
-      // Preferred: File System Access API (Chrome/Edge on HTTPS/localhost)
-      try {
-        const handle = await window.showSaveFilePicker({
-          suggestedName: fileName,
-          types: [{
-            description: "PDF File",
-            accept: { "application/pdf": [".pdf"] }
-          }]
-        });
-        const writable = await handle.createWritable();
-        await writable.write(pdfBlob);
-        await writable.close();
-      } catch (err) {
-        // user likely cancelled — ignore silently
-        console.warn("Save cancelled or failed (showSaveFilePicker):", err);
-      }
-    } else if (navigator.msSaveOrOpenBlob) {
-      // IE / old Edge
-      navigator.msSaveOrOpenBlob(pdfBlob, fileName);
-    } else {
-      // Fallback: anchor download (may not show Save As depending on browser settings)
-      const url = URL.createObjectURL(pdfBlob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      // free memory shortly after
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
-    }
+    const url = URL.createObjectURL(pdfBlob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 
     // ====== your existing flow (unchanged) ======
     closeFanPopup(); // close the fan popup
@@ -1143,7 +1119,7 @@ document.getElementById("ReAuthBtn").addEventListener("click", async () => {
 
     const data = await res.json();
     if (res.ok) {
-      alert("Re-Authorization done!");
+      showPopup("Re-Authorization done!");
 
       // Update truck status
       document.getElementById("truckStatus").value = 4;
@@ -1194,8 +1170,8 @@ function showFanPopup(data) {
   const timeStr = pad(hrs) + ":" + pad(mins) + ":" + pad(secs) + " " + ampm;
 
   document.getElementById("FAN_EXPIRY").textContent =
-    pad(dt.getUTCDate()) + '/' +
     pad(dt.getUTCMonth() + 1) + '/' +
+    pad(dt.getUTCDate()) + '/' +
     dt.getUTCFullYear() + ' ' +
     timeStr;
 
@@ -1371,36 +1347,14 @@ async function generateStyledFANPDF() {
     const pdfBlob = doc.output("blob");
     const fileName = "FAN_" + (data.fanNo || Date.now()) + ".pdf";
 
-    if (window.showSaveFilePicker) {
-      try {
-        const handle = await window.showSaveFilePicker({
-          suggestedName: fileName,
-          types: [{
-            description: "PDF File",
-            accept: { "application/pdf": [".pdf"] }
-          }]
-        });
-        const writable = await handle.createWritable();
-        await writable.write(pdfBlob);
-        await writable.close();
-      } catch (err) {
-        // user probably cancelled - ignore if so
-        console.warn("Save cancelled:", err);
-      }
-    } 
-    else if (navigator.msSaveOrOpenBlob) {
-      navigator.msSaveOrOpenBlob(pdfBlob, fileName); // Old Edge/IE
-    } 
-    else {
-      const url = URL.createObjectURL(pdfBlob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
-    }
+    const url = URL.createObjectURL(pdfBlob);
+const a = document.createElement("a");
+a.href = url;
+a.download = fileName;
+document.body.appendChild(a);
+a.click();
+document.body.removeChild(a);
+URL.revokeObjectURL(url);
   } catch (err) {
     console.error("generateStyledFANPDF error:", err);
   }
