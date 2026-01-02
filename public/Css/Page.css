@@ -1,11 +1,28 @@
 body {
   font-family: 'DM Sans', sans-serif;
   padding: 10px;
-  background: #F5F5F5;
+  min-height: 100vh;
 
+  /* Light mode */
+  background-color: #f5f5f5;
+  color: #222;
+
+  /* Layout */
+  display: flex;
+  flex-direction: column;
+
+  /* Smooth theme change */
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
+
+/* Dark Mode */
+body.dark {
+  background-color: #121212;
+  color: #f1f1f1;
+}
+
 h2 {
-  text-align: center;
+  text-align: lef;
 }
 
 
@@ -73,21 +90,28 @@ h2 {
 
 /* === Table === */
 table {
-  width: 100%;
-  border-collapse: separate; /* ✅ change from collapse */
-  border-spacing: 0; /* ✅ keep spacing consistent */
+  width: 68%;
+  margin: 0 auto;              /* ✅ CENTER TABLE */
+
+  border-collapse: separate;
+  border-spacing: 0;
   background: #fff;
-  box-shadow: rgba(0, 0, 0, 0.09) 0px 2px 1px, rgba(0, 0, 0, 0.09) 0px 4px 2px, rgba(0, 0, 0, 0.09) 0px 8px 4px, rgba(0, 0, 0, 0.09) 0px 16px 8px, rgba(0, 0, 0, 0.09) 0px 32px 16px;
+  /* box-shadow: rgba(0, 0, 0, 0.09) 0px 2px 1px,
+              rgba(0, 0, 0, 0.09) 0px 4px 2px,
+              rgba(0, 0, 0, 0.09) 0px 8px 4px,
+              rgba(0, 0, 0, 0.09) 0px 16px 8px,
+              rgba(0, 0, 0, 0.09) 0px 32px 16px; */
+
   font-weight: bold;
-  border-radius: 12px; /* ✅ rounded corners */
-  overflow: hidden; /* ✅ ensures corners look clean */
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 th, td {
   border: none;
   border-bottom: 1px solid #ddd;
-  padding: 10px;
-  font-weight: bold;
+  padding: 20px;
+  font-size: 15px;
   word-wrap: break-word;
   height: 10px;
   border-bottom: 1px solid #EAEAEA;
@@ -95,13 +119,14 @@ th, td {
 }
 
 th {
-  background:#6F6F6F;
-  color: #fff;
+  background:#ffffff;
+  border-bottom:  1px solid #e5e7eb;
+  color: #6b7280;
   cursor: pointer;
-  font-weight: bold;
+  font-size: 15px;
 }
 td{
-  padding: 6px;
+  padding: 10px;
 }
 
 /* Fixed widths */
@@ -110,7 +135,7 @@ th.srno-col, td.srno-col { width: 60px; text-align: center; }
 th.edit-col, td.edit-col { width: 200px; text-align:center; }
 
 /* Alignments */
-td.cardno-col, td.status-col { text-align: center;}
+td.cardno-col, td.status-col { text-align: center; color: #1f2937;}
 
 /* Status colors */
 td.status.active { color: green; font-weight: bold; }
@@ -150,7 +175,7 @@ tr:hover { background: #f9f9ff; }
 
 /* === Table header links === */
 thead a {
-  color: white;
+  color: #6b7280;
   text-decoration: none;
   display: inline-block;
 }
@@ -340,7 +365,7 @@ nav {
   font-weight: bold;
   padding-bottom: 20px;
   font-weight: bold;
-}
+} 
 
 nav ul {
   list-style: none;
@@ -530,3 +555,104 @@ a.btn-reset {
 a.btn-reset:hover {
   transform: scale(1.05);
 }
+
+
+
+
+
+.card-container {
+  display: flex;
+  margin: 15px 0;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.stat-card {
+  width: 365px;
+  height: 60px;
+
+  margin-left: 300px;   /* 👈 move right */
+  /* margin-right: 40px;  move left */
+
+  background: #fff;
+  padding: 18px 22px;
+  border-radius: 14px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+.stat-card1 {
+  width: 365px;
+  height: 60px;
+
+  margin-left: 20px;   /* 👈 move right */
+  /* margin-right: 40px;  move left */
+
+  background: #fff;
+  padding: 18px 22px;
+  border-radius: 14px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+.stat-card2 {
+  width: 365px;
+  height: 60px;
+
+  margin-left: 20px;   /* 👈 move right */
+  /* margin-right: 40px;  move left */
+
+  background: #fff;
+  padding: 18px 22px;
+  border-radius: 14px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+.title {
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 6px;
+}
+
+.stat-card h2 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: bold;
+  text-align: left;
+}
+.stat-card1 h2 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: bold;
+  text-align: left;
+}
+.stat-card2 h2 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: bold;
+  text-align: left;
+}
+
+.icon {
+  width: 45px;
+  height: 45px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.blue {  color: #3b5bfd; }
+.green {  color: #12b76a; }
+.red { color: #e63946; }

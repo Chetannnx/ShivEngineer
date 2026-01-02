@@ -167,11 +167,43 @@ if (sortColumn === 'CARD_STATUS') {
 </div>`;
 
 const totalCardHTML = `
-  <div style="margin: 10px 0; font-family:'DM Sans', sans-serif; font-weight:bold; font-size:16px;">
-    Total Card No = ${totalRows} |
-    <span style="color:green;">Active= ${activeCount}</span> | 
-    <span style="color:red;">Block= ${blockCount}</span>
-  </div>`;
+  <div class="card-container">
+
+  <!-- Total Cards -->
+  <div class="stat-card">
+    <div>
+      <p class="title">Total Cards</p>
+      <h2>${totalRows}</h2>
+    </div>
+    <div class="icon blue">
+      <i class="fa-solid fa-folder"></i>
+    </div>
+  </div>
+
+  <!-- Active Cards -->
+  <div class="stat-card1">
+    <div>
+      <p class="title">Active Cards</p>
+      <h2 class="green">${activeCount}</h2>
+    </div>
+    <div class="icon green">
+      <i class="fa-solid fa-circle-check"></i>
+    </div>
+  </div>
+
+  <!-- Blocked Cards -->
+  <div class="stat-card2">
+    <div>
+      <p class="title">Blocked Cards</p>
+      <h2 class="red">${blockCount}</h2>
+    </div>
+    <div class="icon red">
+      <i class="fa-solid fa-ban"></i>
+    </div>
+  </div>
+
+</div>
+`;
 
 
         const topControls = `
@@ -179,28 +211,22 @@ const totalCardHTML = `
   <form method="GET" action="/tees" style="display:flex; align-items:center; gap:8px;">
   
 
-    <input type="text" name="search" value="${escapeHtml(search)}" placeholder="Search Card No" style="padding:6px;font-weight:bold; font-family:'DM Sans', sans-serif;height:22px; border-radius:10px; border:1px solid #ccc;">
-    <button 
-  type="submit" 
-  class="btn btn-add" 
-  style="font-size: 16px; font-family:'DM Sans', sans-serif; padding: 6px 12px; height: 37px; border-radius: 13px; border: none; background: #6571ff; color: #fff; font-weight: bold; cursor: pointer; width: 100px; display: flex; align-items: center; justify-content: center; gap: 6px;">
-  
-  <i class="fa-solid fa-magnifying-glass" style="font-size: 18px;"></i> Search
-    </button>
- <a href="/tees" class="btn-reset">Refresh</a>
+    <input type="text" name="search" value="${escapeHtml(search)}" placeholder="Search Card No" style="padding:7px; font-size:14px; margin-left:300px; font-family:'DM Sans', sans-serif;height:24px; border-radius:10px; border:1px solid #ccc; background: #f3f4f6 ">
+   
+ <a href="/tees" class="btn-reset"><i class="fa" style="font-size:20px; color:#6b7280;">&#xf021;</i></a>
 
     <input type="hidden" name="sortBy" value="${escapeHtml(rawSortBy)}">
     <input type="hidden" name="order" value="${escapeHtml(order)}">
     <input type="hidden" name="limit" value="${limit}">
   </form>
   <div style="display:inline-flex; align-items:center; gap:6px; flex:0 1 auto; min-width:0;">
-    Show
-    <select onchange="window.location='/tees?page=1&limit='+this.value+'&search=${encodedSearch}&sortBy=${rawSortBy}&order=${order}'" style="margin-left:6px; padding:4px; min-width:44px; width:auto; max-width:100%; border-radius:8px; box-sizing:border-box;">
+    Rows:
+    <select onchange="window.location='/tees?page=1&limit='+this.value+'&search=${encodedSearch}&sortBy=${rawSortBy}&order=${order}'" style="margin-right:300px; padding:5px; min-width:52px; width:auto; max-width:100%; border-radius:8px; box-sizing:border-box; background: #f3f4f6">
       <option value="20" ${limit===20?'selected':''}>20</option>
       <option value="50" ${limit===50?'selected':''}>50</option>
       <option value="100" ${limit===100?'selected':''}>100</option>
       <option value="200" ${limit===200?'selected':''}>200</option>
-    </select> rows
+    </select>
   </div>
 </div>`;
 
@@ -248,11 +274,11 @@ setTimeout(() => {
   
   
   <button 
-  style="width: 130px; font-family: 'DM Sans', sans-serif; border-radius: 13px; font-size: 16px; height: 40px; display: flex; align-items: center; justify-content: center; gap: 8px;" 
+  style="width: 130px; font-family: 'DM Sans', sans-serif; border-radius: 13px; margin-left: 1437px; font-size: 16px; height: 40px; display: flex; align-items: center; justify-content: center; gap: 8px;" 
   class="btn btn-add" 
   onclick="openAddPopup()">
   
-  <i class="fa-solid fa-credit-card" style="font-size: 21px;"></i> Add New
+  <i style="font-size:21px" class="fa">&#xf067;</i> Add New
 </button>
   
 </div>
@@ -266,6 +292,7 @@ ${topControls}
 
 <!-- Delete form: added hidden inputs & confirm onsubmit -->
 <form id="deleteForm" method="POST" action="/delete">
+
 <table id="cardTable">
   <thead>
     <tr>
@@ -338,7 +365,7 @@ if (rows.length === 0) {
   type="button"
   onclick="openDeletePopup()"
   class="btn btn-delete"
-  style="border-radius: 13px; font-family:'DM Sans', sans-serif;font-size: 16px; width: 100px; height: 37px; display: flex; align-items: center; justify-content: center; gap: 6px; background: #ff4d4d; color: #fff; border: none; cursor: pointer;">
+  style="border-radius: 13px; font-family:'DM Sans', sans-serif;font-size: 16px; width: 100px; margin-left:300px; height: 37px; display: flex; align-items: center; justify-content: center; gap: 6px; background: #ff4d4d; color: #fff; border: none; cursor: pointer;">
   <i class="fa-solid fa-trash" style="font-size: 18px;"></i> Delete
 </button>
 
