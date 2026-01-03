@@ -39,7 +39,7 @@ router.get('/', async (req, res) => {
 
   const msg = req.query.msg || '';
   const page = Math.max(1, parseInt(req.query.page) || 1);
-  const limit = parseInt(req.query.limit) || 20;
+  const limit = parseInt(req.query.limit) || 10;
   const offset = (page - 1) * limit;
   const rawSearch = req.query.search || '';
   const search = rawSearch.trim();
@@ -176,7 +176,11 @@ const totalCardHTML = `
       <h2>${totalRows}</h2>
     </div>
     <div class="icon blue">
-      <i class="fa-solid fa-folder"></i>
+    <div class="bg-surface-light dark:bg-surface-dark rounded-xl p-6 border border-border-light dark:border-border-dark shadow-soft flex items-center justify-between">
+    <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
+      <span class="material-icons-outlined">folder</span>
+      </div>
+     </div> 
     </div>
   </div>
 
@@ -187,7 +191,9 @@ const totalCardHTML = `
       <h2 class="green">${activeCount}</h2>
     </div>
     <div class="icon green">
-      <i class="fa-solid fa-circle-check"></i>
+      <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg text-green-600 dark:text-green-400">
+      <span class="material-icons-outlined">check_circle</span>
+      </div>
     </div>
   </div>
 
@@ -198,7 +204,9 @@ const totalCardHTML = `
       <h2 class="red">${blockCount}</h2>
     </div>
     <div class="icon red">
-      <i class="fa-solid fa-ban"></i>
+     <div class="p-3 bg-red-100 dark:bg-red-900/30 rounded-lg text-red-600 dark:text-red-400">
+      <span class="material-icons-outlined">block</span>
+      </div>
     </div>
   </div>
 
@@ -211,23 +219,7 @@ const totalCardHTML = `
   <form method="GET" action="/tees" style="display:flex; align-items:center; gap:8px;">
   
 
-    <input type="text" name="search" value="${escapeHtml(search)}" placeholder="Search Card No" style="padding:7px; font-size:14px; margin-left:300px; font-family:'DM Sans', sans-serif;height:24px; border-radius:10px; border:1px solid #ccc; background: #f3f4f6 ">
    
- <a href="/tees" class="btn-reset"><i class="fa" style="font-size:20px; color:#6b7280;">&#xf021;</i></a>
-
-    <input type="hidden" name="sortBy" value="${escapeHtml(rawSortBy)}">
-    <input type="hidden" name="order" value="${escapeHtml(order)}">
-    <input type="hidden" name="limit" value="${limit}">
-  </form>
-  <div style="display:inline-flex; align-items:center; gap:6px; flex:0 1 auto; min-width:0;">
-    Rows:
-    <select onchange="window.location='/tees?page=1&limit='+this.value+'&search=${encodedSearch}&sortBy=${rawSortBy}&order=${order}'" style="margin-right:300px; padding:5px; min-width:52px; width:auto; max-width:100%; border-radius:8px; box-sizing:border-box; background: #f3f4f6">
-      <option value="20" ${limit===20?'selected':''}>20</option>
-      <option value="50" ${limit===50?'selected':''}>50</option>
-      <option value="100" ${limit===100?'selected':''}>100</option>
-      <option value="200" ${limit===200?'selected':''}>200</option>
-    </select>
-  </div>
 </div>`;
 
         let html = `<!DOCTYPE html>
@@ -235,9 +227,11 @@ const totalCardHTML = `
 <head>
 <meta charset="utf-8">
 <div id="navbar"></div>
+
 <title>Card Master</title>
 <link href='https://fonts.googleapis.com/css?family=DM Sans' rel='stylesheet'>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet"/>
 <link rel="stylesheet" href="/Css/Page.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
 </head>
@@ -267,20 +261,20 @@ setTimeout(() => {
 }, 3000);
 </script>
 
-<h2>
-  <i class="fa-solid fa-credit-card" style="font-size: 21px;"></i> 
-  CARD MASTER DATA</h2>
-<div class="top-bar" style="padding-top:10px;">
-  
-  
+<div class="top-header">
+  <h2 class="page-title">
+  <span class="p-2 bg-primary/10 rounded-lg text-primary">
+  <span class="material-icons-outlined">credit_card</span>
+  </span>
+  Card Master Data
+</h2>
+
   <button 
-  style="width: 130px; font-family: 'DM Sans', sans-serif; border-radius: 13px; margin-left: 1437px; font-size: 16px; height: 40px; display: flex; align-items: center; justify-content: center; gap: 8px;" 
-  class="btn btn-add" 
-  onclick="openAddPopup()">
-  
-  <i style="font-size:21px" class="fa">&#xf067;</i> Add New
-</button>
-  
+    class="btn btn-add"
+    onclick="openAddPopup()">
+    <span class="material-icons-outlined mr-2 -ml-1 text-lg">add_circle</span>
+    Add New Card
+  </button>
 </div>
 
 ${messageHTML}
@@ -291,10 +285,55 @@ ${topControls}
 
 
 <!-- Delete form: added hidden inputs & confirm onsubmit -->
-<form id="deleteForm" method="POST" action="/delete">
 
 <table id="cardTable">
   <thead>
+  <tr class="table-controls">
+    <th colspan="5">
+      <div class="table-controls-wrap">
+
+        <!-- Left: Search + Refresh -->
+        <form method="GET" action="/tees" class="table-search">
+          <input 
+            type="text"
+            name="search"
+            value="${escapeHtml(search)}"
+            placeholder="Search Card No"
+          >
+
+
+          <a href="/tees" class="icon-btn">
+            <i class="fa">&#xf021;</i>
+          </a>
+          <button 
+  type="button"
+  onclick="openDeletePopup()"
+  class="btn btn-delete"
+  style="border-radius: 6px; font-family:'DM Sans', sans-serif;font-size: 14px; width: 153px; margin-left:650px; padding-top:6px; padding-bottom:6px; height: 37px; display: flex; align-items: center; justify-content: center; gap: 6px; background-color: rgb(254 242 242 / var(--tw-bg-opacity, 1));  border: 1px solid rgb(254 202 202); color: #dc2626; cursor: pointer;">
+  <span class="material-icons-outlined text-lg mr-1">delete</span> Delete Selected
+</button>
+
+          <input type="hidden" name="sortBy" value="${escapeHtml(rawSortBy)}">
+          <input type="hidden" name="order" value="${escapeHtml(order)}">
+          <input type="hidden" name="limit" value="${limit}">
+        </form>
+<form id="deleteForm" method="POST" action="/delete">
+        
+
+        <!-- Right: Rows dropdown -->
+        <div class="rows-select">
+          
+          <select onchange="window.location='/tees?page=1&limit='+this.value+'&search=${encodedSearch}&sortBy=${rawSortBy}&order=${order}'" style="margin-left:10px">
+            <option value="10" ${limit===10?'selected':''}>10</option>
+            <option value="50" ${limit===50?'selected':''}>50</option>
+            <option value="100" ${limit===100?'selected':''}>100</option>
+            <option value="200" ${limit===200?'selected':''}>200</option>
+          </select>
+        </div>
+
+      </div>
+    </th>
+  </tr>
     <tr>
       <th class="select-col">Select</th>
       <th class="srno-col">Sr. No</th>
@@ -331,15 +370,17 @@ ${topControls}
   <td class="select-col"><input type="checkbox" name="CARD_NO" value="${cardNoHtml}"></td>
   <td class="srno-col">${row.SRNO}</td>
   <td class="cardno-col">${cardNoHtml}</td>
-  <td class="status-col status ${statusClass}">${statusText}</td>
+  <td class="status-col">
+  <span class="status-badge ${statusClass}">${statusText}</span>
+</td>
   <td class="edit-col">
     <button  
   type="button" 
-  class="btn btn-edit" 
-  style="background-color: #e5e8ed; margin-left: 50px; color: black; height: 35px; font-size: 16px; width: 110px; display: flex; align-items: center; justify-content: center; gap: 6px; border: none; border-radius: 8px; cursor: pointer;"
+  class="text-primary hover:text-primary-hover dark:hover:text-indigo-400 bg-primary/5 hover:bg-primary/10 px-3 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1" 
+  style="margin-left: 80px; height: 35px; font-size: 14px; width: 70px; display: flex; align-items: center; justify-content: center; gap: 6px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;"
   onclick="openEditPopup('${cardNoJs}', '${row.CARD_STATUS}')">
   
-  <i class="fa-solid fa-pencil"></i> Edit
+  <span class="material-icons-outlined text-sm">edit</span> Edit
 </button>
 
   </td>
@@ -357,32 +398,58 @@ if (rows.length === 0) {
 
         html += `
   </tbody>
+ <tfoot>
+    <tr>
+      <td colspan="5" style="text-align:center; padding:14px;" class="bg-gray-50">
+        <div style="display:flex; justify-content:flex-end; align-items:center; gap:12px; font-family:'DM Sans', sans-serif; width:100%;">
+
+`;
+
+// ◀ Previous button
+if (page > 1) {
+  html += `
+    <a href="/tees?page=${page - 1}&limit=${limit}&search=${encodedSearch}&sortBy=${rawSortBy}&order=${order}"
+       style="padding:8px; border-radius:6px; border:1px solid #d1d5db; background:#f9fafb; text-decoration:none; color:#111;">
+       <span class="material-icons-outlined text-sm">chevron_left</span>
+    </a>
+  `;
+}
+
+// Page info
+html += `
+    <span style="font-weight:600;">
+      Page ${page} of ${totalPages}
+    </span>
+`;
+
+// Next ▶ button
+if (page < totalPages) {
+  html += `
+    <a href="/tees?page=${page + 1}&limit=${limit}&search=${encodedSearch}&sortBy=${rawSortBy}&order=${order}"
+       style="padding:8PX; border-radius:6px; border:1px solid #d1d5db; background:#f9fafb; text-decoration:none; color:#111;">
+       <span class="material-icons-outlined text-sm">chevron_right</span>
+    </a>
+  `;
+}
+
+html += `
+        </div>
+      </td>
+    </tr>
+  </tfoot>
 </table>
+
 <div class="delete-bottom">
 
 
- <button 
-  type="button"
-  onclick="openDeletePopup()"
-  class="btn btn-delete"
-  style="border-radius: 13px; font-family:'DM Sans', sans-serif;font-size: 16px; width: 100px; margin-left:300px; height: 37px; display: flex; align-items: center; justify-content: center; gap: 6px; background: #ff4d4d; color: #fff; border: none; cursor: pointer;">
-  <i class="fa-solid fa-trash" style="font-size: 18px;"></i> Delete
-</button>
+ 
 
 
 </div>
 </form>`;
 
         
-            html += `<div style="width:100%; margin:12px 0; text-align:center;">`;
-            if (page > 1) {
-                html += `<a href="/tees?page=${page-1}&limit=${limit}&search=${encodedSearch}&sortBy=${rawSortBy}&order=${order}" style="margin-right:10px;">◀ Previous</a>`;
-            }
-            html += ` Page ${page} of ${totalPages} `;
-            if (page < totalPages) {
-                html += `<a href="/tees?page=${page+1}&limit=${limit}&search=${encodedSearch}&sortBy=${rawSortBy}&order=${order}" style="margin-left:10px;" >Next ▶</a>`;
-            }
-            html += `</div>`;
+            
         
 
         // Popups (Add/Edit) - added hidden inputs inside both forms to preserve state
