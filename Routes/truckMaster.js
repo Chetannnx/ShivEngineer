@@ -15,6 +15,19 @@ function escapeHtml(unsafe) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
+// ===== Helper: format date as MM/DD/YYYY =====
+function formatMMDDYYYY(date) {
+  if (!date) return '-';
+  const d = new Date(date);
+  if (isNaN(d)) return '-';
+
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const yyyy = d.getFullYear();
+
+  return `${mm}/${dd}/${yyyy}`;
+}
+
 
 // ===== Helper: escape JS for inline JS values =====
 function escapeJs(str) {
@@ -26,8 +39,118 @@ function escapeJs(str) {
 router.get('/', (req, res) => {
   (async () => {
     try {
+      const search = req.query.search ? req.query.search.trim() : '';
+
       const pool = await sql.connect(dbConfig); // ✅ now works, no top-level await
+      // ===== Truck Table Data =====
+let tableQuery = `
+  SELECT 
+    TRUCK_REG_NO,
+    BLACKLIST_STATUS,
+    SAFETY_CERTIFICATION_NO,
+    CALIBRATION_CERTIFICATION_NO
+  FROM TRUCK_MASTER
+`;
+
+if (search) {
+  tableQuery += ` WHERE TRUCK_REG_NO LIKE @search `;
+}
+
+tableQuery += ` ORDER BY TRUCK_REG_NO`;
+
+const tableRequest = pool.request();
+if (search) {
+  tableRequest.input('search', sql.VarChar, `%${search}%`);
+}
+
+const tableResult = await tableRequest.query(tableQuery);
+const truckTableData = tableResult.recordset;
+
+
+// ===== Truck Table HTML =====
+const truckTableHTML = `
+<div class="table-wrapper">
+  <table class="truck-table">
+    <thead>
+    <!-- 🔍 SEARCH ROW INSIDE TABLE -->
+      <tr class="table-controls">
+        <th colspan="6">
+          <form method="GET" action="/truck-master" class="table-search">
+            <input
+              type="text"
+              name="search"
+              placeholder="Search Truck Reg No..."
+              value="${escapeHtml(search)}"
+            />
+            <a href="/truck-master" class="icon-btn"><i class="fa">&#xf021;</i></a>
+          </form>
+        </th>
+      </tr>
+    
+      <tr>
+        <th>
+          <input type="checkbox" id="selectAll">
+        </th>
+        <th>Truck Reg No</th>
+        <th>Blacklist Status</th>
+        <th>Safety Cert Valid Upto</th>
+        <th>Calibration Cert Valid Upto</th>
+        <th>Edit</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${truckTableData.map(row => `
+        <tr>
+        <!-- Select checkbox -->
+  <td>
+    <input 
+      type="checkbox" 
+      class="row-checkbox"
+      value="${escapeHtml(row.TRUCK_REG_NO)}"
+    >
+  </td>
+          <td>${escapeHtml(row.TRUCK_REG_NO)}</td>
+          <td>
+            <span class="status ${row.BLACKLIST_STATUS ? 'blacklisted' : 'not-blacklisted'}">
+              ${row.BLACKLIST_STATUS ? 'Blacklisted' : 'Not Blacklisted'}
+            </span>
+          </td>
+          <td>
+            ${formatMMDDYYYY(row.SAFETY_CERTIFICATION_NO)}
+
+          </td>
+          <td>
+            ${formatMMDDYYYY(row.CALIBRATION_CERTIFICATION_NO)}
+
+            <td>
+    <button 
+      class="action-btn edit-btn"
+      onclick="editTruck('${escapeJs(row.TRUCK_REG_NO)}')">
+      Edit
+    </button>
+          </td>
+        </tr>
+      `).join('')}
+    </tbody>
+  </table>
+</div>
+`;
+
+      // ===== Truck Count Summary (LIKE CARD MASTER) =====
+const countResult = await pool.request().query(`
+  SELECT 
+    COUNT(*) AS totalTruck,
+    SUM(CASE WHEN BLACKLIST_STATUS = 0 THEN 1 ELSE 0 END) AS notBlacklistCount,
+    SUM(CASE WHEN BLACKLIST_STATUS = 1 THEN 1 ELSE 0 END) AS blacklistCount
+  FROM TRUCK_MASTER
+`);
+
+const totalTruck = countResult.recordset[0].totalTruck || 0;
+const notBlacklistCount = countResult.recordset[0].notBlacklistCount || 0;
+const blacklistCount = countResult.recordset[0].blacklistCount || 0;
+
       const truckRegNo = req.query.truck?.trim();
+      
 
       let truckData = {
         TRUCK_REG_NO: truckRegNo || '',
@@ -62,119 +185,171 @@ router.get('/', (req, res) => {
         }
       }
 
+      // ===== Truck Summary Cards HTML =====
+const totalTruckHTML = `
+<div class="card-container">
+
+  <!-- Total Trucks -->
+  <div class="stat-card">
+    <div>
+      <p class="title">Total Trucks</p>
+      <h2>${totalTruck}</h2>
+    </div>
+    <div class="icon blue">
+      <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
+        <span class="material-icons-outlined">local_shipping</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Not Blacklisted -->
+  <div class="stat-card1">
+    <div>
+      <p class="title">Not Blacklisted</p>
+      <h2 class="green">${notBlacklistCount}</h2>
+    </div>
+    <div class="icon green">
+      <div class="p-3 bg-green-100 rounded-lg text-green-600">
+        <span class="material-icons-outlined">check_circle</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Blacklisted -->
+  <div class="stat-card2">
+    <div>
+      <p class="title">Blacklisted</p>
+      <h2 class="red">${blacklistCount}</h2>
+    </div>
+    <div class="icon red">
+      <div class="p-3 bg-red-100 rounded-lg text-red-600">
+        <span class="material-icons-outlined">block</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+`;
+
       const html = `<!DOCTYPE html>
 <html>
 <head>
   <title>Truck Master</title>
   <link rel="stylesheet" href="/Css/TruckMaster.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet"/>
   <link href='https://fonts.googleapis.com/css?family=DM Sans' rel='stylesheet'>
 </head>
 <body>
   <div id="navbar"></div>
 
- <h2 style="text-align:center;font-family: 'DM Sans', sans-serif;">
-  <i class="fa-solid fa-truck-fast" style="font-size: 21px;"></i>
-  TRUCK MASTER DATA
+<div class="top-header">
+  <h2 class="page-title">
+  <span class="p-2 bg-primary/10 rounded-lg text-primary">
+   <span class="material-icons-outlined">local_shipping</span>
+   </span>
+  Truck Master Data
 </h2>
 
+  <button 
+    class="btn btn-add"
+    onclick="openAddPopup()">
+    <span class="material-icons-outlined mr-2 -ml-1 text-lg">add_circle</span>
+    Add New Truck
+  </button>
+</div>
+${totalTruckHTML}
+${truckTableHTML}
 
-  <form method="GET" action="/truck-master" style="text-align:center; margin:20px;">
-      <input id="TRUCK_REG_NO" style="font-family: 'DM Sans', sans-serif;" type="text" name="truck" placeholder="Enter Truck Reg No" value="${truckRegNo ?? ''}" required>
-      <button style="font-family: 'DM Sans', sans-serif;" type="submit">Submit</button>
-      <a href="/truck-master" class="btn-reset">Refresh</a>
-  </form>
+
   
-
-  <div class="form-container">
-    <div>
-      <div class="form-group"><label>Truck Number :</label><input name="TRUCK_REG_NO" type="text" value="${truckData.TRUCK_REG_NO ?? ''}" readonly></div>
-      <div class="form-group"><label>Trailer no :</label><input name="TRAILER_NO" type="text" value="${truckData.TRAILER_NO ?? ''}" readonly></div>
-      <div class="form-group"><label>Owner Name :</label><input name="OWNER_NAME" type="text" value="${truckData.OWNER_NAME ?? ''}" readonly></div>
-      <div class="form-group"><label>Driver Name :</label><input name="DRIVER_NAME" type="text" value="${truckData.DRIVER_NAME ?? ''}" readonly></div>
-      <div class="form-group"><label>Helper Name :</label><input name="HELPER_NAME" type="text" value="${truckData.HELPER_NAME ?? ''}" readonly></div>
-      <div class="form-group"><label>Carrier Company :</label><input name="CARRIER_COMPANY" type="text" value="${truckData.CARRIER_COMPANY ?? ''}" readonly></div>
-<div class="form-group">
-  <label for="truckSealingReq">TRUCK SEALING REQUIREMENT :</label>
-  <select name="TRUCK_SEALING_REQUIREMENT" id="truckSealingReq" disabled>
-    <option value="">-- Select --</option>
-    <option value="1" ${truckData.TRUCK_SEALING_REQUIREMENT == 1 ? 'selected' : ''}>Yes</option>
-    <option value="0" ${truckData.TRUCK_SEALING_REQUIREMENT == 0 ? 'selected' : ''}>No</option>
-  </select>
-</div>      
-    </div>
-
-    <div>
-<div class="form-group">
-  <label for="blacklistStatus">Blacklist Status :</label>
-  <select name="BLACKLIST_STATUS" id="blacklistStatus" disabled>
-    <option value="">-- Select --</option>
-    <option value="1" ${truckData.BLACKLIST_STATUS == 1 ? 'selected' : ''}>Blacklist</option>
-    <option value="0" ${truckData.BLACKLIST_STATUS == 0 ? 'selected' : ''}>Not_Blacklist</option>
-  </select>
-</div>
-      <div class="form-group"><label>Reason For Blacklist :</label><input name="REASON_FOR_BLACKLIST" type="text" value="${truckData.REASON_FOR_BLACKLIST ?? ''}" readonly></div>
-      <div class="form-group"><label>Safety Cer. Valid Upto :</label><input name="SAFETY_CERTIFICATION_NO" type="date" 
-  value="${truckData.SAFETY_CERTIFICATION_NO ? new Date(truckData.SAFETY_CERTIFICATION_NO).toISOString().split('T')[0] : ''}" readonly>
-</div>
-      <div class="form-group"><label>Calibration Cer. Valid Upto :</label><input name="CALIBRATION_CERTIFICATION_NO" type="date" 
-  value="${truckData.CALIBRATION_CERTIFICATION_NO ? new Date(truckData.CALIBRATION_CERTIFICATION_NO).toISOString().split('T')[0] : ''}" readonly></div>
-      <div class="form-group"><label>Tare Weight :</label><input id="tareWeight" name="TARE_WEIGHT" type="text" value="${truckData.TARE_WEIGHT ?? ''}" readonly></div>
-      <div class="form-group"><label>Max Weight :</label><input id="maxWeight" name="MAX_WEIGHT" type="text" value="${truckData.MAX_WEIGHT ?? ''}" readonly></div>
-      <div class="form-group"><label>Max Fuel Capacity :</label><input id="maxFuel" name="MAX_FUEL_CAPACITY" type="text" value="${truckData.MAX_FUEL_CAPACITY ?? ''}" readonly></div>
-    </div>
-  </div>
-
-  <div class="button-container" style="margin: 20px; text-align: left;">
-    <button class="action-btn" id="editBtn">Edit</button>
-    <button class="action-btn hidden" id="saveBtn" style="padding: 8px 16px; border-radius: 8px; display:none;">Save</button>
-    <button class="action-btn hidden" id="cancelBtn" style="padding: 8px 16px; border-radius: 8px; display:none;">Cancel</button>
-    <button class="action-btn" id="deleteBtn" style="background-color: #ff4d4d; color: white;">Delete</button>
-  </div>
-
-
-  ${showInsertForm ? `
   <div class="popup" id="popup">
   <div class="popup-content">
-    <button class="close-btn" onclick="document.getElementById('popup').remove()">✖</button>
+    <button class="close-btn" onclick="closeAddPopup()">✖</button>
     <h3>Add New Truck</h3>
 
     <form id="insertForm" class="popup-form">
       <div class="form-group">
         <label>Truck Number:</label>
-        <input name="TRUCK_REG_NO" value="${truckRegNo}" readonly>
+        <input name="TRUCK_REG_NO" required>
       </div>
-      <div class="form-group"><label>Trailer no:</label><input name="TRAILER_NO" required></div>
+
       <div class="form-group">
-  <label for="blacklistStatusPopup">Blacklist Status:</label>
-  <select name="BLACKLIST_STATUS" id="blacklistStatusPopup" required>
-    <option value="">-- Select --</option>
-    <option value="1">Blacklist</option>
-    <option value="0">Not_Blacklist</option>
-  </select>
-</div>
-      <div class="form-group"><label>Owner Name:</label><input name="OWNER_NAME" required></div>
-      <div class="form-group"><label>Reason for Blacklist:</label><input name="REASON_FOR_BLACKLIST" id="reasonBlacklistPopup" required></div>
-      <div class="form-group"><label>Driver Name:</label><input name="DRIVER_NAME" required></div>
-      <div class="form-group"><label>Safety Cert. Valid Upto:</label><input type="date" name="SAFETY_CERTIFICATION_NO" required></div>
-      <div class="form-group"><label>Helper Name:</label><input name="HELPER_NAME" required></div>
-      <div class="form-group"><label>Calibration Cert. Valid Upto:</label><input type="date" name="CALIBRATION_CERTIFICATION_NO" required></div>
-      <div class="form-group"><label>Carrier Company:</label><input name="CARRIER_COMPANY" required></div>
-      <div class="form-group"><label>Tare Weight:</label><input name="TARE_WEIGHT" id="inserttareWeight" required></div>
+        <label>Trailer No:</label>
+        <input name="TRAILER_NO" required>
+      </div>
+
       <div class="form-group">
-  <label for="truckSealingReq">Truck Sealing Requirement:</label>
-  <select name="TRUCK_SEALING_REQUIREMENT" id="truckSealingReq" required>
-    <option value="">-- Select --</option>
-    <option value="1">Yes</option>
-    <option value="0">No</option>
-  </select>
-</div> 
-      <div class="form-group"><label>Max Weight:</label><input name="MAX_WEIGHT" id="insertmaxWeight" required></div>
-      <div class="form-group"><label>Max Fuel Capacity:</label><input name="MAX_FUEL_CAPACITY" id="insertmaxFuel" required></div>
-      <button style="font-family: 'DM Sans', sans-serif;" type="submit" class="submit-btn">Insert</button>
+        <label>Blacklist Status:</label>
+        <select name="BLACKLIST_STATUS" required>
+          <option value="0">Not Blacklisted</option>
+          <option value="1">Blacklisted</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Reason for Blacklist:</label>
+        <input name="REASON_FOR_BLACKLIST" readonly>
+      </div>
+
+      <div class="form-group">
+        <label>Owner Name:</label>
+        <input name="OWNER_NAME" required>
+      </div>
+
+      <div class="form-group">
+        <label>Driver Name:</label>
+        <input name="DRIVER_NAME" required>
+      </div>
+
+      <div class="form-group">
+        <label>Helper Name:</label>
+        <input name="HELPER_NAME" required>
+      </div>
+
+      <div class="form-group">
+        <label>Carrier Company:</label>
+        <input name="CARRIER_COMPANY" required>
+      </div>
+
+      <div class="form-group">
+        <label>Safety Cert Valid Upto:</label>
+        <input type="date" name="SAFETY_CERTIFICATION_NO" required>
+      </div>
+
+      <div class="form-group">
+        <label>Calibration Cert Valid Upto:</label>
+        <input type="date" name="CALIBRATION_CERTIFICATION_NO" required>
+      </div>
+
+      <div class="form-group">
+        <label>Tare Weight:</label>
+        <input name="TARE_WEIGHT" required>
+      </div>
+
+      <div class="form-group">
+        <label>Max Weight:</label>
+        <input name="MAX_WEIGHT" required>
+      </div>
+
+      <div class="form-group">
+        <label>Truck Sealing Requirement:</label>
+        <select name="TRUCK_SEALING_REQUIREMENT" required>
+          <option value="0">No</option>
+          <option value="1">Yes</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label>Max Fuel Capacity:</label>
+        <input name="MAX_FUEL_CAPACITY" required>
+      </div>
+
+      <button type="submit" class="submit-btn">Insert</button>
     </form>
   </div>
-</div>` : ''}
+</div>
+
 
 
 <!-- Add this somewhere in your HTML, ideally near the end of <body> -->
@@ -537,6 +712,43 @@ document.addEventListener("DOMContentLoaded", function () {
 
 });
 
+
+//================
+//OPEN POPUP SCRIPT
+//=================
+
+function openAddPopup() {
+  const popup = document.getElementById("popup");
+  popup.style.display = "flex";   // 🔥 MUST BE FLEX
+}
+
+function closeAddPopup() {
+  const popup = document.getElementById("popup");
+  popup.style.display = "none";
+}
+
+//===============
+//EDIT CHECKBOX
+//================
+function editTruck(truckRegNo) {
+  // redirect to same page with selected truck
+  window.location.href = '/truck-master?truck=' + encodeURIComponent(truckRegNo);
+}
+
+//==================
+//SELECT ALL
+//===============
+document.addEventListener("DOMContentLoaded", function () {
+  const selectAll = document.getElementById("selectAll");
+
+  if (!selectAll) return;
+
+  selectAll.addEventListener("change", function () {
+    document.querySelectorAll(".row-checkbox").forEach(cb => {
+      cb.checked = selectAll.checked;
+    });
+  });
+});
 </script>
 
 

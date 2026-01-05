@@ -308,7 +308,7 @@ ${topControls}
             type="text"
             name="search"
             value="${escapeHtml(search)}"
-            placeholder="Search Card No"
+            placeholder="Search Card No..."
           >
 
 

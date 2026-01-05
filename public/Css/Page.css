@@ -730,7 +730,7 @@ a.btn-reset:hover {
 
 
  .shadow-soft {
-    --tw-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+
     --tw-shadow-colored: 0 4px 6px -1px var(--tw-shadow-color), 0 2px 4px -1px var(--tw-shadow-color);
     box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
 }
@@ -868,4 +868,47 @@ a.btn-reset:hover {
   color: #991b1b;
   background-color: #fee2e2;
   border: 1px solid #fecaca;
+}
+
+.table-wrapper {
+  margin: 20px;
+  overflow-x: auto;
+}
+
+.truck-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  font-family: 'DM Sans', sans-serif;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.truck-table th,
+.truck-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #eee;
+  text-align: center;
+}
+
+.truck-table th {
+  background: #f3f4f6;
+  font-weight: 600;
+}
+
+.status {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.status.blacklisted {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.status.not-blacklisted {
+  background: #dcfce7;
+  color: #15803d;
 }
