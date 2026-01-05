@@ -242,14 +242,24 @@ function closeMsgPopup() {
   if (popup) popup.style.display = "none";
 }
 
-// Auto-show popup if it exists
 window.addEventListener('DOMContentLoaded', () => {
   const popup = document.getElementById("msgPopup");
-  if (popup) popup.style.display = "flex";
 
-    // ✅ Auto close popup after 3 seconds
-    setTimeout(closeMsgPopup, 3000);
+  if (popup) {
+    // show popup
+    popup.style.display = "flex";
 
+    // auto close after 3 sec
+    setTimeout(() => {
+      closeMsgPopup();
+
+      // ✅ REMOVE msg FROM URL (THIS IS THE KEY FIX)
+      const url = new URL(window.location.href);
+      url.searchParams.delete('msg');
+      window.history.replaceState({}, document.title, url.toString());
+
+    }, 3000);
+  }
 });
 </script>
 
