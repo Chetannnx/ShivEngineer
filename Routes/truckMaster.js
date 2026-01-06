@@ -96,7 +96,6 @@ const totalPages = Math.max(1, Math.ceil(totalRows / limit));
 // ===== Truck Table HTML =====
 const truckTableHTML = `
 <div class="table-wrapper">
-<form id="deleteForm" method="POST" action="/truck-master/delete">
   <table class="truck-table">
     <thead>
     <!-- 🔍 SEARCH ROW INSIDE TABLE -->
@@ -121,22 +120,17 @@ const truckTableHTML = `
     onclick="openDeletePopup()"
     class="btn btn-delete"
     style="
-          border-radius: 6px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    width: 153px;
-    margin-left: 650px;
-    padding-top: 6px;
-    padding-bottom: 6px;
-    height: 37px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    background-color: rgb(254 242 242 / var(--tw-bg-opacity, 1));
-    border: 1px solid rgb(254 202 202);
-    color: #dc2626;
-    cursor: pointer;
+      margin-left:650px;
+      width: 153px;
+      display:flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 12px;
+      background:#fef2f2;
+      border:1px solid #fecaca;
+      color:#dc2626;
+      border-radius:6px;
+      cursor:pointer;
     ">
     <span class="material-icons-outlined text-sm">delete</span>
     Delete Selected
@@ -173,11 +167,11 @@ const truckTableHTML = `
         <tr>
         <!-- Select checkbox -->
   <td>
-    <input
-  type="checkbox"
-  class="row-checkbox"
-  name="TRUCK_REG_NO"
-  value="${escapeHtml(row.TRUCK_REG_NO)}">
+    <input 
+      type="checkbox" 
+      class="row-checkbox"
+      value="${escapeHtml(row.TRUCK_REG_NO)}"
+    >
   </td>
    <!-- ✅ Sr No -->
     <td class="srno-col">
@@ -237,7 +231,6 @@ const truckTableHTML = `
 </tfoot>
 
   </table>
-  </form>
 </div>
 `;
 
@@ -551,32 +544,6 @@ ${truckTableHTML}
   <!-- Close button top-right -->
   <button id="closeTruckPopup">✖</button>
   <div id="truckPopupText"></div>
-</div>
-
-<!-- ❌ No Selection Popup -->
-<div id="no-selection-popup" class="popup" style="display:none;">
-  <div class="popup-content1">
-    <p>Please select at least one truck to delete.</p>
-    <button onclick="closeNoSelectionPopup()">OK</button>
-  </div>
-</div>
-
-<!-- ⚠️ Confirm Delete Popup -->
-<div id="deletePopup" class="popup" style="display:none;">
-  <div class="popup-content1">
-    <h3>⚠️ Confirm Deletion</h3>
-    <p>Are you sure you want to delete selected truck(s)?</p>
-    <div style="margin-top: 15px; display: flex; justify-content: center; gap: 10px;">
-      <button onclick="submitDelete()"
-        style="background: red;font-family: 'DM Sans', sans-serif; color: white; border-radius: 6px;  width: 88px;">
-        Yes, Delete
-      </button>
-      <button onclick="closeDeletePopup()"
-        style="background: gray;font-family: 'DM Sans', sans-serif; color: white; padding: 8px 16px; border-radius: 6px;">
-        Cancel
-      </button>
-    </div>
-  </div>
 </div>
 
 
@@ -1022,33 +989,6 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 });
 
-
-//==================
-//delete popup
-//==================
-function openDeletePopup() {
-  const checked = document.querySelectorAll(
-    'input[name="TRUCK_REG_NO"]:checked'
-  );
-
-  if (checked.length === 0) {
-    document.getElementById("no-selection-popup").style.display = "flex";
-    return;
-  }
-  document.getElementById("deletePopup").style.display = "flex";
-}
-
-function closeDeletePopup() {
-  document.getElementById("deletePopup").style.display = "none";
-}
-
-function closeNoSelectionPopup() {
-  document.getElementById("no-selection-popup").style.display = "none";
-}
-
-function submitDelete() {
-  document.getElementById("deleteForm").submit();
-}
 </script>
 
 
@@ -1183,35 +1123,5 @@ router.delete('/delete-truck/:truckRegNo', async (req, res) => {
     res.status(500).send('Error deleting data: ' + err.message);
   }
 });
-
-// ====== DELETE MULTIPLE TRUCKS ======
-router.post('/delete', async (req, res) => {
-  try {
-    let trucks = req.body.TRUCK_REG_NO;
-    if (!trucks) return res.redirect('/truck-master');
-
-    if (!Array.isArray(trucks)) trucks = [trucks];
-
-    const pool = await sql.connect(dbConfig);
-
-    for (const truck of trucks) {
-      // Delete from DATA_MASTER first
-      await pool.request()
-        .input('truck', sql.VarChar, truck)
-        .query('DELETE FROM DATA_MASTER WHERE TRUCK_REG_NO = @truck');
-
-      // Delete from TRUCK_MASTER
-      await pool.request()
-        .input('truck', sql.VarChar, truck)
-        .query('DELETE FROM TRUCK_MASTER WHERE TRUCK_REG_NO = @truck');
-    }
-
-    res.redirect('/truck-master?msg=deleted');
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Delete error');
-  }
-});
-
 
 module.exports = router;
