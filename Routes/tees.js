@@ -304,13 +304,17 @@ ${topControls}
 
         <!-- Left: Search + Refresh -->
         <form method="GET" action="/tees" class="table-search">
+          <div class="search-wrapper">
+    <span class="material-icons-outlined search-icon">
+      search
+    </span>
           <input 
             type="text"
             name="search"
             value="${escapeHtml(search)}"
             placeholder="Search Card No..."
           >
-
+ </div>
 
           <a href="/tees" class="icon-btn">
             <i class="fa">&#xf021;</i>
@@ -436,7 +440,7 @@ html += `
 if (page < totalPages) {
   html += `
     <a href="/tees?page=${page + 1}&limit=${limit}&search=${encodedSearch}&sortBy=${rawSortBy}&order=${order}"
-       style="padding:8PX; border-radius:6px; border:1px solid #d1d5db; background:#f9fafb; text-decoration:none; color:#111;">
+    class="icon-btn">
        <span class="material-icons-outlined text-sm">chevron_right</span>
     </a>
   `;

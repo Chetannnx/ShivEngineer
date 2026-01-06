@@ -6,9 +6,10 @@ const dbConfig = require('../Config/dbConfig'); // ✅ proper config import
 const router = express.Router();
 
 // ===== Helper: escape HTML =====
-function escapeHtml(unsafe) {
-  if (!unsafe) return '';
-  return unsafe
+function escapeHtml(value) {
+  if (value === null || value === undefined) return '';
+
+  return String(value)   // ✅ FORCE STRING
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -30,17 +31,23 @@ function formatMMDDYYYY(date) {
 
 
 // ===== Helper: escape JS for inline JS values =====
-function escapeJs(str) {
-  if (!str) return '';
-  return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
+function escapeJs(value) {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/"/g, '\\"');
 }
 
 // ====== GET Truck Master Page ======
-router.get('/', (req, res) => {
-  (async () => {
+router.get('/', async (req, res) =>  {
     try {
+      const page = Math.max(1, parseInt(req.query.page) || 1);
+      const limit = parseInt(req.query.limit) || 10;
+      const offset = (page - 1) * limit;
       const search = req.query.search ? req.query.search.trim() : '';
 
+      
       const pool = await sql.connect(dbConfig); // ✅ now works, no top-level await
       // ===== Truck Table Data =====
 let tableQuery = `
@@ -56,7 +63,10 @@ if (search) {
   tableQuery += ` WHERE TRUCK_REG_NO LIKE @search `;
 }
 
-tableQuery += ` ORDER BY TRUCK_REG_NO`;
+tableQuery += `
+      ORDER BY TRUCK_REG_NO
+      OFFSET ${offset} ROWS FETCH NEXT ${limit} ROWS ONLY
+    `;
 
 const tableRequest = pool.request();
 if (search) {
@@ -66,6 +76,22 @@ if (search) {
 const tableResult = await tableRequest.query(tableQuery);
 const truckTableData = tableResult.recordset;
 
+const countQuery = `
+  SELECT COUNT(*) AS totalCount
+  FROM TRUCK_MASTER
+  ${search ? 'WHERE TRUCK_REG_NO LIKE @search' : ''}
+`;
+
+const countRequest = pool.request();
+if (search) {
+  countRequest.input('search', sql.VarChar, `%${search}%`);
+}
+
+const pageCountResult = await countRequest.query(countQuery);
+const totalRows = pageCountResult.recordset[0].totalCount || 0;
+const totalPages = Math.max(1, Math.ceil(totalRows / limit));
+
+    
 
 // ===== Truck Table HTML =====
 const truckTableHTML = `
@@ -75,15 +101,32 @@ const truckTableHTML = `
     <!-- 🔍 SEARCH ROW INSIDE TABLE -->
       <tr class="table-controls">
         <th colspan="6">
+         <div style="display:flex; justify-content:space-between; align-items:center;">
           <form method="GET" action="/truck-master" class="table-search">
+          <div class="search-wrapper">
+    <span class="material-icons-outlined search-icon">
+      search
+    </span>
             <input
               type="text"
               name="search"
               placeholder="Search Truck Reg No..."
               value="${escapeHtml(search)}"
             />
+            </div>
             <a href="/truck-master" class="icon-btn"><i class="fa">&#xf021;</i></a>
           </form>
+          <!-- RIGHT: Rows dropdown -->
+      <div class="rows-select">
+        <select
+          onchange="window.location='/truck-master?page=1&limit='+this.value+'&search=${encodeURIComponent(search)}'">
+          <option value="10" ${limit===10?'selected':''}>10</option>
+          <option value="50" ${limit===50?'selected':''}>50</option>
+          <option value="100" ${limit===100?'selected':''}>100</option>
+          <option value="200" ${limit===200?'selected':''}>200</option>
+        </select>
+      </div>
+      </div>
         </th>
       </tr>
     
@@ -121,7 +164,7 @@ const truckTableHTML = `
           </td>
           <td>
             ${formatMMDDYYYY(row.CALIBRATION_CERTIFICATION_NO)}
-
+            </td>
             <td>
     <button 
       class="action-btn edit-btn"
@@ -132,12 +175,40 @@ const truckTableHTML = `
         </tr>
       `).join('')}
     </tbody>
+    <tfoot>
+<tr>
+<td colspan="6" class="bg-gray-50" style="text-align:center; padding:14px;">
+  <div style="display:flex; justify-content:flex-end; gap:12px; font-family:'DM Sans', sans-serif; align-items:center;">
+
+    ${page > 1 ? `
+      <a href="/truck-master?page=${page-1}&limit=${limit}&search=${encodeURIComponent(search)}"
+         class="icon-btn">
+        <span class="material-icons-outlined">chevron_left</span>
+      </a>
+    ` : ''}
+
+    <span style="font-weight:600;">
+      Page ${page} of ${totalPages}
+    </span>
+
+    ${page < totalPages ? `
+      <a href="/truck-master?page=${page+1}&limit=${limit}&search=${encodeURIComponent(search)}"
+         class="icon-btn">
+        <span class="material-icons-outlined">chevron_right</span>
+      </a>
+    ` : ''}
+
+  </div>
+</td>
+</tr>
+</tfoot>
+
   </table>
 </div>
 `;
 
       // ===== Truck Count Summary (LIKE CARD MASTER) =====
-const countResult = await pool.request().query(`
+const summaryCountResult = await pool.request().query(`
   SELECT 
     COUNT(*) AS totalTruck,
     SUM(CASE WHEN BLACKLIST_STATUS = 0 THEN 1 ELSE 0 END) AS notBlacklistCount,
@@ -145,11 +216,13 @@ const countResult = await pool.request().query(`
   FROM TRUCK_MASTER
 `);
 
-const totalTruck = countResult.recordset[0].totalTruck || 0;
-const notBlacklistCount = countResult.recordset[0].notBlacklistCount || 0;
-const blacklistCount = countResult.recordset[0].blacklistCount || 0;
+const totalTruck = summaryCountResult.recordset[0].totalTruck || 0;
+const notBlacklistCount = summaryCountResult.recordset[0].notBlacklistCount || 0;
+const blacklistCount = summaryCountResult.recordset[0].blacklistCount || 0;
 
-      const truckRegNo = req.query.truck?.trim();
+
+      const truckRegNo = req.query.truck ? req.query.truck.trim() : '';
+
       
 
       let truckData = {
@@ -269,83 +342,149 @@ ${truckTableHTML}
     <h3>Add New Truck</h3>
 
     <form id="insertForm" class="popup-form">
+      <input 
+    type="hidden" 
+    name="IS_EDIT" 
+    value="${truckData.TRUCK_REG_NO ? '1' : '0'}">
       <div class="form-group">
         <label>Truck Number:</label>
-        <input name="TRUCK_REG_NO" required>
+        <input name="TRUCK_REG_NO"
+       id="TRUCK_REG_NO"
+       value="${escapeHtml(truckData.TRUCK_REG_NO)}"
+       ${truckData.TRUCK_REG_NO ? 'readonly' : ''}
+       required>
       </div>
 
       <div class="form-group">
         <label>Trailer No:</label>
-        <input name="TRAILER_NO" required>
+        <input name="TRAILER_NO"
+       value="${escapeHtml(truckData.TRAILER_NO || '')}">
       </div>
 
       <div class="form-group">
         <label>Blacklist Status:</label>
-        <select name="BLACKLIST_STATUS" required>
-          <option value="0">Not Blacklisted</option>
-          <option value="1">Blacklisted</option>
-        </select>
+        <select name="BLACKLIST_STATUS">
+  <option value="0" ${truckData.BLACKLIST_STATUS == 0 ? 'selected' : ''}>
+    Not Blacklisted
+  </option>
+  <option value="1" ${truckData.BLACKLIST_STATUS == 1 ? 'selected' : ''}>
+    Blacklisted
+  </option>
+</select>
       </div>
 
       <div class="form-group">
         <label>Reason for Blacklist:</label>
-        <input name="REASON_FOR_BLACKLIST" readonly>
+       <input
+      name="REASON_FOR_BLACKLIST"
+      value="${escapeHtml(truckData.REASON_FOR_BLACKLIST || '')}"
+      ${truckData.BLACKLIST_STATUS == 1 ? '' : 'readonly'}
+    >
       </div>
 
       <div class="form-group">
         <label>Owner Name:</label>
-        <input name="OWNER_NAME" required>
+        <input
+      name="OWNER_NAME"
+      value="${escapeHtml(truckData.OWNER_NAME || '')}"
+      required
+    >
       </div>
 
       <div class="form-group">
         <label>Driver Name:</label>
-        <input name="DRIVER_NAME" required>
+        <input
+      name="DRIVER_NAME"
+      value="${escapeHtml(truckData.DRIVER_NAME || '')}"
+      required
+    >
       </div>
 
       <div class="form-group">
         <label>Helper Name:</label>
-        <input name="HELPER_NAME" required>
+        <input
+      name="HELPER_NAME"
+      value="${escapeHtml(truckData.HELPER_NAME || '')}"
+      required
+    >
       </div>
 
       <div class="form-group">
         <label>Carrier Company:</label>
-        <input name="CARRIER_COMPANY" required>
+        <input
+      name="CARRIER_COMPANY"
+      value="${escapeHtml(truckData.CARRIER_COMPANY || '')}"
+      required
+    >
       </div>
 
       <div class="form-group">
         <label>Safety Cert Valid Upto:</label>
-        <input type="date" name="SAFETY_CERTIFICATION_NO" required>
+        <input type="date"
+       name="SAFETY_CERTIFICATION_NO"
+       value="${
+  truckData.SAFETY_CERTIFICATION_NO
+    ? new Date(truckData.SAFETY_CERTIFICATION_NO).toISOString().slice(0,10)
+    : ''
+}">
       </div>
 
       <div class="form-group">
         <label>Calibration Cert Valid Upto:</label>
-        <input type="date" name="CALIBRATION_CERTIFICATION_NO" required>
+         <input
+      type="date"
+      name="CALIBRATION_CERTIFICATION_NO"
+      value="${
+        truckData.CALIBRATION_CERTIFICATION_NO
+          ? new Date(truckData.CALIBRATION_CERTIFICATION_NO).toISOString().slice(0,10)
+          : ''
+      }"
+      required
+    >
       </div>
 
       <div class="form-group">
         <label>Tare Weight:</label>
-        <input name="TARE_WEIGHT" required>
+        <input
+      name="TARE_WEIGHT" id="tareWeight"
+      value="${escapeHtml(truckData.TARE_WEIGHT || '')}"
+      required
+    >
       </div>
 
       <div class="form-group">
         <label>Max Weight:</label>
-        <input name="MAX_WEIGHT" required>
+        <input
+      name="MAX_WEIGHT" id="maxWeight"
+      value="${escapeHtml(truckData.MAX_WEIGHT || '')}"
+      required
+    >
       </div>
 
       <div class="form-group">
         <label>Truck Sealing Requirement:</label>
         <select name="TRUCK_SEALING_REQUIREMENT" required>
-          <option value="0">No</option>
-          <option value="1">Yes</option>
-        </select>
+      <option value="0" ${truckData.TRUCK_SEALING_REQUIREMENT == 0 ? 'selected' : ''}>
+        No
+      </option>
+      <option value="1" ${truckData.TRUCK_SEALING_REQUIREMENT == 1 ? 'selected' : ''}>
+        Yes
+      </option>
+    </select>
       </div>
       
       <div class="form-group">
         <label>Max Fuel Capacity:</label>
-        <input name="MAX_FUEL_CAPACITY" required>
+        <input
+      name="MAX_FUEL_CAPACITY" id="maxFuel"
+      value="${escapeHtml(truckData.MAX_FUEL_CAPACITY || '')}"
+      required
+    >
       </div>
 
-      <button type="submit" class="submit-btn">Insert</button>
+      <button type="submit" class="submit-btn">
+  ${truckData.TRUCK_REG_NO ? 'Update' : 'Insert'}
+</button>
     </form>
   </div>
 </div>
@@ -376,8 +515,7 @@ ${truckTableHTML}
     box-sizing:border-box;
 ">
   <!-- Close button top-right -->
-  <button id="closeTruckPopup"
-  ">✖</button>
+  <button id="closeTruckPopup">✖</button>
   <div id="truckPopupText"></div>
 </div>
 
@@ -413,7 +551,8 @@ ${truckTableHTML}
     const params = new URLSearchParams(window.location.search);
 
     // Read TRUCK_REG_NO from query string
-    const truckRegNo = params.get('TRUCK_REG_NO');
+    const truckRegNo = params.get('truck');
+
 
     // If TRUCK_REG_NO exists, set it in input field
     if (truckRegNo) {
@@ -433,20 +572,45 @@ ${truckTableHTML}
     const form = document.getElementById('insertForm');
     if(form){
       form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const data = Object.fromEntries(new FormData(form).entries());
-        const res = await fetch('/truck-master/insert-truck', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-        if(res.ok){
-        showTruckPopup('Insert Truck Successfully');
-          window.location.href = '/truck-master?truck=' + data.TRUCK_REG_NO;
-        } else {
-          alert('Error inserting data');
-        }
-      });
+  e.preventDefault();
+
+  const data = Object.fromEntries(new FormData(form).entries());
+
+  // const isEdit = !!data.TRUCK_REG_NO && data.TRUCK_REG_NO.length > 0;
+  // const isEdit = document.querySelector('input[name="IS_EDIT"]')?.value === "1";
+  const isEdit = data.IS_EDIT === "1";
+
+
+// if (!isEdit) {
+//   blacklistSelect.value = "0";
+//   sealingSelect.value = "0";
+// }
+
+
+  const url = isEdit
+    ? '/truck-master/update-truck'
+    : '/truck-master/insert-truck';
+
+  const method = isEdit ? 'PUT' : 'POST';
+
+  const res = await fetch(url, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+
+  if (res.ok) {
+  showTruckPopup(isEdit ? 'Truck updated successfully' : 'Truck inserted successfully');
+
+  setTimeout(() => {
+    // 🔥 CLEAR EDIT MODE
+    window.location.href = '/truck-master';
+  }, 500);
+}else {
+    alert('Operation failed');
+  }
+});
+
     }
       
   </script>
@@ -473,117 +637,117 @@ attachFuelCalculation(
 );
 
 // Attach for Insert form
-attachFuelCalculation(
-  document.getElementById('inserttareWeight'),
-  document.getElementById('insertmaxWeight'),
-  document.getElementById('insertmaxFuel')
-);
+// attachFuelCalculation(
+//   document.getElementById('inserttareWeight'),
+//   document.getElementById('insertmaxWeight'),
+//   document.getElementById('insertmaxFuel')
+// );
 
   </script>
 
   
-<script>
-const editBtn = document.getElementById('editBtn');
-const saveBtn = document.getElementById('saveBtn');
-const cancelBtn = document.getElementById('cancelBtn');
+// <script>
+// const editBtn = document.getElementById('editBtn');
+// const saveBtn = document.getElementById('saveBtn');
+// const cancelBtn = document.getElementById('cancelBtn');
 
-// include selects too
-const inputs = document.querySelectorAll('.form-container input, .form-container select');
+// // include selects too
+// const inputs = document.querySelectorAll('.form-container input, .form-container select');
 
-// ===== Add this block here =====
-const blacklistSelect = document.querySelector('select[name="BLACKLIST_STATUS"]');
-const reasonInput = document.querySelector('input[name="REASON_FOR_BLACKLIST"]');
+// // ===== Add this block here =====
+// const blacklistSelect = document.querySelector('select[name="BLACKLIST_STATUS"]');
+// const reasonInput = document.querySelector('input[name="REASON_FOR_BLACKLIST"]');
 
-const insertFormBlacklist = document.querySelector('#insertForm select[name="BLACKLIST_STATUS"]');
-const insertFormReason = document.querySelector('#insertForm input[name="REASON_FOR_BLACKLIST"]');
+// const insertFormBlacklist = document.querySelector('#insertForm select[name="BLACKLIST_STATUS"]');
+// const insertFormReason = document.querySelector('#insertForm input[name="REASON_FOR_BLACKLIST"]');
 
-function toggleInsertReasonField() {
-  if (insertFormBlacklist.value === "1") {
-    insertFormReason.removeAttribute('readonly');
-  } else {
-    insertFormReason.setAttribute('readonly', true);
-    insertFormReason.value = ''; // optional: clear if Not_Blacklist
-  }
-}
+// function toggleInsertReasonField() {
+//   if (insertFormBlacklist.value === "1") {
+//     insertFormReason.removeAttribute('readonly');
+//   } else {
+//     insertFormReason.setAttribute('readonly', true);
+//     insertFormReason.value = ''; // optional: clear if Not_Blacklist
+//   }
+// }
 
-//toggleInsertReasonField();
+// //toggleInsertReasonField();
 
-insertFormBlacklist?.addEventListener('change', toggleInsertReasonField);
+// insertFormBlacklist?.addEventListener('change', toggleInsertReasonField);
 
-function toggleReasonField() {
-  if (blacklistSelect.value === "1") {
-    reasonInput.removeAttribute('readonly');
-  } else {
-    reasonInput.setAttribute('readonly', true);
-    reasonInput.value = ''; // optional: clear if Not_Blacklist
-  }
-}
+// function toggleReasonField() {
+//   if (blacklistSelect.value === "1") {
+//     reasonInput.removeAttribute('readonly');
+//   } else {
+//     reasonInput.setAttribute('readonly', true);
+//     reasonInput.value = ''; // optional: clear if Not_Blacklist
+//   }
+// }
 
-// Run on page load in case existing data is Blacklist
-
-
-// Run whenever Blacklist dropdown changes
-
-// ===== End of block =====
-
-editBtn?.addEventListener('click', (e) => {
-  e.preventDefault();
-  inputs.forEach(input => {
-    if (input.name !== "TRUCK_REG_NO") {
-      input.removeAttribute('readonly');  // input fields
-      if(input.tagName === 'SELECT') input.disabled = false; // select fields
-    }
-  });
-  toggleReasonField(); // make sure reason field is correct after clicking Edit
-  blacklistSelect?.addEventListener('change', toggleReasonField);
-  editBtn.style.display = 'none';
-  saveBtn.style.display = 'inline-block';
-  cancelBtn.style.display = 'inline-block';
-});
-
-cancelBtn?.addEventListener('click', (e) => {
-  e.preventDefault();
-  window.location.reload(); // reset values
-});
-
-saveBtn?.addEventListener('click', async (e) => {
-  e.preventDefault();
-  const data = {};
-  inputs.forEach(input => {
-    if(input.name === 'TRUCK_SEALING_REQUIREMENT' || input.name === 'BLACKLIST_STATUS'){
-      data[input.name] = parseInt(input.value); // convert "0"/"1" to number
-    } else {
-      data[input.name] = input.value;
-    }
-  });
-
-  try {
-    const res = await fetch('/truck-master/update-truck', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-
-   if (res.ok) {
-    showTruckPopup('Truck updated successfully');
-
-    // Wait for the user to click the close button
-    closeBtn.addEventListener('click', () => {
-        window.location.reload(); // reload after closing
-    }, { once: true }); // { once: true } ensures the handler runs only once
-}else {
-      const errorText = await res.text();
-      alert('Error updating data: ' + errorText);
-    }
-  } catch (err) {
-    alert('Failed to reach server.');
-  }
-});
+// // Run on page load in case existing data is Blacklist
 
 
+// // Run whenever Blacklist dropdown changes
+
+// // ===== End of block =====
+
+// editBtn?.addEventListener('click', (e) => {
+//   e.preventDefault();
+//   inputs.forEach(input => {
+//     if (input.name !== "TRUCK_REG_NO") {
+//       input.removeAttribute('readonly');  // input fields
+//       if(input.tagName === 'SELECT') input.disabled = false; // select fields
+//     }
+//   });
+//   toggleReasonField(); // make sure reason field is correct after clicking Edit
+//   blacklistSelect?.addEventListener('change', toggleReasonField);
+//   editBtn.style.display = 'none';
+//   saveBtn.style.display = 'inline-block';
+//   cancelBtn.style.display = 'inline-block';
+// });
+
+// cancelBtn?.addEventListener('click', (e) => {
+//   e.preventDefault();
+//   window.location.reload(); // reset values
+// });
+
+// saveBtn?.addEventListener('click', async (e) => {
+//   e.preventDefault();
+//   const data = {};
+//   inputs.forEach(input => {
+//     if(input.name === 'TRUCK_SEALING_REQUIREMENT' || input.name === 'BLACKLIST_STATUS'){
+//       data[input.name] = parseInt(input.value); // convert "0"/"1" to number
+//     } else {
+//       data[input.name] = input.value;
+//     }
+//   });
+
+//   try {
+//     const res = await fetch('/truck-master/update-truck', {
+//       method: 'PUT',
+//       headers: { 'Content-Type': 'application/json' },
+//       body: JSON.stringify(data)
+//     });
+
+//    if (res.ok) {
+//     showTruckPopup('Truck updated successfully');
+
+//     // Wait for the user to click the close button
+//     closeBtn.addEventListener('click', () => {
+//         window.location.reload(); // reload after closing
+//     }, { once: true }); // { once: true } ensures the handler runs only once
+// }else {
+//       const errorText = await res.text();
+//       alert('Error updating data: ' + errorText);
+//     }
+//   } catch (err) {
+//     alert('Failed to reach server.');
+//   }
+// });
 
 
-</script>
+
+
+// </script>
 
 <script>
 var deleteBtn = document.getElementById('deleteBtn');
@@ -684,14 +848,14 @@ document.addEventListener("DOMContentLoaded", function () {
   ============================== */
 
   // ✅ Blacklist → NOT_BLACKLIST
-  if (blacklistSelect) {
-    blacklistSelect.value = "0";
-  }
+  // if (blacklistSelect) {
+  //   blacklistSelect.value = "0";
+  // }
 
-  // ✅ Truck Sealing → NO
-  if (sealingSelect) {
-    sealingSelect.value = "0";
-  }
+  // // ✅ Truck Sealing → NO
+  // if (sealingSelect) {
+  //   sealingSelect.value = "0";
+  // }
 
   // ✅ Handle Reason field
   function toggleReasonField() {
@@ -717,15 +881,121 @@ document.addEventListener("DOMContentLoaded", function () {
 //OPEN POPUP SCRIPT
 //=================
 
+// function openAddPopup() {
+//   const popup = document.getElementById("popup");
+//   popup.style.display = "flex";   // 🔥 MUST BE FLEX
+// }
+// function openAddPopup() {
+//   const popup = document.getElementById("popup");
+//   popup.classList.remove("closing");
+//   popup.style.display = "flex";
+// }
+// function openAddPopup() {
+//   const popup = document.getElementById("popup");
+//   const form = document.getElementById("insertForm");
+
+//   // 1️⃣ RESET FORM COMPLETELY
+//   form.reset();
+
+//   // 2️⃣ FORCE INSERT MODE
+//   const isEditInput = form.querySelector('input[name="IS_EDIT"]');
+//   if (isEditInput) isEditInput.value = "0";
+
+//   // 3️⃣ ENABLE Truck No (important!)
+//   const truckNo = document.getElementById("TRUCK_REG_NO");
+//   if (truckNo) {
+//     truckNo.readOnly = false;
+//     truckNo.value = "";
+//   }
+
+//   // 4️⃣ RESET BUTTON TEXT
+//   const submitBtn = form.querySelector(".submit-btn");
+//   if (submitBtn) submitBtn.textContent = "Insert";
+
+//   // 5️⃣ RESET TITLE
+//   const title = document.querySelector(".popup-content h3");
+//   if (title) title.textContent = "Add New Truck";
+
+//   // 6️⃣ DEFAULT VALUES
+//   form.querySelector('select[name="BLACKLIST_STATUS"]').value = "0";
+//   form.querySelector('select[name="TRUCK_SEALING_REQUIREMENT"]').value = "0";
+//   form.querySelector('input[name="REASON_FOR_BLACKLIST"]').readOnly = true;
+//   form.querySelector('input[name="REASON_FOR_BLACKLIST"]').value = "";
+
+//   // 7️⃣ SHOW POPUP
+//   popup.style.display = "flex";
+// }
 function openAddPopup() {
   const popup = document.getElementById("popup");
-  popup.style.display = "flex";   // 🔥 MUST BE FLEX
+  const form = document.getElementById("insertForm");
+
+  /* 🔥 CLEAR ALL INPUTS */
+  form.querySelectorAll("input").forEach(input => {
+    if (input.type === "hidden") return;
+    if (input.type === "date") {
+      input.value = "";
+    } else {
+      input.value = "";
+    }
+    input.readOnly = false;
+  });
+
+  /* 🔥 CLEAR ALL SELECTS */
+  form.querySelectorAll("select").forEach(select => {
+    select.selectedIndex = 0;
+  });
+
+  /* 🔥 FORCE INSERT MODE */
+  const isEditInput = form.querySelector('input[name="IS_EDIT"]');
+  if (isEditInput) isEditInput.value = "0";
+
+  /* 🔥 RESET TITLE & BUTTON */
+  const title = document.querySelector(".popup-content h3");
+  if (title) title.textContent = "Add New Truck";
+
+  const submitBtn = form.querySelector(".submit-btn");
+  if (submitBtn) submitBtn.textContent = "Insert";
+
+  /* 🔥 DEFAULT FIELD RULES */
+  const reasonInput = form.querySelector('input[name="REASON_FOR_BLACKLIST"]');
+  if (reasonInput) reasonInput.readOnly = true;
+
+  /* 🔥 SHOW POPUP */
+  popup.style.display = "flex";
 }
 
+// function closeAddPopup() {
+//   const popup = document.getElementById("popup");
+//   popup.style.display = "none";
+// }
+// function closeAddPopup() {
+//   const popup = document.getElementById("popup");
+//   popup.classList.add("closing");
+
+//   setTimeout(() => {
+//     popup.style.display = "none";
+//     popup.classList.remove("closing");
+//   }, 250);
+// }
+// function closeAddPopup() {
+//   const popup = document.getElementById("popup");
+
+//   popup.style.display = "none";
+
+//   // 🔥 REMOVE ?truck=XXXX FROM URL
+//   if (window.location.search.includes("truck=")) {
+//     history.replaceState(null, "", "/truck-master");
+//   }
+// }
 function closeAddPopup() {
   const popup = document.getElementById("popup");
   popup.style.display = "none";
+
+  if (window.location.search.includes("truck=")) {
+    history.replaceState(null, "", "/truck-master");
+  }
 }
+
 
 //===============
 //EDIT CHECKBOX
@@ -749,6 +1019,42 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 });
+
+// document.addEventListener("DOMContentLoaded", function () {
+//   const params = new URLSearchParams(window.location.search);
+//   const truck = params.get('truck');
+
+//   if (truck) {
+//     // 👉 EDIT MODE → open popup automatically
+//     openAddPopup();
+
+//     // Change title
+//     const title = document.querySelector('.popup-content h3');
+//     if (title) title.textContent = "Update Truck";
+//   }
+// });
+document.addEventListener("DOMContentLoaded", function () {
+  const params = new URLSearchParams(window.location.search);
+  const truck = params.get('truck');
+
+  // 🔥 ONLY auto-open ON PAGE LOAD, NOT AFTER CLOSE
+  if (truck && !window.__popupOpenedOnce) {
+    window.__popupOpenedOnce = true;
+
+    const popup = document.getElementById("popup");
+    popup.style.display = "flex";
+
+    const title = document.querySelector('.popup-content h3');
+    if (title) title.textContent = "Update Truck";
+
+    const isEdit = document.querySelector('input[name="IS_EDIT"]');
+    if (isEdit) isEdit.value = "1";
+
+    const submitBtn = document.querySelector('.submit-btn');
+    if (submitBtn) submitBtn.textContent = "Update";
+  }
+});
+
 </script>
 
 
@@ -760,8 +1066,7 @@ document.addEventListener("DOMContentLoaded", function () {
       console.error('Error fetching truck data:', err);
       res.status(500).send('Error loading TRUCK MASTER DATA');
     }
-  })();
-});
+  });
 
 // ====== INSERT TRUCK API ======
 router.post('/insert-truck', async (req, res) => {

@@ -374,7 +374,7 @@ input[type="text"]{
   z-index: 9999;
 }
 
-.popup-content {
+/* .popup-content {
   font-family: 'DM Sans', sans-serif;
   position: relative;
   background: #fff;
@@ -385,7 +385,71 @@ input[type="text"]{
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
   animation: popupFade 0.3s ease-out;
   border-radius: 14px;
+} */
+
+.popup-content {
+  font-family: 'DM Sans', sans-serif;
+  background: #ffffff;
+  width: 850px;
+  max-height: 85%;
+  padding: 30px 35px;
+  overflow-y: auto;
+
+  border-radius: 16px;
+  box-shadow:
+    0 30px 60px rgba(0, 0, 0, 0.35),
+    0 10px 20px rgba(0, 0, 0, 0.15);
+
+  /* macOS motion */
+  transform-origin: center bottom;
+  animation: macOpen 0.45s cubic-bezier(0.25, 0.8, 0.25, 1);
+
+  will-change: transform, opacity;
 }
+
+@keyframes macOpen {
+  0% {
+    opacity: 0;
+    transform: 
+      translateY(40px)
+      scale(0.88)
+      perspective(800px)
+      rotateX(6deg);
+    filter: blur(6px);
+  }
+
+  60% {
+    opacity: 1;
+    transform:
+      translateY(-6px)
+      scale(1.02)
+      perspective(800px)
+      rotateX(0deg);
+    filter: blur(0);
+  }
+
+  100% {
+    opacity: 1;
+    transform:
+      translateY(0)
+      scale(1);
+  }
+}
+.popup.closing .popup-content {
+  animation: macClose 0.25s ease-in forwards;
+}
+
+@keyframes macClose {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.92) translateY(20px);
+  }
+}
+
 
 @keyframes popupFade {
   from {
@@ -402,7 +466,7 @@ input[type="text"]{
 .close-btn {
   position: absolute;
   top: 12px;
-  left: 12px;
+  left: 832px;
   background: none;
   border: none;
   font-size: 22px;
@@ -411,11 +475,11 @@ input[type="text"]{
   font-weight: bold;
 }
 
-.close-btn:hover {
+/* .close-btn:hover {
   color: #000;
   transform: rotate(90deg);
   transition: 0.2s ease;
-}
+} */
 
 .popup-content h3 {
   text-align: center;
@@ -796,6 +860,7 @@ input[readonly] {
     color: #6b7280;
     text-decoration: none;
     cursor: pointer;
+    border: 1px solid #d5cfcf;
 }
 /* Checkbox center */
 td input[type="checkbox"],
@@ -815,4 +880,41 @@ th input[type="checkbox"] {
 
 .edit-btn:hover {
   background: #e0e7ff;
+}
+.search-wrapper {
+  position: relative;
+  display: inline-block;
+}
+.search-wrapper input {
+  width: 220px;
+  padding: 10px 12px 10px 40px; /* 👈 left space for icon */
+  border-radius: 13px;
+  border: 1px solid #ccc;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  background: #f3f4f6;
+  transition: all 0.3s ease;
+}
+.search-icon {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  transform: translateY(-50%);
+  font-size: 20px;
+  color: #6b7280; /* gray-500 */
+  pointer-events: none; /* 👈 allows typing/clicking input */
+}
+.bg-gray-50
+ {
+    background-color: rgb(249, 250, 251);
+}
+.rows-select select {
+    padding: 5px 8px;
+    border-radius: 8px;
+    background: #f3f4f6;
+}
+select, option {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
 }
