@@ -374,18 +374,19 @@ input[type="text"]{
   z-index: 9999;
 }
 
-/* .popup-content {
+.popup-content1 {
   font-family: 'DM Sans', sans-serif;
   position: relative;
   background: #fff;
-  width: 850px;
+  width: 350px;
   max-height: 85%;
-  padding: 30px 35px;
+  padding: 20px;
   overflow-y: auto;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
   animation: popupFade 0.3s ease-out;
   border-radius: 14px;
-} */
+  text-align: center;
+}
 
 .popup-content {
   font-family: 'DM Sans', sans-serif;
@@ -597,7 +598,6 @@ input{
 
 /* Button styling */
 .action-btn {
-  font-family: Roboto, Helvetica, sans-serif;
   padding: 8px 16px;
   border-radius: 8px;
   border: none;
@@ -607,6 +607,7 @@ input{
   margin-right: 8px;
   transition: background-color 0.3s ease;
   border-radius: 12px;
+  font-weight: bold;
 }
 .action-btn hidden{
   border-radius: 12px;
@@ -871,12 +872,17 @@ th input[type="checkbox"] {
 
 /* Edit button */
 .edit-btn {
-  background: #f3f4f6;
-  color: #1e3a8a;
+  background: #e8f3ff;
+  color: rgb(101 104 241);
   border-radius: 10px;
   padding: 6px 12px;
   font-weight: 600;
+  align-items: center;      /* vertical center */
+  justify-content: center;
+  gap: 6px;
 }
+
+
 
 .edit-btn:hover {
   background: #e0e7ff;
@@ -912,9 +918,41 @@ th input[type="checkbox"] {
     padding: 5px 8px;
     border-radius: 8px;
     background: #f3f4f6;
+    margin-right: 29px;
 }
 select, option {
     font-family: 'DM Sans', sans-serif;
     font-size: 14px;
     font-weight: 500;
+}
+/* Common badge style */
+.status {
+  display: inline-block;
+  padding: 6px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 9999px; /* pill shape */
+  border: 1px solid;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+/* ✅ Not Blacklisted (Green like Active) */
+.status.not-blacklisted {
+  color: #15803d;                 /* green text */
+  background-color: #dcfce7;      /* light green bg */
+  border-color: #86efac;          /* green border */
+}
+
+/* ❌ Blacklisted (Red like Block) */
+.status.blacklisted {
+  color: #b91c1c;                 /* red text */
+  background-color: #fee2e2;      /* light red bg */
+  border-color: #fca5a5;          /* red border */
+}
+
+.edit-btn .edit-icon {
+  font-size: 14px;   /* try 12px / 14px / 15px */
+  line-height: 1;
+  align-items: center;
 }

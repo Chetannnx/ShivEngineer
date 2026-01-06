@@ -96,18 +96,19 @@ const totalPages = Math.max(1, Math.ceil(totalRows / limit));
 // ===== Truck Table HTML =====
 const truckTableHTML = `
 <div class="table-wrapper">
+<form id="deleteForm" method="POST" action="/truck-master/delete">
   <table class="truck-table">
     <thead>
     <!-- 🔍 SEARCH ROW INSIDE TABLE -->
       <tr class="table-controls">
-        <th colspan="6">
+        <th colspan="7">
          <div style="display:flex; justify-content:space-between; align-items:center;">
           <form method="GET" action="/truck-master" class="table-search">
           <div class="search-wrapper">
-    <span class="material-icons-outlined search-icon">
-      search
-    </span>
-            <input
+              <span class="material-icons-outlined search-icon">
+                search
+              </span>
+              <input
               type="text"
               name="search"
               placeholder="Search Truck Reg No..."
@@ -115,6 +116,31 @@ const truckTableHTML = `
             />
             </div>
             <a href="/truck-master" class="icon-btn"><i class="fa">&#xf021;</i></a>
+            <button
+    type="button"
+    onclick="openDeletePopup()"
+    class="btn btn-delete"
+    style="
+          border-radius: 6px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    width: 153px;
+    margin-left: 650px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    height: 37px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background-color: rgb(254 242 242 / var(--tw-bg-opacity, 1));
+    border: 1px solid rgb(254 202 202);
+    color: #dc2626;
+    cursor: pointer;
+    ">
+    <span class="material-icons-outlined text-sm">delete</span>
+    Delete Selected
+  </button>
           </form>
           <!-- RIGHT: Rows dropdown -->
       <div class="rows-select">
@@ -134,30 +160,31 @@ const truckTableHTML = `
         <th>
           <input type="checkbox" id="selectAll">
         </th>
+        <th class="srno-col">Sr. No</th>
         <th>Truck Reg No</th>
-        <th>Blacklist Status</th>
         <th>Safety Cert Valid Upto</th>
         <th>Calibration Cert Valid Upto</th>
+        <th>Blacklist Status</th>
         <th>Edit</th>
       </tr>
     </thead>
     <tbody>
-      ${truckTableData.map(row => `
+      ${truckTableData.map((row, index) => `
         <tr>
         <!-- Select checkbox -->
   <td>
-    <input 
-      type="checkbox" 
-      class="row-checkbox"
-      value="${escapeHtml(row.TRUCK_REG_NO)}"
-    >
+    <input
+  type="checkbox"
+  class="row-checkbox"
+  name="TRUCK_REG_NO"
+  value="${escapeHtml(row.TRUCK_REG_NO)}">
   </td>
+   <!-- ✅ Sr No -->
+    <td class="srno-col">
+      ${offset + index + 1}
+    </td>
+  
           <td>${escapeHtml(row.TRUCK_REG_NO)}</td>
-          <td>
-            <span class="status ${row.BLACKLIST_STATUS ? 'blacklisted' : 'not-blacklisted'}">
-              ${row.BLACKLIST_STATUS ? 'Blacklisted' : 'Not Blacklisted'}
-            </span>
-          </td>
           <td>
             ${formatMMDDYYYY(row.SAFETY_CERTIFICATION_NO)}
 
@@ -166,9 +193,15 @@ const truckTableHTML = `
             ${formatMMDDYYYY(row.CALIBRATION_CERTIFICATION_NO)}
             </td>
             <td>
+            <span class="status ${row.BLACKLIST_STATUS ? 'blacklisted' : 'not-blacklisted'}">
+              ${row.BLACKLIST_STATUS ? 'Blacklisted' : 'Not Blacklisted'}
+            </span>
+          </td>
+            <td>
     <button 
       class="action-btn edit-btn"
       onclick="editTruck('${escapeJs(row.TRUCK_REG_NO)}')">
+       <span class="material-icons-outlined edit-icon">edit</span>
       Edit
     </button>
           </td>
@@ -177,7 +210,7 @@ const truckTableHTML = `
     </tbody>
     <tfoot>
 <tr>
-<td colspan="6" class="bg-gray-50" style="text-align:center; padding:14px;">
+<td colspan="7" class="bg-gray-50" style="text-align:center; padding:14px;">
   <div style="display:flex; justify-content:flex-end; gap:12px; font-family:'DM Sans', sans-serif; align-items:center;">
 
     ${page > 1 ? `
@@ -204,6 +237,7 @@ const truckTableHTML = `
 </tfoot>
 
   </table>
+  </form>
 </div>
 `;
 
@@ -258,7 +292,7 @@ const blacklistCount = summaryCountResult.recordset[0].blacklistCount || 0;
         }
       }
 
-      // ===== Truck Summary Cards HTML =====
+      //===== Truck Summary Cards HTML =====
 const totalTruckHTML = `
 <div class="card-container">
 
@@ -519,6 +553,32 @@ ${truckTableHTML}
   <div id="truckPopupText"></div>
 </div>
 
+<!-- ❌ No Selection Popup -->
+<div id="no-selection-popup" class="popup" style="display:none;">
+  <div class="popup-content1">
+    <p>Please select at least one truck to delete.</p>
+    <button onclick="closeNoSelectionPopup()">OK</button>
+  </div>
+</div>
+
+<!-- ⚠️ Confirm Delete Popup -->
+<div id="deletePopup" class="popup" style="display:none;">
+  <div class="popup-content1">
+    <h3>⚠️ Confirm Deletion</h3>
+    <p>Are you sure you want to delete selected truck(s)?</p>
+    <div style="margin-top: 15px; display: flex; justify-content: center; gap: 10px;">
+      <button onclick="submitDelete()"
+        style="background: red;font-family: 'DM Sans', sans-serif; color: white; border-radius: 6px;  width: 88px;">
+        Yes, Delete
+      </button>
+      <button onclick="closeDeletePopup()"
+        style="background: gray;font-family: 'DM Sans', sans-serif; color: white; padding: 8px 16px; border-radius: 6px;">
+        Cancel
+      </button>
+    </div>
+  </div>
+</div>
+
 
 
   <script>
@@ -646,108 +706,6 @@ attachFuelCalculation(
   </script>
 
   
-// <script>
-// const editBtn = document.getElementById('editBtn');
-// const saveBtn = document.getElementById('saveBtn');
-// const cancelBtn = document.getElementById('cancelBtn');
-
-// // include selects too
-// const inputs = document.querySelectorAll('.form-container input, .form-container select');
-
-// // ===== Add this block here =====
-// const blacklistSelect = document.querySelector('select[name="BLACKLIST_STATUS"]');
-// const reasonInput = document.querySelector('input[name="REASON_FOR_BLACKLIST"]');
-
-// const insertFormBlacklist = document.querySelector('#insertForm select[name="BLACKLIST_STATUS"]');
-// const insertFormReason = document.querySelector('#insertForm input[name="REASON_FOR_BLACKLIST"]');
-
-// function toggleInsertReasonField() {
-//   if (insertFormBlacklist.value === "1") {
-//     insertFormReason.removeAttribute('readonly');
-//   } else {
-//     insertFormReason.setAttribute('readonly', true);
-//     insertFormReason.value = ''; // optional: clear if Not_Blacklist
-//   }
-// }
-
-// //toggleInsertReasonField();
-
-// insertFormBlacklist?.addEventListener('change', toggleInsertReasonField);
-
-// function toggleReasonField() {
-//   if (blacklistSelect.value === "1") {
-//     reasonInput.removeAttribute('readonly');
-//   } else {
-//     reasonInput.setAttribute('readonly', true);
-//     reasonInput.value = ''; // optional: clear if Not_Blacklist
-//   }
-// }
-
-// // Run on page load in case existing data is Blacklist
-
-
-// // Run whenever Blacklist dropdown changes
-
-// // ===== End of block =====
-
-// editBtn?.addEventListener('click', (e) => {
-//   e.preventDefault();
-//   inputs.forEach(input => {
-//     if (input.name !== "TRUCK_REG_NO") {
-//       input.removeAttribute('readonly');  // input fields
-//       if(input.tagName === 'SELECT') input.disabled = false; // select fields
-//     }
-//   });
-//   toggleReasonField(); // make sure reason field is correct after clicking Edit
-//   blacklistSelect?.addEventListener('change', toggleReasonField);
-//   editBtn.style.display = 'none';
-//   saveBtn.style.display = 'inline-block';
-//   cancelBtn.style.display = 'inline-block';
-// });
-
-// cancelBtn?.addEventListener('click', (e) => {
-//   e.preventDefault();
-//   window.location.reload(); // reset values
-// });
-
-// saveBtn?.addEventListener('click', async (e) => {
-//   e.preventDefault();
-//   const data = {};
-//   inputs.forEach(input => {
-//     if(input.name === 'TRUCK_SEALING_REQUIREMENT' || input.name === 'BLACKLIST_STATUS'){
-//       data[input.name] = parseInt(input.value); // convert "0"/"1" to number
-//     } else {
-//       data[input.name] = input.value;
-//     }
-//   });
-
-//   try {
-//     const res = await fetch('/truck-master/update-truck', {
-//       method: 'PUT',
-//       headers: { 'Content-Type': 'application/json' },
-//       body: JSON.stringify(data)
-//     });
-
-//    if (res.ok) {
-//     showTruckPopup('Truck updated successfully');
-
-//     // Wait for the user to click the close button
-//     closeBtn.addEventListener('click', () => {
-//         window.location.reload(); // reload after closing
-//     }, { once: true }); // { once: true } ensures the handler runs only once
-// }else {
-//       const errorText = await res.text();
-//       alert('Error updating data: ' + errorText);
-//     }
-//   } catch (err) {
-//     alert('Failed to reach server.');
-//   }
-// });
-
-
-
-
-// </script>
 
 <script>
 var deleteBtn = document.getElementById('deleteBtn');
@@ -813,26 +771,26 @@ closeBtn.addEventListener("click", closeTruckPopup);
 //==========
 //auto date 
 //==========
-document.addEventListener("DOMContentLoaded", function () {
+// document.addEventListener("DOMContentLoaded", function () {
 
-  const popup = document.getElementById("popup");
+//   const popup = document.getElementById("popup");
 
-  if (popup) {
-    const today = new Date().toISOString().split("T")[0];
+//   if (popup) {
+//     const today = new Date().toISOString().split("T")[0];
 
-    const safetyDate = popup.querySelector('input[name="SAFETY_CERTIFICATION_NO"]');
-    const calibrationDate = popup.querySelector('input[name="CALIBRATION_CERTIFICATION_NO"]');
+//     const safetyDate = popup.querySelector('input[name="SAFETY_CERTIFICATION_NO"]');
+//     const calibrationDate = popup.querySelector('input[name="CALIBRATION_CERTIFICATION_NO"]');
 
-    if (safetyDate && !safetyDate.value) {
-      safetyDate.value = today;
-    }
+//     if (safetyDate && !safetyDate.value) {
+//       safetyDate.value = today;
+//     }
 
-    if (calibrationDate && !calibrationDate.value) {
-      calibrationDate.value = today;
-    }
-  }
+//     if (calibrationDate && !calibrationDate.value) {
+//       calibrationDate.value = today;
+//     }
+//   }
 
-});
+// });
 
 document.addEventListener("DOMContentLoaded", function () {
 
@@ -960,6 +918,15 @@ function openAddPopup() {
   const reasonInput = form.querySelector('input[name="REASON_FOR_BLACKLIST"]');
   if (reasonInput) reasonInput.readOnly = true;
 
+  /* ✅ AUTO DATE SET (ONLY FOR ADD MODE) */
+  const today = new Date().toISOString().split("T")[0];
+
+  const safetyDate = form.querySelector('input[name="SAFETY_CERTIFICATION_NO"]');
+  const calibrationDate = form.querySelector('input[name="CALIBRATION_CERTIFICATION_NO"]');
+
+  if (safetyDate) safetyDate.value = today;
+  if (calibrationDate) calibrationDate.value = today;
+
   /* 🔥 SHOW POPUP */
   popup.style.display = "flex";
 }
@@ -1055,6 +1022,33 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 });
 
+
+//==================
+//delete popup
+//==================
+function openDeletePopup() {
+  const checked = document.querySelectorAll(
+    'input[name="TRUCK_REG_NO"]:checked'
+  );
+
+  if (checked.length === 0) {
+    document.getElementById("no-selection-popup").style.display = "flex";
+    return;
+  }
+  document.getElementById("deletePopup").style.display = "flex";
+}
+
+function closeDeletePopup() {
+  document.getElementById("deletePopup").style.display = "none";
+}
+
+function closeNoSelectionPopup() {
+  document.getElementById("no-selection-popup").style.display = "none";
+}
+
+function submitDelete() {
+  document.getElementById("deleteForm").submit();
+}
 </script>
 
 
@@ -1119,7 +1113,8 @@ router.put('/update-truck', async (req, res) => {
     const pool = await sql.connect(dbConfig);
     const data = req.body;
 
-    const truckSealingReq = data.TRUCK_SEALING_REQUIREMENT; // ✅ 1 or 0
+    const truckSealingReq =
+  data.TRUCK_SEALING_REQUIREMENT === "1" ? 1 : 0; // ✅ 1 or 0
 
     await pool.request()
       .input('TRUCK_REG_NO', sql.VarChar, data.TRUCK_REG_NO)
@@ -1129,7 +1124,7 @@ router.put('/update-truck', async (req, res) => {
       .input('HELPER_NAME', sql.VarChar, data.HELPER_NAME)
       .input('CARRIER_COMPANY', sql.VarChar, data.CARRIER_COMPANY)
       .input('TRUCK_SEALING_REQUIREMENT', sql.Bit, truckSealingReq) // ✅ FIXED NAME
-      .input('BLACKLIST_STATUS', sql.Bit, data.BLACKLIST_STATUS)
+      .input('BLACKLIST_STATUS', sql.Bit, data.BLACKLIST_STATUS === "1" ? 1 : 0)
       .input('REASON_FOR_BLACKLIST', sql.VarChar, data.REASON_FOR_BLACKLIST)
       .input('SAFETY_CERTIFICATION_NO', sql.Date, data.SAFETY_CERTIFICATION_NO)
       .input('CALIBRATION_CERTIFICATION_NO', sql.Date, data.CALIBRATION_CERTIFICATION_NO)
@@ -1188,5 +1183,35 @@ router.delete('/delete-truck/:truckRegNo', async (req, res) => {
     res.status(500).send('Error deleting data: ' + err.message);
   }
 });
+
+// ====== DELETE MULTIPLE TRUCKS ======
+router.post('/delete', async (req, res) => {
+  try {
+    let trucks = req.body.TRUCK_REG_NO;
+    if (!trucks) return res.redirect('/truck-master');
+
+    if (!Array.isArray(trucks)) trucks = [trucks];
+
+    const pool = await sql.connect(dbConfig);
+
+    for (const truck of trucks) {
+      // Delete from DATA_MASTER first
+      await pool.request()
+        .input('truck', sql.VarChar, truck)
+        .query('DELETE FROM DATA_MASTER WHERE TRUCK_REG_NO = @truck');
+
+      // Delete from TRUCK_MASTER
+      await pool.request()
+        .input('truck', sql.VarChar, truck)
+        .query('DELETE FROM TRUCK_MASTER WHERE TRUCK_REG_NO = @truck');
+    }
+
+    res.redirect('/truck-master?msg=deleted');
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Delete error');
+  }
+});
+
 
 module.exports = router;
