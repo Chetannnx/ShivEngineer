@@ -488,7 +488,7 @@ html += `
 
       <label>Card Status:</label><br>
       <select name="CARD_STATUS" class="status-dropdown"
-        style="width:80%; padding:8px; margin:8px 0;" required>
+        style="width:86%; padding:8px; margin:8px 0;border-radius: 8px;" required>
         <option value="1">Active</option>
         <option value="0">Block</option>
       </select><br>
@@ -532,7 +532,7 @@ html += `
       <label>Card No:</label><br>
       <input type="text" name="NEW_CARD_NO" id="edit_NEW_CARD_NO" style="width:80%; padding:8px; margin:8px 0;" readonly><br>
       <label>Card Status:</label><br>
-      <select name="CARD_STATUS" id="edit_CARD_STATUS" style="width:80%; padding:8px; margin:8px 0;" required>
+      <select name="CARD_STATUS" id="edit_CARD_STATUS" style="width:86%; padding:8px; margin:8px 0;border-radius: 8px;" required>
         <option value="1">Active</option>
         <option value="0">Block</option>
       </select><br>

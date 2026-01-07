@@ -53,7 +53,11 @@ router.get("/", async (req, res) => {
           <td>${i + 1}</td>
           <td>${r.TRUCK_REG_NO || "-"}</td>
           <td>${r.CARD_NO || "-"}</td>
-          <td>${r.STATUS || "-"}</td>
+          <td>
+  <span class="status-badge status-yellow">
+    ${r.STATUS || "-"}
+  </span>
+</td>
           <td>${r.TYPE || "-"}</td>
           <td>${r.BAY || "-"}</td>
           <td>${r.FAN_TIME_OUT || "-"}</td>

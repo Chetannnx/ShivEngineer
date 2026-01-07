@@ -256,33 +256,53 @@ ${fs.readFileSync(path.join(__dirname, "../public/Css/navbar.html"), "utf8")}
 </div>
 
 <div class="table-wrapper">
-<table>
-<thead>
-<tr>
-${columns.map(c => `<th>${escapeHtml(c.replace(/_/g, " "))}</th>`).join("")}
-</tr>
-</thead>
-<tbody>
-`;
+  <table class="lts-table">
+    <thead>
+      <tr>
+        ${columns.map(c => `<th>${escapeHtml(c.replace(/_/g, " "))}</th>`).join("")}
+      </tr>
+    </thead>
 
-    rs.recordset.forEach(row => {
-      html += `<tr>${
-        columns.map(c => `<td>${renderValue(c, row[c])}</td>`).join("")
-      }</tr>`;
-    });
+    <tbody>
+      ${rs.recordset.map(row => `
+        <tr>
+          ${columns.map(c => `<td>${renderValue(c, row[c])}</td>`).join("")}
+        </tr>
+      `).join("")}
+    </tbody>
 
-    html += `
-</tbody>
-</table>
+    <tfoot>
+  <tr>
+    <td colspan="${columns.length}">
+      <div class="tfoot-bar">
+
+        <!-- LEFT SIDE -->
+        <span class="record-count">
+          Total Records: <b>${total}</b>
+        </span>
+
+        <!-- RIGHT SIDE PAGINATION -->
+        <div class="tfoot-pagination">
+          ${page > 1 ? `<a class="page-btn" href="?page=${page - 1}">Prev</a>` : ""}
+
+          ${Array.from({ length: pages }, (_, i) =>
+            `<a class="page-btn ${page === i + 1 ? "active" : ""}"
+                href="?page=${i + 1}">
+                ${i + 1}
+             </a>`
+          ).join("")}
+
+          ${page < pages ? `<a class="page-btn" href="?page=${page + 1}">Next</a>` : ""}
+        </div>
+
+      </div>
+    </td>
+  </tr>
+</tfoot>
+
+  </table>
 </div>
 
-<div class="pagination">
-${page > 1 ? `<a class="page-btn" href="?page=${page - 1}">Prev</a>` : ""}
-${Array.from({ length: pages }, (_, i) =>
-  `<a class="page-btn ${page === i + 1 ? "active" : ""}" href="?page=${i + 1}">${i + 1}</a>`
-).join("")}
-${page < pages ? `<a class="page-btn" href="?page=${page + 1}">Next</a>` : ""}
-</div>
 
 ${exportModalHtml("pdf")}
 ${exportModalHtml("excel")}

@@ -147,15 +147,29 @@ body.dark .dark-toggle:hover {
 /* ===================== TABLE WRAPPER ===================== */
 
 .table-wrapper {
-  width: 100%;
+  width: 88%;
+  margin: 0 auto; 
   background: var(--bg-card);
   border-radius: 14px;
-  padding: 8px;
   overflow-x: auto;
   overflow-y: auto;
   max-height: calc(100vh - 300px);
   box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-}
+} 
+
+/* .table-wrapper {
+  width: 78%;
+  margin: 0 auto;              
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow-x: auto;
+  overflow-y: auto;
+max-height: calc(100vh - 300px);
+  font-weight: bold;
+  border-radius: 12px;
+  overflow: hidden;
+} */
+
 
 /* ===================== TABLE ===================== */
 
@@ -616,4 +630,64 @@ body.dark #dateRange::-moz-placeholder {
 /* Internet Explorer / Legacy Edge */
 body.dark #dateRange:-ms-input-placeholder {
   color: #94a3b8;
+}
+
+
+/*================table new=======================
+/* Wrapper gives scroll */
+.table-wrapper {
+  max-height: 70vh;          /* vertical scroll */
+  overflow-x: auto;
+  border: 1px solid #d1d5db;
+}
+
+/* Table base */
+.lts-table {
+  border-collapse: collapse;
+  width: max-content;        /* horizontal scroll */
+  min-width: 180%;
+  font-family: "DM Sans", sans-serif;
+}
+
+/* Header */
+.lts-table thead th {
+  position: sticky;
+  top: 0;
+  background: rgba(31, 41, 55,0.03);
+  color: #6b7280;
+  z-index: 2;
+  padding: 14px 20px;
+  white-space: nowrap;
+}
+
+/* Footer */
+.lts-table tfoot td {
+  position: sticky;
+  bottom: 0;
+  background: #f3f4f6;
+  font-weight: 600;
+  padding: 8px 10px;
+  z-index: 1;
+  border-top: 2px solid #9ca3af;
+}
+
+/* Body cells */
+.lts-table td {
+  padding: 14px 10px;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+/* Row hover */
+.lts-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+/* Dark mode support */
+body.dark .lts-table thead th {
+  background: #0f172a;
+}
+body.dark .lts-table tfoot td {
+  background: #111827;
+  color: #e5e7eb;
 }
