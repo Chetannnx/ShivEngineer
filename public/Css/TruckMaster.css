@@ -956,3 +956,5 @@ select, option {
   line-height: 1;
   align-items: center;
 }
+/* Row hover effect */
+tr:hover { background: rgba(31, 41, 55,0.03) }

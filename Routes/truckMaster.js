@@ -121,11 +121,11 @@ const truckTableHTML = `
     class="btn btn-delete"
     style="
       margin-left:650px;
-      width: 153px;
+      width: 154px;
       display:flex;
       align-items:center;
       gap:6px;
-      padding:6px 12px;
+      padding:2px 12px;
       background:#fef2f2;
       border:1px solid #fecaca;
       color:#dc2626;
@@ -545,7 +545,31 @@ ${truckTableHTML}
   <button id="closeTruckPopup">✖</button>
   <div id="truckPopupText"></div>
 </div>
+<!-- ❌ No Selection Popup -->
+<div id="no-selection-popup" class="popup" style="display:none;">
+  <div class="popup-content1">
+    <p>Please select at least one truck to delete.</p>
+    <button onclick="closeNoSelectionPopup()">OK</button>
+  </div>
+</div>
 
+<!-- ⚠️ Confirm Delete Popup -->
+<div id="deletePopup" class="popup" style="display:none;">
+  <div class="popup-content1">
+    <h3>⚠️ Confirm Deletion</h3>
+    <p>Are you sure you want to delete selected truck(s)?</p>
+    <div style="margin-top: 15px; display: flex; justify-content: center; gap: 10px;">
+      <button onclick="submitDelete()"
+        style="background: red;font-family: 'DM Sans', sans-serif; color: white; border-radius: 6px;  width: 88px;">
+        Yes, Delete
+      </button>
+      <button onclick="closeDeletePopup()"
+        style="background: gray;font-family: 'DM Sans', sans-serif; color: white; padding: 8px 16px; border-radius: 6px;">
+        Cancel
+      </button>
+    </div>
+  </div>
+</div>
 
 
   <script>
@@ -988,6 +1012,67 @@ document.addEventListener("DOMContentLoaded", function () {
     if (submitBtn) submitBtn.textContent = "Update";
   }
 });
+
+
+/* ============================
+   DELETE SELECTED – SAFE LOGIC
+   ============================ */
+
+function openDeletePopup() {
+  const selected = getSelectedTrucks();
+
+  if (selected.length === 0) {
+    document.getElementById("no-selection-popup").style.display = "flex";
+    return;
+  }
+
+  document.getElementById("deletePopup").style.display = "flex";
+}
+
+function closeDeletePopup() {
+  document.getElementById("deletePopup").style.display = "none";
+}
+
+function closeNoSelectionPopup() {
+  document.getElementById("no-selection-popup").style.display = "none";
+}
+
+/* Get checked truck numbers */
+function getSelectedTrucks() {
+  return Array.from(document.querySelectorAll(".row-checkbox:checked"))
+    .map(cb => cb.value);
+}
+
+/* Called when YES, DELETE clicked */
+async function submitDelete() {
+  const trucks = getSelectedTrucks();
+  if (trucks.length === 0) return;
+
+  try {
+    for (const truck of trucks) {
+      const res = await fetch(
+        '/truck-master/delete-truck/' + encodeURIComponent(truck),
+        { method: 'DELETE' }
+      );
+
+      if (!res.ok) {
+  res.text().then(function (msg) {
+    alert("Failed to delete " + truck + ": " + msg);
+  });
+  return;
+}
+    }
+
+    closeDeletePopup();
+
+    // 🔥 Reload clean page (no edit mode)
+    window.location.href = "/truck-master";
+
+  } catch (err) {
+    console.error("Delete error:", err);
+    alert("Error deleting trucks");
+  }
+}
 
 </script>
 
