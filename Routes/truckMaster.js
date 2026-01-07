@@ -377,9 +377,14 @@ ${truckTableHTML}
         <label>Truck Number:</label>
         <input name="TRUCK_REG_NO"
        id="TRUCK_REG_NO"
+       autocomplete="off"
        value="${escapeHtml(truckData.TRUCK_REG_NO)}"
        ${truckData.TRUCK_REG_NO ? 'readonly' : ''}
        required>
+       <small id="truck-exists-msg"
+         style="display:none; color:#dc2626; font-weight:600; margin-top:4px; margin-left:18px">
+    🚫 This truck already exists in Truck Master
+  </small>
       </div>
 
       <div class="form-group">
@@ -878,6 +883,16 @@ function openAddPopup() {
   const popup = document.getElementById("popup");
   const form = document.getElementById("insertForm");
 
+    /* 🔥 RESET TRUCK EXISTS VALIDATION STATE */
+  const truckInput = document.getElementById("TRUCK_REG_NO");
+  const msg = document.getElementById("truck-exists-msg");
+  const submitBtn = form.querySelector(".submit-btn");
+
+  if (msg) msg.style.display = "none";
+  if (truckInput) truckInput.style.borderColor = "";
+  if (submitBtn) submitBtn.disabled = false;
+
+
   /* 🔥 CLEAR ALL INPUTS */
   form.querySelectorAll("input").forEach(input => {
     if (input.type === "hidden") return;
@@ -898,11 +913,13 @@ function openAddPopup() {
   const isEditInput = form.querySelector('input[name="IS_EDIT"]');
   if (isEditInput) isEditInput.value = "0";
 
+  
+
   /* 🔥 RESET TITLE & BUTTON */
   const title = document.querySelector(".popup-content h3");
   if (title) title.textContent = "Add New Truck";
 
-  const submitBtn = form.querySelector(".submit-btn");
+  // const submitBtn = form.querySelector(".submit-btn");
   if (submitBtn) submitBtn.textContent = "Insert";
 
   /* 🔥 DEFAULT FIELD RULES */
@@ -1074,6 +1091,56 @@ async function submitDelete() {
   }
 }
 
+
+//========================
+//truck exit alert script
+//========================
+document.addEventListener("DOMContentLoaded", function () {
+
+  const truckInput = document.getElementById("TRUCK_REG_NO");
+  const msg = document.getElementById("truck-exists-msg");
+  const submitBtn = document.querySelector(".submit-btn");
+  const isEdit = document.querySelector('input[name="IS_EDIT"]');
+
+  if (!truckInput || !msg || !submitBtn) return;
+
+  let typingTimer;
+  const delay = 500; // debounce
+
+  truckInput.addEventListener("input", function () {
+
+    // ❌ Skip check in EDIT mode
+    if (isEdit && isEdit.value === "1") return;
+
+    const value = truckInput.value.trim();
+
+    msg.style.display = "none";
+    truckInput.style.borderColor = "";
+    submitBtn.disabled = false;
+
+    if (!value) return;
+
+    clearTimeout(typingTimer);
+
+    typingTimer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          "/truck-master/check-truck/" + encodeURIComponent(value)
+        );
+        const data = await res.json();
+
+        if (data.exists) {
+          msg.style.display = "block";
+          truckInput.style.borderColor = "#dc2626";
+          submitBtn.disabled = true;
+        }
+      } catch (err) {
+        console.error("Live truck check failed", err);
+      }
+    }, delay);
+  });
+
+});
 </script>
 
 
@@ -1087,11 +1154,35 @@ async function submitDelete() {
     }
   });
 
+  // ===== CHECK TRUCK EXISTS (LIVE VALIDATION) =====
+router.get('/check-truck/:truckNo', async (req, res) => {
+  try {
+    const pool = await sql.connect(dbConfig);
+    const truckNo = req.params.truckNo.trim();
+
+    const result = await pool.request()
+      .input('truckNo', sql.VarChar, truckNo)
+      .query(`SELECT 1 FROM TRUCK_MASTER WHERE TRUCK_REG_NO = @truckNo`);
+
+    res.json({ exists: result.recordset.length > 0 });
+  } catch (err) {
+    console.error("Check truck error:", err);
+    res.status(500).json({ exists: false });
+  }
+});
+
 // ====== INSERT TRUCK API ======
 router.post('/insert-truck', async (req, res) => {
   try {
     const pool = await sql.connect(dbConfig);
     const data = req.body;
+    const exists = await pool.request()
+  .input('TRUCK_REG_NO', sql.VarChar, data.TRUCK_REG_NO)
+  .query(`SELECT 1 FROM TRUCK_MASTER WHERE TRUCK_REG_NO = @TRUCK_REG_NO`);
+
+if (exists.recordset.length > 0) {
+  return res.status(409).send('Truck already exists');
+}
 
     const truckSealingReq =
   data.TRUCK_SEALING_REQUIREMENT === "1" ? 1 : 0; // ✅ 1 or 0
