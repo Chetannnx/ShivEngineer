@@ -22,12 +22,6 @@ table {
   border-collapse: separate;
   border-spacing: 0;
   background: #fff;
-  /* box-shadow: rgba(0, 0, 0, 0.09) 0px 2px 1px,
-              rgba(0, 0, 0, 0.09) 0px 4px 2px,
-              rgba(0, 0, 0, 0.09) 0px 8px 4px,
-              rgba(0, 0, 0, 0.09) 0px 16px 8px,
-              rgba(0, 0, 0, 0.09) 0px 32px 16px; */
-
   font-weight: bold;
   border-radius: 12px;
   overflow: hidden;
@@ -109,3 +103,33 @@ tr:hover {
   color: #727007;
   border-color: #ffd966;
 }
+
+/*------------------LOADING UNLOADING---------------*/
+.loading-icon {
+  color: green;
+  font-size: 28px;
+}
+
+.unloading-icon {
+  color: red;
+  font-size: 28px;
+}
+.type-cell {
+  text-align: center;
+}
+
+.type-wrapper {
+  display: inline-flex;
+  align-items: center;     /* 🔥 vertical center */
+  justify-content: center; /* 🔥 horizontal center */
+  gap: 6px;                /* space between text & icon */
+}
+
+.type-text {
+  font-weight: 600;
+}
+
+.material-symbols-outlined {
+  line-height: 1;          /* 🔥 important */
+}
+

@@ -10,14 +10,21 @@ router.get("/", async (req, res) => {
 
     const result = await pool.request().query(`
   SELECT 
-    [TRUCK REG NO] AS TRUCK_REG_NO,
-    [CARD NO] AS CARD_NO,
-    STATUS,
-    TYPE,
-    BAY,
-    CONVERT(VARCHAR(19), [FAN TIMEOUT], 120) AS FAN_TIME_OUT
-  FROM COMMON_VIEW_3
-  WHERE BATCH_STATUS = 1;
+  [TRUCK REG NO] AS TRUCK_REG_NO,
+  [CARD NO] AS CARD_NO,
+  STATUS,
+  TYPE,
+  BAY,
+  CONVERT(VARCHAR(19), [FAN TIMEOUT], 120) AS FAN_TIME_OUT,
+
+  CASE 
+    WHEN TYPE = 'LOADING' THEN 'UP'
+    WHEN TYPE = 'UNLOADING' THEN 'DOWN'
+    ELSE 'NONE'
+  END AS TYPE_ICON
+
+FROM COMMON_VIEW_3
+WHERE BATCH_STATUS = 1;
 `);
 
     const rows = result.recordset;
@@ -29,18 +36,20 @@ router.get("/", async (req, res) => {
   <title>Live Status</title>
   <link rel="stylesheet" href="/Css/LiveStatus.css">
   <link href='https://fonts.googleapis.com/css?family=DM Sans' rel='stylesheet'>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
+
 </head>
 <body>
 
 <table border="1" width="100%" style="border-collapse:collapse;">
 <tr>
-  <th>SrNo</th>
-  <th>Truck Reg NO</th>
-  <th>Card No</th>
-  <th>Status</th>
-  <th>Type</th>
-  <th>Bay</th>
-  <th>Fan TimeOut</th>
+  <th>SR NO</th>
+  <th>TRUCK NO</th>
+  <th>CARD NO</th>
+  <th>STATUS</th>
+  <th>TYPE</th>
+  <th>BAY</th>
+  <th>FAN TIMEOUT</th>
 </tr>
 `;
 
@@ -54,11 +63,25 @@ router.get("/", async (req, res) => {
           <td>${r.TRUCK_REG_NO || "-"}</td>
           <td>${r.CARD_NO || "-"}</td>
           <td>
-  <span class="status-badge status-yellow">
-    ${r.STATUS || "-"}
-  </span>
-</td>
-          <td>${r.TYPE || "-"}</td>
+            <span class="status-badge status-yellow">
+              ${r.STATUS || "-"}
+            </span>
+          </td>
+          <td class="type-cell">
+            ${
+              r.TYPE_ICON === "UP"
+                ? `<span class="type-wrapper">
+                    <span class="type-text">LOADING</span>
+                    <span class="material-symbols-outlined loading-icon">arrow_upward</span>
+                  </span>`
+                : r.TYPE_ICON === "DOWN"
+                ? `<span class="type-wrapper">
+                    <span class="type-text">UNLOADING</span>
+                    <span class="material-symbols-outlined unloading-icon">arrow_downward</span>
+                  </span>`
+                : "-"
+            }
+          </td>
           <td>${r.BAY || "-"}</td>
           <td>${r.FAN_TIME_OUT || "-"}</td>
         </tr>
