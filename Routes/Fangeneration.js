@@ -20,56 +20,55 @@ router.get("/", async (req, res) => {
         <body>
           <div id="navbar"></div>
 
-          <h2 style="text-align:center;font-family: 'DM Sans', sans-serif;">
+          <h2>
             <i class="fa-solid fa-truck-fast" style="font-size: 21px;"></i>
             TRUCK DATA ENTRY
           </h2>
 
           <!-- Search Bar -->
           <div class="top-actions">
-    <div class="input-group">
-      <label>Truck Reg No : </label>
-      <input id="truckRegInput" type="text" placeholder="Enter Truck Reg No">
-    </div>
-    <div class="input-group">
-      <label>Card Allocated : </label>
-      <input id="CARD_NO" type="text" placeholder="Card Allocated">
-    </div>
-  </div>
+            <div class="input-group">
+              <label>Truck Reg No : </label>
+              <input id="truckRegInput" type="text" placeholder="Enter Truck Reg No">
+            </div>
+            <div class="input-group">
+              <label>Card Allocated : </label>
+              <input id="CARD_NO" type="text" placeholder="Card Allocated">
+            </div>
+          
 
-  <div class="top-actionss">
-    <div class="input-group">
-      <label for="truckStatus">Truck Status:</label>
-      <select id="truckStatus" disabled>
-        <option value="">-- Select --</option>
-        <option value="-1">Registered</option>
-        <option value="1">Reported</option>
-        <option value="2">Fan Generation</option>
-        <option value="4">Fan Reauthorised</option>
-        <option value="5">Entry Weight Accept</option>
-        <option value="6">Truck at bay</option>
-        <option value="7">Earthing Clamp Engaged</option>
-        <option value="8">Loading started</option>
-        <option value="9">Loading stopped</option>
-        <option value="12">Loading Completed: Disengage Earthing Clamp</option>
-        <option value="13">Aborted</option>
-        <option value="14">Loading Completed</option>
-        <option value="15">Exit Weight Accepted</option>
-        <option value="16">Invoice Generated</option>
+          
+            <div class="input-group">
+              <label for="truckStatus">Truck Status : </label>
+              <select id="truckStatus" disabled>
+                <option value="">-- Select --</option>
+                <option value="-1">Registered</option>
+                <option value="1">Reported</option>
+                <option value="2">Fan Generation</option>
+                <option value="4">Fan Reauthorised</option>
+                <option value="5">Entry Weight Accept</option>
+                <option value="6">Truck at bay</option>
+                <option value="7">Earthing Clamp Engaged</option>
+                <option value="8">Loading started</option>
+                <option value="9">Loading stopped</option>
+                <option value="12">Loading Completed: Disengage Earthing Clamp</option>
+                <option value="13">Aborted</option>
+                <option value="14">Loading Completed</option>
+                <option value="15">Exit Weight Accepted</option>
+                <option value="16">Invoice Generated</option>
+              </select>
+            </div>
 
-      </select>
-    </div>
+            <div class="input-group">
+              <label for="processType">Process Type : </label>
+              <select id="processType">
+                <option value="">-- Select --</option>
+                <option value="1">Loading</option>
+                <option value="0">Unloading</option>
+              </select>
+            </div>
 
-    <div class="input-group">
-      <label for="processType">Process Type:</label>
-      <select id="processType">
-        <option value="">-- Select --</option>
-        <option value="1">Loading</option>
-        <option value="0">Unloading</option>
-      </select>
-    </div>
-  </div>
-  </div>
+          </div>
 
  
     <button type="button" id="assignCardBtn" class="btn">Assign Card</button>
@@ -80,6 +79,8 @@ router.get("/", async (req, res) => {
     <button type="button" id="reAllocateBtn" class="btn" onclick="openReallocatePopup()">Re Allocate</button>
     <button type="button" id="checkBtn" class="btn">Abort</button>
 
+    
+
     <p id="result"></p>
 
 
@@ -87,51 +88,64 @@ router.get("/", async (req, res) => {
           <div class="form-container">
             <!-- LEFT: CARD_MASTER from Truck Master -->
             <div>
+            <div class="form-row two-col">
               <div class="form-group"><label>Truck Number :</label><input id="TRUCK_REG_NO" name="TRUCK_REG_NO" type="text" readonly></div>
               <div class="form-group"><label>Trailer No :</label><input id="TRAILER_NO" name="TRAILER_NO" type="text" readonly></div>
-              <div class="form-group"><label>Owner Name :</label><input id="OWNER_NAME" name="OWNER_NAME" type="text" readonly></div>
+            </div>
+
+                <div class="form-group"><label>Owner Name :</label><input id="OWNER_NAME" name="OWNER_NAME" type="text" readonly></div>
+            <div class="form-row two-col">
               <div class="form-group"><label>Driver Name :</label><input id="DRIVER_NAME" name="DRIVER_NAME" type="text" readonly></div>
               <div class="form-group"><label>Helper Name :</label><input id="HELPER_NAME" name="HELPER_NAME" type="text" readonly></div>
+            </div>
               <div class="form-group"><label>Carrier Company :</label><input id="CARRIER_COMPANY" name="CARRIER_COMPANY" type="text" readonly></div>
 
-              <div class="form-group">
-                <label for="TRUCK_SEALING_REQUIREMENT">Truck Sealing Requirement :</label>
-                <select id="TRUCK_SEALING_REQUIREMENT" name="TRUCK_SEALING_REQUIREMENT" disabled>
-                  <option value="">-- Select --</option>
-                  <option value="1">Yes</option>
-                  <option value="0">No</option>
-                </select>
-              </div>
+              <div class="form-row two-col">
+  <div class="form-group">
+    <label for="TRUCK_SEALING_REQUIREMENT">Truck Sealing Requirement :</label>
+    <select id="TRUCK_SEALING_REQUIREMENT" name="TRUCK_SEALING_REQUIREMENT" disabled>
+      <option value="">-- Select --</option>
+      <option value="1">Yes</option>
+      <option value="0">No</option>
+    </select>
+  </div>
 
-              <div class="form-group">
-                <label for="BLACKLIST_STATUS">Blacklist Status :</label>
-                <select id="BLACKLIST_STATUS" name="BLACKLIST_STATUS" disabled>
-                  <option value="">-- Select --</option>
-                  <option value="1">Blacklist</option>
-                  <option value="0">Not_Blacklist</option>
-                </select>
-              </div>
+  <div class="form-group">
+    <label for="BLACKLIST_STATUS">Blacklist Status :</label>
+    <select id="BLACKLIST_STATUS" name="BLACKLIST_STATUS" disabled>
+      <option value="">-- Select --</option>
+      <option value="1">Blacklist</option>
+      <option value="0">Not Blacklist</option>
+    </select>
+  </div>
+</div>
 
               <div class="form-group"><label>Reason For Blacklist :</label><input id="REASON_FOR_BLACKLIST" name="REASON_FOR_BLACKLIST" type="text" readonly></div>
+            <div class="form-row two-col">
               <div class="form-group"><label>Safety Cer. Valid Upto :</label><input id="SAFETY_CERTIFICATION_NO" name="SAFETY_CERTIFICATION_NO" type="text" readonly></div>
               <div class="form-group"><label>Calibration Cer. Valid Upto :</label><input id="CALIBRATION_CERTIFICATION_NO" name="CALIBRATION_CERTIFICATION_NO" type="text" readonly></div>
+            </div>
+            <div class="form-row three-col">
               <div class="form-group"><label>Tare Weight :</label><input id="TARE_WEIGHT" name="TARE_WEIGHT" type="number" readonly></div>
               <div class="form-group"><label>Max Weight :</label><input id="MAX_WEIGHT" name="MAX_WEIGHT" type="number" readonly></div>
               <div class="form-group"><label>Max Fuel Capacity :</label><input id="MAX_FUEL_CAPACITY" name="MAX_FUEL_CAPACITY" type="number" readonly></div>
+             </div> 
             </div>
 
             <!-- RIGHT: DATA_MASTER (editable fields) -->
             <div>
+            
               <div class="form-group"><label>Customer Name :</label><input id="CUSTOMER_NAME" name="CUSTOMER_NAME" type="text" autofocus></div>
               <div class="form-group"><label>Address Line 1 :</label><input id="ADDRESS_LINE_1" name="ADDRESS_LINE_1" type="text"></div>
               <div class="form-group"><label>Address Line 2 :</label><input id="ADDRESS_LINE_2" name="ADDRESS_LINE_2" type="text"></div>
+            
               <div class="form-group">
   <label for="ITEM_DESCRIPTION">Item Description :</label>
   <select id="ITEM_DESCRIPTION" name="ITEM_DESCRIPTION">
     <option value="">-- Select --</option>
-    <option value="Petrol">PETROL</option>
-    <option value="Diesel">DIESEL</option>
-    <option value="Jetkero">CONDENSATE</option>
+    <option value="Lpg">LPG</option>
+    <option value="Propane">PROPANE</option>
+    <option value="Condensate">CONDENSATE</option>
     
   </select>
 </div>
@@ -954,7 +968,7 @@ document.getElementById("assignBayBtn").addEventListener("click", async function
   const truckRegNo = document.getElementById("truckRegInput").value.trim();
   const bayNo = document.getElementById("BAY_NO").value.trim();
   const bayType = document.querySelector('input[name="bayType"]:checked').value;
-  const itemDesc = document.getElementById("ITEM_DESCRIPTION").value.trim(); // Petrol / Diesel / Jetkero
+  const itemDesc = document.getElementById("ITEM_DESCRIPTION").value.trim(); // lpg / propane / condensate
 
   if (!truckRegNo) return alert("Truck Reg No missing");
   if (bayType === "manual" && !bayNo) return alert("Enter Bay No");
@@ -2426,12 +2440,12 @@ router.post("/api/assign-bay", async (req, res) => {
       let bayGroup = [];
 
       // Select bay group based on item description (fuel type)
-      if (itemDesc && itemDesc.toLowerCase() === "petrol") {
-        bayGroup = ["1", "2"];
-      } else if (itemDesc && itemDesc.toLowerCase() === "jetkero") {
-        bayGroup = ["3", "4"];
-      } else if (itemDesc && itemDesc.toLowerCase() === "diesel") {
-        bayGroup = ["1", "2", "3", "4"];
+      if (itemDesc && itemDesc.toLowerCase() === "lpg") {
+        bayGroup = ["1"];
+      } else if (itemDesc && itemDesc.toLowerCase() === "condensate") {
+        bayGroup = ["3"];
+      } else if (itemDesc && itemDesc.toLowerCase() === "propane") {
+        bayGroup = ["2"];
       } else {
         return res
           .status(400)
@@ -2618,12 +2632,12 @@ router.post("/api/reallocate-bay", async (req, res) => {
       let bayGroup = [];
 
       // Select bay group based on item description (fuel type)
-      if (itemDesc && itemDesc.toLowerCase() === "petrol") {
-        bayGroup = ["1", "2"];
-      } else if (itemDesc && itemDesc.toLowerCase() === "jetkero") {
-        bayGroup = ["3", "4"];
-      } else if (itemDesc && itemDesc.toLowerCase() === "diesel") {
-        bayGroup = ["1", "2", "3", "4"];
+      if (itemDesc && itemDesc.toLowerCase() === "lpg") {
+        bayGroup = ["1"];
+      } else if (itemDesc && itemDesc.toLowerCase() === "condensate") {
+        bayGroup = ["3"];
+      } else if (itemDesc && itemDesc.toLowerCase() === "propane") {
+        bayGroup = ["2"];
       } else {
         return res
           .status(400)

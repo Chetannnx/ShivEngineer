@@ -45,15 +45,17 @@ font-family: 'DM Sans', sans-serif;
   color: #616774;
   padding: 10px;
   font-weight: bold;
-  text-align: center;
+  text-align: left;
   white-space: nowrap;
+  padding-left: 3.5rem;
 }
 
 /* Cells */
 td {
+  padding-left: 3.5rem;
   font-family: 'DM Sans', sans-serif;
-  padding: 8px;
-  text-align: center;
+  text-align: left;
+  justify-content: center;
   font-size: 16px;
   white-space: nowrap;        /* ✅ Prevent line break */
   overflow: hidden;           /* ✅ Prevent overflow */
@@ -90,7 +92,7 @@ tr:hover {
 /* ===== STATUS BADGE ===== */
 .status-badge {
   display: inline-block;
-  padding: 6px 14px;
+  padding: 7px 14px;
   border-radius: 20px;
   font-size: 13px;
   font-weight: 600;
@@ -99,24 +101,60 @@ tr:hover {
 
 /* Yellow status (like screenshot) */
 .status-yellow {
-  background-color: #fff7cc;
+  /* background-color: #fff7cc;
   color: #727007;
-  border-color: #ffd966;
+  border-color: #ffd966; */
+  color: #15803d;                 /* green text */
+  background-color: #dcfce7;      /* light green bg */
+  border-color: #86efac;
 }
 
 /*------------------LOADING UNLOADING---------------*/
 .loading-icon {
+  /* color: green;
+  font-size: 28px; */
   color: green;
   font-size: 28px;
+  animation: greenBlink 1s infinite;
+}
+@keyframes greenBlink {
+  0% {
+    opacity: 1;
+    text-shadow: 0 0 3px #00ff00, 0 0 10px #00ff00;
+  }
+  50% {
+    opacity: 0.3;
+    text-shadow: 0 0 2px green;
+  }
+  100% {
+    opacity: 1;
+    text-shadow: 0 0 5px #00ff00, 0 0 10px #00ff00;
+  }
 }
 
 .unloading-icon {
   color: red;
   font-size: 28px;
+  animation: redBlink 1s infinite;
 }
-.type-cell {
-  text-align: center;
+@keyframes redBlink {
+  0% {
+    opacity: 1;
+    text-shadow: 0 0 3px #db6868, 0 0 10px #db6868;
+  }
+  50% {
+    opacity: 0.3;
+    text-shadow: 0 0 2px red;
+  }
+  100% {
+    opacity: 1;
+    text-shadow: 0 0 5px #db6868, 0 0 10px #db6868;
+  }
 }
+/* .type-cell {
+  text-align: left;
+
+} */
 
 .type-wrapper {
   display: inline-flex;
