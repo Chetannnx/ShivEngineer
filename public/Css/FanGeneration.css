@@ -76,7 +76,7 @@ nav ul li a.active::after {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 80px;
-  max-width: 1300px;
+  max-width: 1240px;
   /* margin: 20px auto; */
   margin-left: 63.5px;
   padding: 30px;
@@ -290,7 +290,7 @@ nav ul li a.active::after {
 } 
 
 .btn {
-  grid-column: span 2;
+  /* grid-column: span 2; */
   background: #6571ff;
   color: white;
   border: none;
@@ -298,13 +298,13 @@ nav ul li a.active::after {
   border-radius: 12px;
   cursor: pointer;
   font-size: 1rem;
-  font-weight: bold;
+  /* font-weight: bold; */
   margin-top: 8px;
   transition: background 0.2s ease, transform 0.2s ease;
 }
 
 
-.btn {
+/* .btn {
   position: absolute;
   background-color: #6366f1;
   color: white;
@@ -316,14 +316,164 @@ nav ul li a.active::after {
   transition: all 0.3s ease;
   width: 158px;
   text-align: center;
+} */
+.section-title {
+  grid-column: 1 / -1;   /* 🔥 span both columns */
+  margin: 0 0 0px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: black;
+  display: flex;
+  gap: 6px;
+}
+.section-title1 {
+  grid-column: 1 / -1;   /* 🔥 span both columns */
+  margin: 0 0 18px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: black;
+  display: flex;
+  gap: 6px;
+}
+.section-title2 {
+  grid-column: 1 / -1;   /* 🔥 span both columns */
+  margin: 10px 0 17px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: black;
+  display: flex;
+  gap: 6px;
+}
 
+.section-divider {
+  grid-column: 1 / -1;   /* 🔥 span both columns */
+  width: 100%;
+  height: 1px;
+  background-color: #d1d5db; /* light gray */
+}
+.section-divider1 {
+  grid-column: 1 / -1;   /* 🔥 span both columns */
+  width: 100%;
+  height: 1px;
+  background-color: #d1d5db; /* light gray */
+  margin-bottom: 20px;
+}
+.section-divider2 {
+  grid-column: 1 / -1;   /* 🔥 span both columns */
+  width: 100%;
+  height: 1px;
+  background-color: #d1d5db; /* light gray */
+ margin-bottom: 13px;
+}
+
+
+
+.material-symbols-outlined {
+  font-size: 26px;
+  line-height: 1;
+}
+.Shape .btn {
+  font-family: 'DM Sans', sans-serif;
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  background-color: #8a8686;
+  color: #1f2937;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  justify-content: center;
+  align-items: center;
+   gap: 8px; 
+}
+#assignCardBtn{
+  background-color: #6366f1;
+  color: white;
+  display: flex;
+}
+#ReassignCardBtn{
+  background-color: white;
+  border: 1px solid #ccc;
+  display: flex;
+}
+#FanGeneration{
+  background-color: white;
+  border: 1px solid #ccc;
+  display: flex;
+}
+
+#FanAbortBtn{
+  background-color: white;
+  border: 1px solid #ccc;
+  display: flex;
+}
+#ReAuthBtn{
+  background-color: white;
+  border: 1px solid #ccc;
+  display: flex;
+}
+#reAllocateBtn{
+  background-color: white;
+  border: 1px solid #ccc;
+  display: flex;
+}
+#checkBtn{
+  --tw-bg-opacity: 1;
+  background-color: rgb(254 226 226 / var(--tw-bg-opacity, 1));
+  --tw-text-opacity: 1;
+  color: rgb(220 38 38 / var(--tw-text-opacity, 1));
+  display: flex;
+}
+
+.Shape .btn:hover {
+  background-color: #7a7676;
+}
+
+.Shape .btn.abort {
+  background-color: #fdecec;
+  color: #dc2626;
+}
+
+.Shape {
+  background-color: white;
+  padding: 20px;
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .btn:active {
   transform: translateY(2px);
 }
+.page-layout {
+  display: grid;
+  grid-template-columns: 1fr 464px; /* form | button panel */
+  gap: 20px;
+  align-items: start;
+}
+.Shape {
+   width: 360px; 
+  background-color: white;
+  padding: 20px;
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
 
-#assignCardBtn {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.btn-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+
+/* #assignCardBtn {
   top: 260px;
   right: 100px;
   background-color: rgb(128, 122, 122);
@@ -362,7 +512,7 @@ nav ul li a.active::after {
   top: 560px;
   right: 100px;
   background-color: rgb(128, 122, 122);
-}
+} */
 
 .btn:disabled {
     background-color: #ccc !important;  /* Gray background */
@@ -377,33 +527,32 @@ nav ul li a.active::after {
     cursor: pointer;
   }
 
-.three-inputs {
-  display: flex;
-  position: absolute;
+/* .three-inputs {
+  display: flex;;
   left: 61.3%;
   right: 10px;
   width: 100px;
   gap: 5px;
-}
+} */
 
-.three-inputs input#MIN {
+/* .three-inputs input#MIN {
   width: 65px;
-  /* small for min */
+  /* small for min 
   text-align: center;
-}
+} */
 
-.three-inputs input#WEIGHT_TO_FILLED {
+/* .three-inputs input#WEIGHT_TO_FILLED {
   flex: 8;
-  /* takes remaining space, editable */
+  /* takes remaining space, editable 
   min-width: 148px;
   text-align: center;
-}
+} */
 
-.three-inputs input#MAX {
+/* .three-inputs input#MAX {
   width: 65px;
-  /* slightly bigger than MIN */
+  /* slightly bigger than MIN 
   text-align: center;
-}
+} */
 
 
 /* Overlay */
@@ -893,3 +1042,30 @@ input[readonly] {
   padding: 10px;
   font-size: 14px;
 }
+
+
+/*----------weight to filled-------------*/
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* 3 inputs in one row */
+.form-group.three-inputs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+
+}
+
+/* make label span full width */
+.form-group.three-inputs label {
+  grid-column: 1 / -1;
+}
+
+/* inputs styling (optional) */
+.form-group.three-inputs input {
+  padding: 10px;
+  font-size: 14px;
+}
+

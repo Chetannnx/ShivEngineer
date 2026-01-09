@@ -14,6 +14,7 @@ router.get("/", async (req, res) => {
           <title>Fan Generation</title>
           <meta charset="UTF-8" />
           <link href="https://fonts.googleapis.com/css?family=DM Sans" rel="stylesheet">
+          <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
           <link rel="stylesheet" href="/Css/FanGeneration.css">
           <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
         </head>
@@ -21,7 +22,7 @@ router.get("/", async (req, res) => {
           <div id="navbar"></div>
 
           <h2>
-            <i class="fa-solid fa-truck-fast" style="font-size: 21px;"></i>
+            <i class="fa-solid fa-truck-fast" style="font-size: 21px; color:#6366f1"></i>
             TRUCK DATA ENTRY
           </h2>
 
@@ -71,24 +72,18 @@ router.get("/", async (req, res) => {
           </div>
 
  
-    <button type="button" id="assignCardBtn" class="btn">Assign Card</button>
-    <button type="button" id="ReassignCardBtn" class="btn">Re AssignCard</button>
-    <button type="button" id="FanGeneration" class="btn">Fan Generation</button>
-    <button type="button" id="FanAbortBtn" class="btn">Fan Abort</button>
-    <button type="button" id="ReAuthBtn" class="btn">Re Authorized</button>
-    <button type="button" id="reAllocateBtn" class="btn" onclick="openReallocatePopup()">Re Allocate</button>
-    <button type="button" id="checkBtn" class="btn">Abort</button>
-
     
 
     <p id="result"></p>
 
 
-  
+  <div class="page-layout">
           <div class="form-container">
             <!-- LEFT: CARD_MASTER from Truck Master -->
             <div>
             <div class="form-row two-col">
+            <h3 class="section-title"><span style="color:#6366f1;" class="material-symbols-outlined">feedback</span>Truck Details</h3>
+            <div class="section-divider"></div>
               <div class="form-group"><label>Truck Number :</label><input id="TRUCK_REG_NO" name="TRUCK_REG_NO" type="text" readonly></div>
               <div class="form-group"><label>Trailer No :</label><input id="TRAILER_NO" name="TRAILER_NO" type="text" readonly></div>
             </div>
@@ -134,7 +129,8 @@ router.get("/", async (req, res) => {
 
             <!-- RIGHT: DATA_MASTER (editable fields) -->
             <div>
-            
+              <h3 class="section-title1"><span style="color:#6366f1;" class="material-symbols-outlined">receipt_long</span>Transaction Details</h3>
+              <div class="section-divider1"></div>
               <div class="form-group"><label>Customer Name :</label><input id="CUSTOMER_NAME" name="CUSTOMER_NAME" type="text" autofocus></div>
               <div class="form-group"><label>Address Line 1 :</label><input id="ADDRESS_LINE_1" name="ADDRESS_LINE_1" type="text"></div>
               <div class="form-group"><label>Address Line 2 :</label><input id="ADDRESS_LINE_2" name="ADDRESS_LINE_2" type="text"></div>
@@ -151,17 +147,33 @@ router.get("/", async (req, res) => {
 </div>
               <div class="form-group"><label>Fan Time Out :</label><input id="FAN_TIME_OUT" name="FAN_TIME_OUT" type="text"></div>
               <div class="form-group three-inputs">
-  <label>Weight Filled:</label>
-  <input type="text" id="MIN" name="MAX1" placeholder="Min" readonly>
-  <input type="number" id="WEIGHT_TO_FILLED" name="WEIGHT_TO_FILLED" placeholder="Weight to Fill">
-  <input type="text" id="MAX" name="MAX2" placeholder="Max" readonly>
-</div>
+              <h3 class="section-title2"><span style="color:#6366f1;" class="material-symbols-outlined">scale</span>Weights & Measurement</h3>
+              <div class="section-divider2"></div>
+                  <label>Weight Filled:</label>
+                  <input type="text" id="MIN" name="MAX1" placeholder="Min" readonly>
+                  <input type="number" id="WEIGHT_TO_FILLED" name="WEIGHT_TO_FILLED" placeholder="Weight to Fill">
+                  <input type="text" id="MAX" name="MAX2" placeholder="Max" readonly>
+              </div>
 
 
             </div>
             
           </div>
-          
+  <div class="Shape">
+    <button type="button" id="assignCardBtn" class="btn"><span class="material-symbols-outlined">assignment_ind</span>Assign Card</button>
+    <button type="button" id="ReassignCardBtn" class="btn"><span class="material-symbols-outlined">cached</span>Re AssignCard</button>
+    <div class="btn-row">
+      <button type="button" id="FanGeneration" class="btn"><span class="material-symbols-outlined">cached</span>Fan Generation</button>
+      <button type="button" id="FanAbortBtn" class="btn"><span class="material-symbols-outlined">cancel</span>Fan Abort</button>
+    </div>
+    <div class="btn-row">
+      <button type="button" id="ReAuthBtn" class="btn"><span class="material-symbols-outlined">verified_user</span>Re Authorized</button>
+      <button type="button" id="reAllocateBtn" class="btn" onclick="openReallocatePopup()"><span class="material-symbols-outlined">move_to_inbox</span>Re Allocate</button>
+    </div>
+    <button type="button" id="checkBtn" class="btn"><span class="material-symbols-outlined">block
+</span>Abort</button>
+  </div>
+ </div>         
 
 
           <!-- Fan Generation Popup -->
@@ -538,17 +550,17 @@ async function fetchTruckData() {
   //find Using URL
   //==============
 //     (function () {
-//   // Parse query parameters from URL
+//    Parse query parameters from URL
 //   const params = new URLSearchParams(window.location.search);
 //   const cardNo = params.get('CARD_NO');
 
-//   // If CARD_NO is present, fill the input and optionally trigger fetch
+//   If CARD_NO is present, fill the input and optionally trigger fetch
 //   if (cardNo) {
 //     const input = document.getElementById('CARD_NO');
 //     if (input) {
 //       input.value = cardNo;
 
-//       // Optional: call your fetch function to load related data
+//       Optional: call your fetch function to load related data
 //       if (typeof fetchTruckData === "function") {
 //         fetchTruckData();
 //       }
@@ -1663,7 +1675,7 @@ function confirmPopup(message) {
 // document.addEventListener("DOMContentLoaded", () => setBtnState("LOADED_ONLY_ASSIGN")); // will flip once data loads
 // </script>
 // <script>
-// // helper to enable/disable buttons in one place
+// helper to enable/disable buttons in one place
 // function setBtnState(state){
 //   const $ = (id) => document.getElementById(id);
 //   const btns = {
@@ -1676,10 +1688,10 @@ function confirmPopup(message) {
 //     checkAbort: $("checkBtn")
 //   };
 
-//   // default: all disabled
+//   default: all disabled
 //   Object.values(btns).forEach(b => b && (b.disabled = true));
 
-//   // states
+//   states
 //   if (state === "LOADED_ONLY_ASSIGN") {
 //     btns.assign.disabled = false;
 //   }
@@ -1698,9 +1710,9 @@ function confirmPopup(message) {
 //   }
 // }
 
-// // decide state from current data
+// /decide state from current data
 // function decideStateFromData(data){
-//   // PROCESS_STATUS: -1 Registered, 1 Reported, 2 Fan Generation, 4 Reauthorised, 13 Aborted
+//   PROCESS_STATUS: -1 Registered, 1 Reported, 2 Fan Generation, 4 Reauthorised, 13 Aborted
 //   const ps = Number(data?.PROCESS_STATUS ?? -1);
 //   const hasCard = !!data?.CARD_NO;
 
