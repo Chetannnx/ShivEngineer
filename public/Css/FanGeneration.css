@@ -1069,3 +1069,15 @@ input[readonly] {
   font-size: 14px;
 }
 
+.bg-primary\/10 {
+    background-color: rgb(99 102 241 / 0.1);
+}
+.p-2 {
+    padding: 0.5rem;
+}
+.rounded-lg {
+    border-radius: 0.5rem;
+}
+.page-title{
+  gap: 8px;
+}

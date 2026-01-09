@@ -12,6 +12,7 @@ router.get("/", (req, res) => {
   <title>Entry Weight Bridge</title>
   <link rel="stylesheet" href="/Css/EntryWeight.css">
   <link href='https://fonts.googleapis.com/css?family=DM Sans' rel='stylesheet'>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 </head>
@@ -21,45 +22,68 @@ router.get("/", (req, res) => {
   <img src="/Icons/login-.png"">
   ENTRY WEIGH BRIDGE
 </h2>
+<div class="entry-layout">
 
- <div class="form-container">
-  <!-- LEFT SIDE -->
-  <div class="form-left">
-    <div class="form-group">
-      <label for="CARD_NO">Card Number :</label>
-      <input id="card_no" name="CARD_NO" type="text" placeholder="Enter Card Number">
+  <!-- MAIN PANEL -->
+  <div class="form-container">
+    <div class="form-left">
+      <h3 class="section-title">
+        <span class="material-symbols-outlined" style="color:#6366f1;">feedback</span>
+        Identification
+      </h3>
+      <div class="section-divider"></div>
+
+      <div class="form-row two-col">
+        <div class="form-group">
+          <label>Card Number :</label>
+          <input id="card_no" type="text" placeholder="Enter Card Number">
+        </div>
+
+        <div class="form-group">
+          <label>Truck Number :</label>
+          <input id="truck_reg" type="text" readonly>
+        </div>
+      </div>
+
+      <div class="form-row two-col">
+        <div class="form-group">
+          <label>Measured Weight :</label>
+          <input id="max_weight_entry" type="text">
+        </div>
+
+        <div class="form-group">
+          <label>Process Type :</label>
+          <input id="process_type" type="text" readonly>
+        </div>
+      </div>
     </div>
 
-    <div class="form-group">
-      <label for="TRUCK_REG_NO">Truck Number :</label>
-      <input id="truck_reg" name="TRUCK_REG_NO" type="text" readonly>
-    </div>
-
-    <div class="form-group">
-      <label for="MAX_WEIGHT_ENTRY">Measured Weight :</label>
-      <input id="max_weight_entry" name="MAX_WEIGHT_ENTRY" type="text">
+    <div class="button-container">
+      <button id="acceptBtn">ACCEPT</button>
     </div>
   </div>
 
-  <!-- RIGHT SIDE -->
-  <div class="form-right">
-    <div class="form-group">
-      <label for="PROCESS_TYPE">Process Type :</label>
-      <input id="process_type" name="PROCESS_TYPE" type="text" readonly>
-    </div>
+  <!-- NOTE PANEL (RIGHT SIDE) -->
+  <div class="form-note">
+    <p class="note-text">
+      <span class="note-title">
+        <span class="material-symbols-outlined">download</span> LOADING</span>
+      <span class="note-desc">
+        Measured Weight will be <strong>Tare Weight</strong>
+      </span>
+    </p>
+    <p class="note-text1">
+      <span class="note-title1">
+        <span class="material-symbols-outlined">upload</span> UNLOADING
+      </span>
+      <span class="note-desc1">
+        Measured Weight will be <strong>Gross Weight</strong>
+      </span>
+    </p>
+  </div>
 
-    <div class="form-note">
-      <p>
-        (*) For Loading – Measured Weight will be <strong>Tare Weight</strong><br>
-        For Unloading – Measured Weight will be <strong>Gross Weight</strong>
-      </p>
-    </div>
-  </div>
-   <!-- ✅ ACCEPT BUTTON inside the form-container -->
-  <div class="button-container">
-    <button id="acceptBtn">ACCEPT</button>
-  </div>
-</div>
+</div> <!-- ✅ ONLY ONE closing -->
+
 
 
 

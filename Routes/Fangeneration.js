@@ -21,8 +21,10 @@ router.get("/", async (req, res) => {
         <body>
           <div id="navbar"></div>
 
-          <h2>
+          <h2 class="page-title">
+          <span class="p-2 bg-primary/10 rounded-lg text-primary">
             <i class="fa-solid fa-truck-fast" style="font-size: 21px; color:#6366f1"></i>
+            </span>
             TRUCK DATA ENTRY
           </h2>
 
