@@ -19,26 +19,26 @@ router.get("/", (req, res) => {
 <body>
   <div id="navbar"></div>
   <h2>
-  <img src="/Icons/login-.png"">
-  ENTRY WEIGH BRIDGE
-</h2>
+  <span class="p-2 bg-primary/10 rounded-lg text-primary"><span class="material-symbols-outlined">exit_to_app</span></span>ENTRY WEIGH BRIDGE</h2>
 <div class="entry-layout">
 
   <!-- MAIN PANEL -->
   <div class="form-container">
     <div class="form-left">
       <h3 class="section-title">
-        <span class="material-symbols-outlined" style="color:#6366f1;">feedback</span>
+        <span class="material-symbols-outlined" style="color:#6366f1; --tw-bg-opacity: 1;
+              background-color: rgb(219 234 254 / var(--tw-bg-opacity, 1));
+              border-radius: 999px;
+              color:#3b5bfd;
+              padding: 5px 5px; ">badge</span>
         Identification
       </h3>
       <div class="section-divider"></div>
-
-      <div class="form-row two-col">
-        <div class="form-group">
-          <label>Card Number :</label>
-          <input id="card_no" type="text" placeholder="Enter Card Number">
-        </div>
-
+        <div class="form-row two-col">
+          <div class="form-group">
+            <label>Card Number :</label>
+            <input id="card_no" type="text" placeholder="Enter Card Number">
+          </div>
         <div class="form-group">
           <label>Truck Number :</label>
           <input id="truck_reg" type="text" readonly>
@@ -50,7 +50,6 @@ router.get("/", (req, res) => {
           <label>Measured Weight :</label>
           <input id="max_weight_entry" type="text">
         </div>
-
         <div class="form-group">
           <label>Process Type :</label>
           <input id="process_type" type="text" readonly>
@@ -67,14 +66,22 @@ router.get("/", (req, res) => {
   <div class="form-note">
     <p class="note-text">
       <span class="note-title">
-        <span class="material-symbols-outlined">download</span> LOADING</span>
+        <span class="material-symbols-outlined" style="--tw-bg-opacity: 1;
+          background-color: rgb(219 234 254 / var(--tw-bg-opacity, 1));
+          border-radius: 999px;
+          color:#3b5bfd;
+          padding: 5px 5px; ">download</span> LOADING</span>
       <span class="note-desc">
         Measured Weight will be <strong>Tare Weight</strong>
       </span>
     </p>
     <p class="note-text1">
       <span class="note-title1">
-        <span class="material-symbols-outlined">upload</span> UNLOADING
+        <span class="material-symbols-outlined" style="--tw-bg-opacity: 1;
+          background-color: rgb(219 234 254 / var(--tw-bg-opacity, 1));
+          border-radius: 999px;
+          color:#3b5bfd;
+          padding: 5px 5px; ">upload</span> UNLOADING
       </span>
       <span class="note-desc1">
         Measured Weight will be <strong>Gross Weight</strong>

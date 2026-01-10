@@ -6,10 +6,28 @@ body {
 }
 
 h2 {
-  font-family: 'DM Sans', sans-serif;
   text-align: left;
-  font-size: 24px;
-  margin-left: 76px;
+    font-family: 'DM Sans', sans-serif;
+    max-width: 1700px;
+    margin: 0 auto;
+    padding-top: 28px;
+    padding-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.rounded-lg {
+    border-radius: 0.5rem;
+}
+.p-2 {
+    padding: 0.5rem;
+}
+.bg-primary\/10 {
+    background-color: rgb(99 102 241 / 0.1);
+}
+.text-primary {
+    --tw-text-opacity: 1;
+    color: rgb(99 102 241 / var(--tw-text-opacity, 1));
 }
 
 h2 img {
@@ -85,7 +103,6 @@ nav ul li a.active::after {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   max-width: 1000px;
   margin-left: 26px;
-  margin-top: 2%;
   position: relative; 
   height: auto;
 }
@@ -200,11 +217,10 @@ nav ul li a.active::after {
 
   display: flex;
   flex-direction: column;
-  gap: 45px;
+  gap: 35px;
 
   font-size: 14px;
   color: #333;
-  margin-top: 5%;
   margin-left: 4%;
   width: 662px;
   height: 278px;
@@ -233,19 +249,30 @@ input[readonly], .row .value.readonly{
 }
 
 .note-text {
+  --tw-bg-opacity: 0.3;
+  background-color: rgb(219 234 254 / var(--tw-bg-opacity, 0.5));
+  margin-top: 30px;
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+  color: #374151;
+  padding-top: 10px;
+  padding-bottom: 14px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+.note-text1 {
+  --tw-bg-opacity: 0.3;
+  background-color: rgb(219 234 254 / var(--tw-bg-opacity, 0.5));
   margin: 0;
   display: flex;
   flex-direction: column;
   font-size: 14px;
   color: #374151;
   padding-top: 10px;
-}
-.note-text1 {
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  font-size: 14px;
-  color: #374151;
+  padding-bottom: 14px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
 }
 
 /* LOADING / UNLOADING */
@@ -287,14 +314,13 @@ input[readonly], .row .value.readonly{
 .note-desc1 strong {
   color: #1d4ed8;
 }
-.material-symbols-outlined{
+/* .material-symbols-outlined{
   --tw-bg-opacity: 1;
   background-color: rgb(219 234 254 / var(--tw-bg-opacity, 1));
   border-radius: 999px;
   color:#3b5bfd;
   padding: 5px 5px; 
-
-}
+} */
 
 .section-title {
   margin: 0 0 10px 0;
@@ -303,6 +329,7 @@ input[readonly], .row .value.readonly{
   color: black;
   display: flex;
   gap: 6px;
+  align-items: center;
 }
 .entry-layout {
   display: grid;

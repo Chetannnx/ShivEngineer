@@ -22,10 +22,9 @@ router.get("/", async (req, res) => {
           <div id="navbar"></div>
 
           <h2 class="page-title">
-          <span class="p-2 bg-primary/10 rounded-lg text-primary">
-            <i class="fa-solid fa-truck-fast" style="font-size: 21px; color:#6366f1"></i>
-            </span>
-            TRUCK DATA ENTRY
+          <span class="p-2 bg-primary/10 rounded-lg text-primary"><span class="material-symbols-outlined">delivery_truck_speed</span></span>
+          TRUCK DATA ENTRY
+          
           </h2>
 
           <!-- Search Bar -->

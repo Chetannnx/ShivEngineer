@@ -15,6 +15,10 @@ font-family: 'DM Sans', sans-serif;
   margin: 0 auto;
   padding: 27px 22px;
 }
+.text-primary {
+    --tw-text-opacity: 1;
+    color: rgb(99 102 241 / var(--tw-text-opacity, 1));
+}
 
 /* === NAVBAR STYLES === */
 nav {

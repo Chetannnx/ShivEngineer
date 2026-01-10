@@ -12,67 +12,112 @@ router.get("/", (req, res) => {
   <title>Exit Weigh Bridge</title>
   <link rel="stylesheet" href="/Css/ExitWeigh.css">
   <link href='https://fonts.googleapis.com/css?family=DM Sans' rel='stylesheet'>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 </head>
 <body>
   <div id="navbar"></div>
   <h2>
-  <img src="/Icons/login-.png"">
-  EXIT WEIGH BRIDGE
-</h2>
+  <span class="p-2 bg-primary/10 rounded-lg text-primary"><span class="material-symbols-outlined">exit_to_app</span></span>EXIT WEIGH BRIDGE</h2>
 
+
+<div class="entry-layout">
 <div class="form-container">
   <!-- LEFT SIDE -->
   <div class="form-left">
-    <div class="form-group">
-      <label for="CARD_NO">Card Number :</label>
-      <input id="card_no" name="CARD_NO" type="text" placeholder="Enter Card Number">
+  <h3 class="section-title">
+        <span class="material-symbols-outlined" style="color:#6366f1; --tw-bg-opacity: 1;
+              background-color: rgb(219 234 254 / var(--tw-bg-opacity, 1));
+              border-radius: 999px;
+              color:#3b5bfd;
+              padding: 5px 5px; ">badge</span>
+        Identification
+      </h3>
+      <div class="section-divider"></div>
+    <div class="form-row two-col" style="margin-bottom: 10px;">
+      <div class="form-group">
+        <label for="CARD_NO">Card Number :</label>
+        <input id="card_no" name="CARD_NO" type="text" placeholder="Enter Card Number">
+      </div>
+
+      <div class="form-group">
+        <label for="TRUCK_REG_NO">Truck Number :</label>
+        <input id="truck_reg" name="TRUCK_REG_NO" type="text" readonly>
+      </div>
+    </div>
+    <h3 class="section-title">
+        <span class="material-symbols-outlined" style="color:#6366f1; --tw-bg-opacity: 1;
+              background-color: rgb(219 234 254 / var(--tw-bg-opacity, 1));
+              border-radius: 999px;
+              color:#3b5bfd;
+              padding: 5px 5px; ">analytics</span>
+        Measurement Data
+      </h3>
+      <div class="section-divider"></div>
+    <div class="form-row two-col">
+      <div class="form-group">
+        <label for="MEASURED_WEIGHT">Measured Weight :</label>
+        <input id="measured_weight" name="MEASURED_WEIGHT" type="text">
+      </div>
+
+      <div class="form-group">
+        <label for="SEAL_NO">SEAL NO :</label>
+        <input id="seal_no" name="SEAL_NO" type="text" autofocus>
+      </div>
     </div>
 
-    <div class="form-group">
-      <label for="TRUCK_REG_NO">Truck Number :</label>
-      <input id="truck_reg" name="TRUCK_REG_NO" type="text" readonly>
-    </div>
-
-    <div class="form-group">
-      <label for="MEASURED_WEIGHT">Measured Weight :</label>
-      <input id="measured_weight" name="MEASURED_WEIGHT" type="text">
-    </div>
-
-    <div class="form-group">
-      <label for="SEAL_NO">SEAL NO :</label>
-      <input id="seal_no" name="SEAL_NO" type="text" autofocus>
-    </div>
+    <div class="form-row two-col">
+  <div class="form-group">
+    <label for="PROCESS_TYPE">Process Type :</label>
+    <input id="process_type" name="PROCESS_TYPE" type="text" readonly>
   </div>
 
-  <!-- RIGHT SIDE -->
-  <div class="form-right">
-    <div class="form-group">
-      <label for="PROCESS_TYPE">Process Type :</label>
-      <input id="process_type" name="PROCESS_TYPE" type="text" readonly>
-    </div>
-
-    <div class="form-note">
-      <p>
-        (*)
-        For Loading – Measured Weight will be <strong>Tare Weight</strong><br>
-        For Unloading – Measured Weight will be <strong>Gross Weight</strong>
-      </p>
-    </div>
-    <div class="form-group">
-      <select id="truckSealingreq" disabled>
+  <div class="form-group">
+    <label>&nbsp;</label>  <!-- keeps alignment with left label -->
+    <select id="truckSealingreq" disabled>
       <option>--Select--</option>
       <option value="1">YES</option>
       <option value="0">NO</option>
-      </select>
-    </div>
+    </select>
   </div>
+</div>
+  </div>
+
+  <!-- RIGHT SIDE -->
    <!-- ✅ ACCEPT BUTTON inside the form-container -->
   <div class="button-container">
     <button id="acceptBtn">ACCEPT</button>
   </div>
 </div>
+
+  <!-- NOTE PANEL (RIGHT SIDE) -->
+  <div class="form-note">
+    <p class="note-text">
+      <span class="note-title">
+        <span class="material-symbols-outlined" style="--tw-bg-opacity: 1;
+          background-color: rgb(219 234 254 / var(--tw-bg-opacity, 1));
+          border-radius: 999px;
+          color:#3b5bfd;
+          padding: 5px 5px; ">download</span> LOADING</span>
+      <span class="note-desc">
+        Measured Weight will be <strong>Tare Weight</strong>
+      </span>
+    </p>
+    <p class="note-text1">
+      <span class="note-title1">
+        <span class="material-symbols-outlined" style="--tw-bg-opacity: 1;
+          background-color: rgb(219 234 254 / var(--tw-bg-opacity, 1));
+          border-radius: 999px;
+          color:#3b5bfd;
+          padding: 5px 5px; ">upload</span> UNLOADING
+      </span>
+      <span class="note-desc1">
+        Measured Weight will be <strong>Gross Weight</strong>
+      </span>
+    </p>
+  </div>
+</div> <!-- ✅ ONLY ONE closing -->
 
    <div id="overlay"></div>
 <div id="popupMsg" style="
