@@ -30,6 +30,7 @@ router.get("/", async (req, res) => {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://fonts.googleapis.com/css?family=DM Sans" rel="stylesheet">
   <link rel="stylesheet" href="/Css/InvoiceGeneration.css">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
   <!-- JS libraries (CDN) -->
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
@@ -41,9 +42,8 @@ router.get("/", async (req, res) => {
 <body style="font-family: 'DM Sans', sans-serif;">
   <div id="navbar"></div>
 
-  <h2 style="text-align:center;">
-    <i class="fa-solid fa-receipt" style="font-size:21px;"></i>
-    INVOICE GENERATION
+  <h2>
+    <span class="p-2 bg-primary/10 rounded-lg text-primary"><span class="material-symbols-outlined">receipt</span></span>INVOICE GENERATION
   </h2>
 
   <!-- TOP BAR -->
@@ -88,15 +88,65 @@ router.get("/", async (req, res) => {
   <!-- LEFT / RIGHT -->
   <section class="grid">
     <!-- LEFT -->
-    <div class="card">
       <div class="row"><div class="label">Trailer Number :</div><input id="T_TRAILER_NUMBER" type="text" readonly></div>
-      <div class="row"><div class="label">Owner Name :</div><input id="T_OWNER_NAME" type="text" readonly></div>
-      <div class="row"><div class="label">Driver Name :</div><input id="T_DRIVER_NAME" type="text" readonly></div>
-      <div class="row"><div class="label">Helper Name :</div><input id="T_HELPER_NAME" type="text" readonly></div>
+      <div class="form-row two-col">
+        <div class="row"><div class="label">Blacklist Status :</div>
+          <select id="T_BLACKLIST_STATUS" disabled>
+            <option>-- Select --</option>
+            <option value="1">Blacklist</option>
+            <option value="0">Not_Blacklist</option>
+          </select>
+        </div>
+        <div class="row"><div class="label">Reason For Blacklist :</div><input id="T_BLACKLIST_REASON" type="text" readonly></div>
+       </div> 
       <div class="row"><div class="label">Carrier Company :</div><input id="T_CARRIER_COMPANY" type="text" readonly></div>
+        <div class="form-row two-col">
+          <div class="row"><div class="label">Safety Cer. Valid Upto :</div><input id="T_SAFETY_CERT_VALID_UPTO" type="date" readonly></div>
+          <div class="row"><div class="label">Calibration Cer. Valid Upto :</div><input id="T_CALIB_CERT_VALID_UPTO" type="date" readonly></div>
+        </div>  
+
+        <div class="form-row two-col">
+          <div class="row"><div class="label">Owner Name :</div><input id="T_OWNER_NAME" type="text" readonly></div> 
+          <div class="row"><div class="label">Driver Name :</div><input id="T_DRIVER_NAME" type="text" readonly></div>
+        </div>
+
+      <div class="form-row two-col">
+        <div class="row"><div class="label">Truck Sealing Requirement :</div>
+          <select id="T_TRUCK_SEALING_REQUIREMENT" disabled>
+            <option>-- Select --</option>
+            <option value="1">Yes</option>
+            <option value="0">No</option>
+          </select>
+        </div>
+        <div class="row"><div class="label">Seal No :</div><input id="D_SEAL_NO" type="text" readonly></div>
+      </div>
+
+       
+      <div class="row"><div class="label">Helper Name :</div><input id="T_HELPER_NAME" type="text" readonly></div>
+
+      <div class="form-row two-col">
+        <div class="row"><div class="label">Tare Weight at Entry :</div><input id="D_TARE_WEIGHT_AT_ENTRY" type="number" min="0" step="0.01" readonly></div>
+        <div class="row"><div class="label">Gross Weight at Exit :</div><input id="D_GROSS_WEIGHT_AT_EXIT" type="number" min="0" step="0.01" readonly></div>
+      </div>
+
       <div class="row"><div class="label">Customer Name :</div><input id="D_CUSTOMER_NAME" type="text" readonly></div>
-      <div class="row"><div class="label">Customer Address Line1 :</div><input id="D_CUSTOMER_ADDRESS_LINE1" type="text" readonly></div>
-      <div class="row"><div class="label">Customer Address Line2 :</div><input id="D_CUSTOMER_ADDRESS_LINE2" type="text" readonly></div>
+
+      <div class="form-row two-col">
+        <div class="row"><div class="label">Tare Weight at Entry Time :</div><input id="D_TARE_WEIGHT_AT_ENTRY_TIME" type="text" readonly></div>
+        <div class="row"><div class="label">Gross Weight at Exit Time :</div><input id="D_GROSS_WEIGHT_AT_EXIT_TIME" type="text" readonly></div>
+      </div>
+
+        <div class="form-row two-col">
+          <div class="row"><div class="label">Customer Address Line1 :</div><input id="D_CUSTOMER_ADDRESS_LINE1" type="text" readonly></div>
+          <div class="row"><div class="label">Customer Address Line2 :</div><input id="D_CUSTOMER_ADDRESS_LINE2" type="text" readonly></div>
+        </div>  
+
+        <div class="form-row two-col">
+          <div class="row"><div class="label">Net Weight :</div><input id="D_NET_WEIGHT" type="number" min="0" step="0.01" readonly></div>
+          <div class="row"><div class="label">Actual Quantity Filled :</div><input id="D_ACTUAL_WEIGHT_AT_BAY" type="text" readonly></div>
+        </div>
+
+      
       <div class="row"><div class="label">Item Description :</div>
         <select id="D_ITEM_DESCRIPTION" disabled>
           <option value="">-- Select --</option>
@@ -105,42 +155,35 @@ router.get("/", async (req, res) => {
           <option value="Jetkero">Jetkero</option>
         </select>
       </div>
+
+
       <div class="row"><div class="label">Rate :</div><input id="D_RATE" type="number" min="0" step="0.01" placeholder="Enter Rate" ></div>
-      <div class="row"><div class="label">Fan Timeout :</div><input id="D_FAN_TIMEOUT" type="text" readonly></div>
-      <div class="row"><div class="label">Tare Weight :</div><input id="T_TARE_WEIGHT" type="number" min="0" step="0.01" readonly></div>
-      <div class="row"><div class="label">Max Weight :</div><input id="T_MAX_WEIGHT" type="number" min="0" step="0.01" readonly></div>
-      <div class="row"><div class="label">Max Fuel Capacity :</div><input id="T_MAX_FUEL_CAPACITY" type="number" min="0" step="0.01" readonly></div>
-    </div>
+
+      <div class="form-row two-col">
+        <div class="row"><div class="label">Tare Weight :</div><input id="T_TARE_WEIGHT" type="number" min="0" step="0.01" readonly></div>
+        <div class="row"><div class="label">Max Weight :</div><input id="T_MAX_WEIGHT" type="number" min="0" step="0.01" readonly></div>
+      </div>
+
+      <div class="form-row two-col">
+        <div class="row"><div class="label">Max Fuel Capacity :</div><input id="T_MAX_FUEL_CAPACITY" type="number" min="0" step="0.01" readonly></div>
+        <div class="row"><div class="label">Fan Timeout :</div><input id="D_FAN_TIMEOUT" type="text" readonly></div>
+      </div>
+
+      
+      
 
     <!-- RIGHT -->
-    <div class="card">
-      <div class="row"><div class="label">Blacklist Status :</div>
-        <select id="T_BLACKLIST_STATUS" disabled>
-          <option>-- Select --</option>
-          <option value="1">Blacklist</option>
-          <option value="0">Not_Blacklist</option>
-        </select>
-      </div>
-      <div class="row"><div class="label">Reason For Blacklist :</div><input id="T_BLACKLIST_REASON" type="text" readonly></div>
-      <div class="row"><div class="label">Safety Cer. Valid Upto :</div><input id="T_SAFETY_CERT_VALID_UPTO" type="date" readonly></div>
-      <div class="row"><div class="label">Calibration Cer. Valid Upto :</div><input id="T_CALIB_CERT_VALID_UPTO" type="date" readonly></div>
-      <div class="row"><div class="label">Truck Sealing Requirement :</div>
-        <select id="T_TRUCK_SEALING_REQUIREMENT" disabled>
-          <option>-- Select --</option>
-          <option value="1">Yes</option>
-          <option value="0">No</option>
-        </select>
-      </div>
-      <div class="row"><div class="label">Seal No :</div><input id="D_SEAL_NO" type="text" readonly></div>
-      <div class="row"><div class="label">Net Weight :</div><input id="D_NET_WEIGHT" type="number" min="0" step="0.01" readonly></div>
-      <div class="row"><div class="label">Actual Quantity Filled :</div><input id="D_ACTUAL_WEIGHT_AT_BAY" type="text" readonly></div>
-      <div class="row"><div class="label">Tare Weight at Entry :</div><input id="D_TARE_WEIGHT_AT_ENTRY" type="number" min="0" step="0.01" readonly></div>
-      <div class="row"><div class="label">Gross Weight at Exit :</div><input id="D_GROSS_WEIGHT_AT_EXIT" type="number" min="0" step="0.01" readonly></div>
-      <div class="row"><div class="label">Tare Weight at Entry Time :</div><input id="D_TARE_WEIGHT_AT_ENTRY_TIME" type="text" readonly></div>
-      <div class="row"><div class="label">Gross Weight at Exit Time :</div><input id="D_GROSS_WEIGHT_AT_EXIT_TIME" type="text" readonly></div>
+      
+      
+      
+      
+      
+      
+      
+      
       <div class="row"><div class="label">Payment Due Date :</div><input id="DERIVED_DUE" type="date"></div>
       <div class="row"><div class="label">Amount To Be Paid :</div><input id="DERIVED_AMOUNT" type="text" placeholder="₹" readonly></div>
-    </div>
+      <div class="row"><div class="label">Fan Timeout :</div><input id="D_FAN_TIMEOUT" type="text" readonly></div>
   </section>
 
   <button id="invoiceBtn" type="button">Invoice Generation</button>
