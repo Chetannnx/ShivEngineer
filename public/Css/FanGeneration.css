@@ -83,7 +83,7 @@ nav ul li a.active::after {
   gap: 80px;
   max-width: 1240px;
   /* margin: 20px auto; */
-  margin-left: 63.5px;
+  margin-left: 75.5px;
   padding: 30px;
   background: rgba(255, 255, 255);
   /* border: 1px solid #ddd; */
@@ -456,7 +456,7 @@ nav ul li a.active::after {
 }
 .page-layout {
   display: grid;
-  grid-template-columns: 1fr 464px; /* form | button panel */
+  grid-template-columns: 1fr 481px; /* form | button panel */
   gap: 20px;
   align-items: start;
 }

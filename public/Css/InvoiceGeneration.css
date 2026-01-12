@@ -10,7 +10,7 @@ h2{
     font-family: 'DM Sans', sans-serif;
     max-width: 1700px;
     margin: 0 auto;
-    padding: 27px 22px;
+    padding: 20px 22px;
     align-items: center;
     display: flex;
     gap: 3px;
@@ -163,10 +163,10 @@ nav ul li a.active{ color:#2563eb; }
   display: grid;
   grid-template-columns: 1fr 1fr;  /* two columns, one grid */
   gap: 14px 40px;
-  max-width: 1400px;
-  margin: 0 0 0 63px;
+  max-width: 1661px;
+  margin: 0 0 0 89px;
   background: white;
-  margin-top: 2%;
+  margin-top: 1%;
   padding: 40px;
   border-radius: 19px;
 }
@@ -202,19 +202,19 @@ nav ul li a.active{ color:#2563eb; }
   padding:8px 10px; font-size:14px; display:flex; align-items:center;
 }
 /* If you put real inputs/selects inside .value, make them flush */
-.row .value input, .row .value select, .row .value textarea{
+/* .row .value input, .row .value select, .row .value textarea{
   width:100%; border:none; outline:none; background:transparent; font:inherit; color:inherit; padding:0; height:20px;
-}
+} */
 
 /* Or if you replace .value entirely with inputs/selects */
 .row input, .row select, .row textarea{
   font-family:'DM Sans',sans-serif; font-weight:bold; flex:2;
   padding:8px 10px; border:1px solid #ccc; border-radius:6px; font-size:14px; background:#fdfdfd; transition:border-color .3s;
 }
-.row input{ height:20px; }
+/* .row input{ height:20px; }
 .row input:focus, .row select:focus, .row textarea:focus{
   border-color:#007bff; outline:none; box-shadow:0 0 5px rgba(0,123,255,.3);
-}
+} */
 
 /* Readonly look */
 input[readonly], .row .value.readonly{
@@ -236,33 +236,36 @@ input[readonly], .row .value.readonly{
 button {
   font-family: 'DM Sans', sans-serif;
   font-size: 15px;
-  font-weight: bold;
-  background-color: rgb(185, 118, 199);
+  gap: 7px;
+  background-color:#6366f1;
   border-radius: 10px;
-  padding: 10px 20px;
-  width: 158px;
+  padding: 10px 10px;
+  width: 186px;
   border: none;
-  color: white;
-  position: absolute;     /* enable top/left positioning */
-  top: 55%;               /* move halfway down */
-  left: 88%;              /* move halfway right */
-   transition: all 0.2s ease-in-out;
+  color: white; 
+  transition: all 0.2s ease-in-out;
   cursor: pointer;
+  align-items: center;
+  display: flex;
+}
 
+.grid-btn{
+  grid-column: 2;        /* move to right column */
+  justify-self: end;     /* align to right */
+  align-self: end;       /* align to bottom */
 }
 
 /* When clicked (pressed) */
-button:active {
-  transform: translateY(2px);   /* move down slightly */
+/* button:active {
+  transform: translateY(2px);  
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
-}
+} */
 
 #closePopup {
   background: none;
   position: absolute;
   font-size: 22px;
-  top: 1px;
-  left: 150px;
+  top: -5px;
   font-weight: bold;
   border: none;
   cursor: pointer;

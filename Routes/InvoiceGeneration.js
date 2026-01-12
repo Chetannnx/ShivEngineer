@@ -156,8 +156,7 @@ router.get("/", async (req, res) => {
         </select>
       </div>
 
-
-      <div class="row"><div class="label">Rate :</div><input id="D_RATE" type="number" min="0" step="0.01" placeholder="Enter Rate" ></div>
+      <div class="row"><div class="label">Payment Due Date :</div><input id="DERIVED_DUE" type="date"></div>
 
       <div class="form-row two-col">
         <div class="row"><div class="label">Tare Weight :</div><input id="T_TARE_WEIGHT" type="number" min="0" step="0.01" readonly></div>
@@ -165,28 +164,20 @@ router.get("/", async (req, res) => {
       </div>
 
       <div class="form-row two-col">
+        <div class="row"><div class="label">Rate :</div><input id="D_RATE" type="number" min="0" step="0.01" placeholder="Enter Rate" ></div>
+        <div class="row"><div class="label">Amount To Be Paid :</div><input id="DERIVED_AMOUNT" type="text" placeholder="₹" readonly></div>
+      </div>
+      
+      <div class="form-row two-col">
         <div class="row"><div class="label">Max Fuel Capacity :</div><input id="T_MAX_FUEL_CAPACITY" type="number" min="0" step="0.01" readonly></div>
         <div class="row"><div class="label">Fan Timeout :</div><input id="D_FAN_TIMEOUT" type="text" readonly></div>
       </div>
+      
+      <button id="invoiceBtn" class="grid-btn" type="button"><span class="material-symbols-outlined">receipt</span>Invoice Generation</button>
 
-      
-      
-
-    <!-- RIGHT -->
-      
-      
-      
-      
-      
-      
-      
-      
-      <div class="row"><div class="label">Payment Due Date :</div><input id="DERIVED_DUE" type="date"></div>
-      <div class="row"><div class="label">Amount To Be Paid :</div><input id="DERIVED_AMOUNT" type="text" placeholder="₹" readonly></div>
-      <div class="row"><div class="label">Fan Timeout :</div><input id="D_FAN_TIMEOUT" type="text" readonly></div>
   </section>
 
-  <button id="invoiceBtn" type="button">Invoice Generation</button>
+  
 
   <div id="overlay"></div>
 <div id="popupMsg" style="

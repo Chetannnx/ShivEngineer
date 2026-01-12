@@ -5,7 +5,17 @@ body{
   font-weight:bold;
   color:#333;
 }
-h2, .page-title{ text-align:center; }
+h2{
+  text-align: left;
+    font-family: 'DM Sans', sans-serif;
+    max-width: 1700px;
+    margin: 0 auto;
+    padding: 20px 22px;
+    align-items: center;
+    display: flex;
+    gap: 3px;
+    margin-left: 45px;
+}
 
 
 
@@ -23,14 +33,13 @@ nav ul li a:hover::after, nav ul li a.active::after{ width:100%; }
 nav ul li a.active{ color:#2563eb; }
 
 /* === Topbar: 2x2 layout, no background === */
-.topbar{
+/* .topbar{
   display:grid;
-  grid-template-columns: repeat(2, minmax(0,1fr)); /* 2 columns */
-  gap: 14px 24px;                                  /* row/col gaps */
+  grid-template-columns: repeat(2, minmax(0,1fr)); 
+  gap: 14px 24px;                                  
   max-width: 1300px;
   margin: 10px auto 18px;
-  
-}
+} */
 
 /* remove card chrome */
 .topbar .card{
@@ -40,47 +49,38 @@ nav ul li a.active{ color:#2563eb; }
   padding: 0 !important;
 }
 
-/* tighter label + field */
-.topbar .label{
-  font-size: 13px;
-  color:#333;
-  margin: 0 0 6px 2px;   /* small gap above field */
-  font-weight: 600;
-}
-
 /* allow either <div class="value"> or real inputs */
 /* === Topbar matches screenshot: 2 columns, label left + field right === */
 .topbar{
-  display:grid;
-  grid-template-columns:repeat(2, minmax(0,1fr)); /* 2 items per row */
-  gap:16px 34px;                                  /* row/col gaps */
-  max-width:1100px;
-  margin:10px auto 18px;
+  display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    background: #ffffff;
+    padding: 16px 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+    align-items: end;
+    max-width: 1700px;
+    margin: 0 auto;
 }
 
 /* no chrome */
 .topbar .card{
-  background:transparent !important;
-  border:none !important;
-  box-shadow:none !important;
-  padding:0 !important;
-
-  /* make each card a row: Label | Field */
-  display:grid;
-  grid-template-columns: 165px 1fr;  /* label width ~ screenshot */
-  align-items:center;
-  column-gap:12px;
+  background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
 /* label exactly like screenshot */
 .topbar .label{
-  margin:0;                 /* inline with field */
-  font-size:16px;
-  font-weight:600;
-  color:#111;
-  text-align:right;
-  white-space:nowrap;
-  font-family:'DM Sans', sans-serif ;
+  font-size: 14px;
+    font-weight: 600;
+    color: #4b5058;
+    text-transform: uppercase;
 }
 
 /* field style (works for div.value or real inputs/selects) */
@@ -125,44 +125,58 @@ nav ul li a.active{ color:#2563eb; }
 
 /* === Main two-column area (maps to your .grid/.card/.row structure) === */
 .grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:30px;
-  max-width:1374px;
-  margin:0 auto 30px;
+  display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 40px;
+    max-width: 1661px;
+    margin: 0 0 0 89px;
+    background: white;
+    margin-top: 1%;
+    padding: 40px;
+    border-radius: 19px;
 }
-.grid .card{
-  background:#fff; border:1px solid #ddd; border-radius:19px;
-  box-shadow:0 4px 12px rgba(0,0,0,.08);
-  padding:30px;
+
+.grid .label{
+  font-size: 14px;
+  font-weight: 700;
+  color: #4b5058;
+  text-align: left;
+}
+
+.grid .row{
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
 }
 
 /* Each field row */
-.row{
+/* .row{
   display:flex; align-items:center; justify-content:space-between;
   margin-bottom:15px;
-}
-.row .label{
+} */
+/* .row .label{
   flex:1; text-align:right; margin-right:15px; font-size:14.5px; color:#333; font-weight:600;
-}
+} */
 .row .value{
   flex:2; min-height:38px; background:#fdfdfd; border:1px solid #ccc; border-radius:6px;
   padding:8px 10px; font-size:14px; display:flex; align-items:center;
 }
 /* If you put real inputs/selects inside .value, make them flush */
-.row .value input, .row .value select, .row .value textarea{
+/* .row .value input, .row .value select, .row .value textarea{
   width:100%; border:none; outline:none; background:transparent; font:inherit; color:inherit; padding:0; height:20px;
-}
+} */
 
 /* Or if you replace .value entirely with inputs/selects */
 .row input, .row select, .row textarea{
   font-family:'DM Sans',sans-serif; font-weight:bold; flex:2;
   padding:8px 10px; border:1px solid #ccc; border-radius:6px; font-size:14px; background:#fdfdfd; transition:border-color .3s;
 }
-.row input{ height:20px; }
+
+/* .row input{ height:20px; }
 .row input:focus, .row select:focus, .row textarea:focus{
   border-color:#007bff; outline:none; box-shadow:0 0 5px rgba(0,123,255,.3);
-}
+} */
 
 /* Readonly look */
 input[readonly], .row .value.readonly{
@@ -184,23 +198,47 @@ input[readonly], .row .value.readonly{
 button {
   font-family: 'DM Sans', sans-serif;
   font-size: 15px;
-  font-weight: bold;
-  background-color: rgb(185, 118, 199);
+  background-color: #6366f1;
   border-radius: 10px;
   padding: 10px 20px;
   width: 158px;
   border: none;
   color: white;
-  position: absolute;     /* enable top/left positioning */
-  top: 55%;               /* move halfway down */
-  left: 88%;              /* move halfway right */
    transition: all 0.2s ease-in-out;
   cursor: pointer;
 
 }
 
 /* When clicked (pressed) */
-button:active {
-  transform: translateY(2px);   /* move down slightly */
+/* button:active {
+  transform: translateY(2px);
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
+} */
+.form-row.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.grid-btn{
+  grid-column: 2;        /* move to right column */
+  justify-self: end;     /* align to right */
+  align-self: end;       /* align to bottom */
+  display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.bg-primary\/10 {
+    background-color: rgb(99 102 241 / 0.1);
+}
+.p-2 {
+    padding: 0.5rem;
+}
+.rounded-lg {
+    border-radius: 0.5rem;
+}
+.text-primary {
+    --tw-text-opacity: 1;
+    color: rgb(99 102 241 / var(--tw-text-opacity, 1));
 }
