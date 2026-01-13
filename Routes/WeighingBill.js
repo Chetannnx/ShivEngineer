@@ -83,17 +83,13 @@ router.get("/", async (req, res) => {
   </section>
 
   <!-- LEFT / RIGHT -->
-  <section class="grid">
+  <div class="grid">
     <!-- LEFT -->
+    <div>
+      <h3 class="section-title"><span style="color:#6366f1;" class="material-symbols-outlined">inventory_2</span>Truck Details</h3>
+      <div class="section-divider"></div>
       <div class="row"><div class="label">Customer Name :</div><input id="D_CUSTOMER_NAME" type="text" readonly></div>
-      <div class="row"><div class="label">Blacklist Status :</div>
-        <select id="T_BLACKLIST_STATUS" disabled>
-          <option>-- Select --</option>
-          <option value="1">Blacklist</option>
-          <option value="0">Not_Blacklist</option>
-        </select>
-      </div>
-        <div class="row"><div class="label">Item Description :</div>
+      <div class="row"><div class="label">Item Description :</div>
           <select id="D_ITEM_DESCRIPTION" disabled>
             <option value="">-- Select --</option>
             <option value="Petrol">Petrol</option>
@@ -101,15 +97,30 @@ router.get("/", async (req, res) => {
             <option value="Jetkero">Jetkero</option>
           </select>
         </div>
-        <div class="row"><div class="label">Reason For Blacklist :</div><input id="T_BLACKLIST_REASON" type="text" readonly></div>
         <div class="row"><div class="label">Fan Timeout :</div><input id="D_FAN_TIMEOUT" type="text" readonly></div>
+        <div class="row"><div class="label">Tare Weight :</div><input id="T_TARE_WEIGHT" type="number" min="0" step="0.01" readonly></div>
+        <div class="row"><div class="label">Max Weight :</div><input id="T_MAX_WEIGHT" type="number" min="0" step="0.01" readonly></div>
+        <div class="row"><div class="label">Max Fuel Capacity :</div><input id="T_MAX_FUEL_CAPACITY" type="number" min="0" step="0.01" readonly></div>
+        <div class="row"><div class="label">Ticket Number :</div><input id="TICKET_NUMBER" type="text" readonly></div>
+    </div>
+    <div>
 
+      <h3 class="section-title"><span style="color:#6366f1;" class="material-symbols-outlined">verified</span>Validation & Measures</h3>
+      <div class="section-divider"></div>
+      <div class="row"><div class="label">Blacklist Status :</div>
+        <select id="T_BLACKLIST_STATUS" disabled>
+          <option>-- Select --</option>
+          <option value="1">Blacklist</option>
+          <option value="0">Not_Blacklist</option>
+        </select>
+      </div>
+        <div class="row"><div class="label">Reason For Blacklist :</div><input id="T_BLACKLIST_REASON" type="text" readonly></div>
+        
         <div class="form-row two-col">
           <div class="row"><div class="label">Safety Cer. Valid Upto :</div><input id="T_SAFETY_CERT_VALID_UPTO" type="date" readonly></div>
           <div class="row"><div class="label">Calibration Cer. Valid Upto :</div><input id="T_CALIB_CERT_VALID_UPTO" type="date" readonly></div>
         </div>
 
-        <div class="row"><div class="label">Tare Weight :</div><input id="T_TARE_WEIGHT" type="number" min="0" step="0.01" readonly></div>
         <div class="row"><div class="label">Truck Sealing Requirement :</div>
         <select id="T_TRUCK_SEALING_REQUIREMENT" disabled>
           <option>-- Select --</option>
@@ -117,31 +128,25 @@ router.get("/", async (req, res) => {
           <option value="0">No</option>
         </select>
       </div>
-        <div class="row"><div class="label">Max Weight :</div><input id="T_MAX_WEIGHT" type="number" min="0" step="0.01" readonly></div>
-
+        
       <div class="form-row two-col">
         <div class="row"><div class="label">Seal No :</div><input id="D_SEAL_NO" type="text" readonly></div>
         <div class="row"><div class="label">Net Weight :</div><input id="D_NET_WEIGHT" type="number" min="0" step="0.01" readonly></div>
       </div> 
-
-        <div class="row"><div class="label">Max Fuel Capacity :</div><input id="T_MAX_FUEL_CAPACITY" type="number" min="0" step="0.01" readonly></div>
 
       <div class="form-row two-col">
         <div class="row"><div class="label">Gross Weight at Entry :</div><input id="D_GROSS_WEIGHT_AT_ENTRY" type="number" min="0" step="0.01" readonly></div>
         <div class="row"><div class="label">Tare Weight at Exit :</div><input id="D_TARE_WEIGHT_AT_EXIT" type="number" min="0" step="0.01" readonly></div>
       </div>
 
-        <div class="row"><div class="label">Ticket Number :</div><input id="TICKET_NUMBER" type="text" readonly></div>
-
-      
       <div class="form-row two-col">
         <div class="row"><div class="label">Gross Weight at Entry Time :</div><input id="D_GROSS_WEIGHT_AT_ENTRY_TIME" type="text" readonly></div>
         <div class="row"><div class="label">Tare Weight at Exit Time :</div><input id="D_TARE_WEIGHT_AT_EXIT_TIME" type="text" readonly></div>
       </div>
 
        <button id="WeighingBill" class="grid-btn" type="button"><span class="material-symbols-outlined">receipt</span>Weighing Bill</button>
-    
-  </section>
+    </div>
+  </div>
 
     <script>
 document.addEventListener("DOMContentLoaded", function () {

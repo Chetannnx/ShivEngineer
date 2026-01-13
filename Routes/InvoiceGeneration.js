@@ -86,9 +86,46 @@ router.get("/", async (req, res) => {
   </section>
 
   <!-- LEFT / RIGHT -->
-  <section class="grid">
+  <div class="grid">
     <!-- LEFT -->
+    <div>
+      <h3 class="section-title"><span style="color:#6366f1;" class="material-symbols-outlined">group</span>Truck Details</h3>
+      <div class="section-divider"></div>
       <div class="row"><div class="label">Trailer Number :</div><input id="T_TRAILER_NUMBER" type="text" readonly></div>
+      <div class="row"><div class="label">Carrier Company :</div><input id="T_CARRIER_COMPANY" type="text" readonly></div>
+      <div class="form-row two-col">
+          <div class="row"><div class="label">Owner Name :</div><input id="T_OWNER_NAME" type="text" readonly></div> 
+          <div class="row"><div class="label">Driver Name :</div><input id="T_DRIVER_NAME" type="text" readonly></div>
+        </div>
+      <div class="row"><div class="label">Helper Name :</div><input id="T_HELPER_NAME" type="text" readonly></div>
+
+      <h3 class="section-title1"><span style="color:#6366f1;" class="material-symbols-outlined">inventory_2</span>Customer Details</h3>
+      <div class="section-divider1"></div>
+      <div class="row"><div class="label">Customer Name :</div><input id="D_CUSTOMER_NAME" type="text" readonly></div>
+      <div class="form-row two-col">
+          <div class="row"><div class="label">Customer Address Line1 :</div><input id="D_CUSTOMER_ADDRESS_LINE1" type="text" readonly></div>
+          <div class="row"><div class="label">Customer Address Line2 :</div><input id="D_CUSTOMER_ADDRESS_LINE2" type="text" readonly></div>
+        </div>
+      <div class="row"><div class="label">Item Description :</div>
+        <select id="D_ITEM_DESCRIPTION" disabled>
+          <option value="">-- Select --</option>
+          <option value="Petrol">Petrol</option>
+          <option value="Diesel">Diesel</option>
+          <option value="Jetkero">Jetkero</option>
+        </select>
+      </div>
+      <div class="form-row two-col">
+        <div class="row"><div class="label">Tare Weight :</div><input id="T_TARE_WEIGHT" type="number" min="0" step="0.01" readonly></div>
+        <div class="row"><div class="label">Max Weight :</div><input id="T_MAX_WEIGHT" type="number" min="0" step="0.01" readonly></div>
+      </div>
+      <div class="form-row two-col">
+        <div class="row"><div class="label">Max Fuel Capacity :</div><input id="T_MAX_FUEL_CAPACITY" type="number" min="0" step="0.01" readonly></div>
+        <div class="row"><div class="label">Fan Timeout :</div><input id="D_FAN_TIMEOUT" type="text" readonly></div>
+      </div>
+  </div>
+  <div>
+      <h3 class="section-title"><span style="color:#6366f1;" class="material-symbols-outlined">verified_user</span>Compliance & Safety</h3>
+      <div class="section-divider1"></div>
       <div class="form-row two-col">
         <div class="row"><div class="label">Blacklist Status :</div>
           <select id="T_BLACKLIST_STATUS" disabled>
@@ -99,16 +136,13 @@ router.get("/", async (req, res) => {
         </div>
         <div class="row"><div class="label">Reason For Blacklist :</div><input id="T_BLACKLIST_REASON" type="text" readonly></div>
        </div> 
-      <div class="row"><div class="label">Carrier Company :</div><input id="T_CARRIER_COMPANY" type="text" readonly></div>
+      
         <div class="form-row two-col">
           <div class="row"><div class="label">Safety Cer. Valid Upto :</div><input id="T_SAFETY_CERT_VALID_UPTO" type="date" readonly></div>
           <div class="row"><div class="label">Calibration Cer. Valid Upto :</div><input id="T_CALIB_CERT_VALID_UPTO" type="date" readonly></div>
         </div>  
 
-        <div class="form-row two-col">
-          <div class="row"><div class="label">Owner Name :</div><input id="T_OWNER_NAME" type="text" readonly></div> 
-          <div class="row"><div class="label">Driver Name :</div><input id="T_DRIVER_NAME" type="text" readonly></div>
-        </div>
+        
 
       <div class="form-row two-col">
         <div class="row"><div class="label">Truck Sealing Requirement :</div>
@@ -122,24 +156,23 @@ router.get("/", async (req, res) => {
       </div>
 
        
-      <div class="row"><div class="label">Helper Name :</div><input id="T_HELPER_NAME" type="text" readonly></div>
-
+      
+      <h3 class="section-title3"><span style="color:#6366f1;" class="material-symbols-outlined">scale</span>Weight & Measurements</h3>
+      <div class="section-divider1"></div>
       <div class="form-row two-col">
         <div class="row"><div class="label">Tare Weight at Entry :</div><input id="D_TARE_WEIGHT_AT_ENTRY" type="number" min="0" step="0.01" readonly></div>
         <div class="row"><div class="label">Gross Weight at Exit :</div><input id="D_GROSS_WEIGHT_AT_EXIT" type="number" min="0" step="0.01" readonly></div>
       </div>
-
-      <div class="row"><div class="label">Customer Name :</div><input id="D_CUSTOMER_NAME" type="text" readonly></div>
+    
+      
+      
 
       <div class="form-row two-col">
         <div class="row"><div class="label">Tare Weight at Entry Time :</div><input id="D_TARE_WEIGHT_AT_ENTRY_TIME" type="text" readonly></div>
         <div class="row"><div class="label">Gross Weight at Exit Time :</div><input id="D_GROSS_WEIGHT_AT_EXIT_TIME" type="text" readonly></div>
       </div>
 
-        <div class="form-row two-col">
-          <div class="row"><div class="label">Customer Address Line1 :</div><input id="D_CUSTOMER_ADDRESS_LINE1" type="text" readonly></div>
-          <div class="row"><div class="label">Customer Address Line2 :</div><input id="D_CUSTOMER_ADDRESS_LINE2" type="text" readonly></div>
-        </div>  
+          
 
         <div class="form-row two-col">
           <div class="row"><div class="label">Net Weight :</div><input id="D_NET_WEIGHT" type="number" min="0" step="0.01" readonly></div>
@@ -147,35 +180,23 @@ router.get("/", async (req, res) => {
         </div>
 
       
-      <div class="row"><div class="label">Item Description :</div>
-        <select id="D_ITEM_DESCRIPTION" disabled>
-          <option value="">-- Select --</option>
-          <option value="Petrol">Petrol</option>
-          <option value="Diesel">Diesel</option>
-          <option value="Jetkero">Jetkero</option>
-        </select>
-      </div>
-
+      
+      <h3 class="section-title4"><span style="color:#6366f1;" class="material-symbols-outlined">payments</span>Payments Details</h3>
+      <div class="section-divider1"></div>
       <div class="row"><div class="label">Payment Due Date :</div><input id="DERIVED_DUE" type="date"></div>
 
-      <div class="form-row two-col">
-        <div class="row"><div class="label">Tare Weight :</div><input id="T_TARE_WEIGHT" type="number" min="0" step="0.01" readonly></div>
-        <div class="row"><div class="label">Max Weight :</div><input id="T_MAX_WEIGHT" type="number" min="0" step="0.01" readonly></div>
-      </div>
+      
 
       <div class="form-row two-col">
         <div class="row"><div class="label">Rate :</div><input id="D_RATE" type="number" min="0" step="0.01" placeholder="Enter Rate" ></div>
         <div class="row"><div class="label">Amount To Be Paid :</div><input id="DERIVED_AMOUNT" type="text" placeholder="₹" readonly></div>
       </div>
       
-      <div class="form-row two-col">
-        <div class="row"><div class="label">Max Fuel Capacity :</div><input id="T_MAX_FUEL_CAPACITY" type="number" min="0" step="0.01" readonly></div>
-        <div class="row"><div class="label">Fan Timeout :</div><input id="D_FAN_TIMEOUT" type="text" readonly></div>
-      </div>
       
+    
       <button id="invoiceBtn" class="grid-btn" type="button"><span class="material-symbols-outlined">receipt</span>Invoice Generation</button>
-
-  </section>
+    </div>
+  </div>
 
   
 

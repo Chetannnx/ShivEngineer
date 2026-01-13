@@ -79,54 +79,57 @@ router.get("/", async (req, res) => {
 
 
   <div class="page-layout">
-          <div class="form-container">
+        <div class="form-container">
             <!-- LEFT: CARD_MASTER from Truck Master -->
-            <div>
+          <div>
             <div class="form-row two-col">
-            <h3 class="section-title"><span style="color:#6366f1;" class="material-symbols-outlined">feedback</span>Truck Details</h3>
-            <div class="section-divider"></div>
+              <h3 class="section-title"><span style="color:#6366f1;" class="material-symbols-outlined">feedback</span>Truck Details</h3>
+              <div class="section-divider"></div>
               <div class="form-group"><label>Truck Number :</label><input id="TRUCK_REG_NO" name="TRUCK_REG_NO" type="text" readonly></div>
               <div class="form-group"><label>Trailer No :</label><input id="TRAILER_NO" name="TRAILER_NO" type="text" readonly></div>
             </div>
 
-                <div class="form-group"><label>Owner Name :</label><input id="OWNER_NAME" name="OWNER_NAME" type="text" readonly></div>
+              <div class="form-group"><label>Owner Name :</label><input id="OWNER_NAME" name="OWNER_NAME" type="text" readonly></div>
+
             <div class="form-row two-col">
               <div class="form-group"><label>Driver Name :</label><input id="DRIVER_NAME" name="DRIVER_NAME" type="text" readonly></div>
               <div class="form-group"><label>Helper Name :</label><input id="HELPER_NAME" name="HELPER_NAME" type="text" readonly></div>
             </div>
+
               <div class="form-group"><label>Carrier Company :</label><input id="CARRIER_COMPANY" name="CARRIER_COMPANY" type="text" readonly></div>
 
-              <div class="form-row two-col">
-  <div class="form-group">
-    <label for="TRUCK_SEALING_REQUIREMENT">Truck Sealing Requirement :</label>
-    <select id="TRUCK_SEALING_REQUIREMENT" name="TRUCK_SEALING_REQUIREMENT" disabled>
-      <option value="">-- Select --</option>
-      <option value="1">Yes</option>
-      <option value="0">No</option>
-    </select>
-  </div>
+            <div class="form-row two-col">
+              <div class="form-group">
+                <label for="TRUCK_SEALING_REQUIREMENT">Truck Sealing Requirement :</label>
+                <select id="TRUCK_SEALING_REQUIREMENT" name="TRUCK_SEALING_REQUIREMENT" disabled>
+                  <option value="">-- Select --</option>
+                  <option value="1">Yes</option>
+                  <option value="0">No</option>
+                </select>
+              </div>
 
-  <div class="form-group">
-    <label for="BLACKLIST_STATUS">Blacklist Status :</label>
-    <select id="BLACKLIST_STATUS" name="BLACKLIST_STATUS" disabled>
-      <option value="">-- Select --</option>
-      <option value="1">Blacklist</option>
-      <option value="0">Not Blacklist</option>
-    </select>
-  </div>
-</div>
+              <div class="form-group">
+                <label for="BLACKLIST_STATUS">Blacklist Status :</label>
+                <select id="BLACKLIST_STATUS" name="BLACKLIST_STATUS" disabled>
+                  <option value="">-- Select --</option>
+                  <option value="1">Blacklist</option>
+                  <option value="0">Not Blacklist</option>
+                </select>
+              </div>
+            </div>
 
               <div class="form-group"><label>Reason For Blacklist :</label><input id="REASON_FOR_BLACKLIST" name="REASON_FOR_BLACKLIST" type="text" readonly></div>
             <div class="form-row two-col">
               <div class="form-group"><label>Safety Cer. Valid Upto :</label><input id="SAFETY_CERTIFICATION_NO" name="SAFETY_CERTIFICATION_NO" type="text" readonly></div>
               <div class="form-group"><label>Calibration Cer. Valid Upto :</label><input id="CALIBRATION_CERTIFICATION_NO" name="CALIBRATION_CERTIFICATION_NO" type="text" readonly></div>
             </div>
+
             <div class="form-row three-col">
               <div class="form-group"><label>Tare Weight :</label><input id="TARE_WEIGHT" name="TARE_WEIGHT" type="number" readonly></div>
               <div class="form-group"><label>Max Weight :</label><input id="MAX_WEIGHT" name="MAX_WEIGHT" type="number" readonly></div>
               <div class="form-group"><label>Max Fuel Capacity :</label><input id="MAX_FUEL_CAPACITY" name="MAX_FUEL_CAPACITY" type="number" readonly></div>
-             </div> 
-            </div>
+            </div> 
+        </div>
 
             <!-- RIGHT: DATA_MASTER (editable fields) -->
             <div>
@@ -137,17 +140,17 @@ router.get("/", async (req, res) => {
               <div class="form-group"><label>Address Line 2 :</label><input id="ADDRESS_LINE_2" name="ADDRESS_LINE_2" type="text"></div>
             
               <div class="form-group">
-  <label for="ITEM_DESCRIPTION">Item Description :</label>
-  <select id="ITEM_DESCRIPTION" name="ITEM_DESCRIPTION">
-    <option value="">-- Select --</option>
-    <option value="Lpg">LPG</option>
-    <option value="Propane">PROPANE</option>
-    <option value="Condensate">CONDENSATE</option>
-    
-  </select>
-</div>
+                <label for="ITEM_DESCRIPTION">Item Description :</label>
+                <select id="ITEM_DESCRIPTION" name="ITEM_DESCRIPTION">
+                  <option value="">-- Select --</option>
+                  <option value="Lpg">LPG</option>
+                  <option value="Propane">PROPANE</option>
+                  <option value="Condensate">CONDENSATE</option>
+                </select>
+              </div>
+
               <div class="form-group"><label>Fan Time Out :</label><input id="FAN_TIME_OUT" name="FAN_TIME_OUT" type="text"></div>
-              <div class="form-group three-inputs">
+            <div class="form-group three-inputs">
               <h3 class="section-title2"><span style="color:#6366f1;" class="material-symbols-outlined">scale</span>Weights & Measurement</h3>
               <div class="section-divider2"></div>
                   <label>Weight Filled:</label>
@@ -155,26 +158,22 @@ router.get("/", async (req, res) => {
                   <input type="number" id="WEIGHT_TO_FILLED" name="WEIGHT_TO_FILLED" placeholder="Weight to Fill">
                   <input type="text" id="MAX" name="MAX2" placeholder="Max" readonly>
               </div>
-
-
-            </div>
-            
+            </div>  
           </div>
-  <div class="Shape">
-    <button type="button" id="assignCardBtn" class="btn"><span class="material-symbols-outlined">assignment_ind</span>Assign Card</button>
-    <button type="button" id="ReassignCardBtn" class="btn"><span class="material-symbols-outlined">cached</span>Re AssignCard</button>
-    <div class="btn-row">
-      <button type="button" id="FanGeneration" class="btn"><span class="material-symbols-outlined">cached</span>Fan Generation</button>
-      <button type="button" id="FanAbortBtn" class="btn"><span class="material-symbols-outlined">cancel</span>Fan Abort</button>
-    </div>
-    <div class="btn-row">
-      <button type="button" id="ReAuthBtn" class="btn"><span class="material-symbols-outlined">verified_user</span>Re Authorized</button>
-      <button type="button" id="reAllocateBtn" class="btn" onclick="openReallocatePopup()"><span class="material-symbols-outlined">move_to_inbox</span>Re Allocate</button>
-    </div>
-    <button type="button" id="checkBtn" class="btn"><span class="material-symbols-outlined">block
-</span>Abort</button>
-  </div>
- </div>         
+                <div class="Shape">
+                  <button type="button" id="assignCardBtn" class="btn"><span class="material-symbols-outlined">assignment_ind</span>Assign Card</button>
+                  <button type="button" id="ReassignCardBtn" class="btn"><span class="material-symbols-outlined">cached</span>Re AssignCard</button>
+                  <div class="btn-row">
+                    <button type="button" id="FanGeneration" class="btn"><span class="material-symbols-outlined">cached</span>Fan Generation</button>
+                    <button type="button" id="FanAbortBtn" class="btn"><span class="material-symbols-outlined">cancel</span>Fan Abort</button>
+                  </div>
+                  <div class="btn-row">
+                    <button type="button" id="ReAuthBtn" class="btn"><span class="material-symbols-outlined">verified_user</span>Re Authorized</button>
+                    <button type="button" id="reAllocateBtn" class="btn" onclick="openReallocatePopup()"><span class="material-symbols-outlined">move_to_inbox</span>Re Allocate</button>
+                  </div>
+                  <button type="button" id="checkBtn" class="btn"><span class="material-symbols-outlined">block</span>Abort</button>
+            </div>
+          </div>         
 
 
           <!-- Fan Generation Popup -->
