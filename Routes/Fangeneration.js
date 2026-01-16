@@ -248,7 +248,7 @@ router.get("/", async (req, res) => {
     background:#fff;
     border:1px solid #ccc;
     padding:30px 40px;
-    z-index:1000;
+    z-index:99999;
     box-shadow:0 0 15px rgba(0,0,0,0.3);
     border-radius:8px;
     font-weight:bold;
@@ -1005,7 +1005,7 @@ document.getElementById("assignBayBtn").addEventListener("click", async function
   clearTruckForm();
 }, 800);
     } else {
-      alert("Error: " + data.message); 
+      showPopup(data.message); 
     }
   } catch (err) {
     console.error(err);
@@ -1473,7 +1473,7 @@ document.getElementById("assignBayBtn1").addEventListener("click", async functio
   clearTruckForm();
 }, 800);
     } else {
-      alert("Error: " + data.message);
+      showPopup("Error: " + data.message);
     }
   } catch (err) {
     console.error("assignBayBtn1 error:", err);
@@ -1950,6 +1950,43 @@ function clearTruckForm() {
   // Optional visual confirmation
   console.log("✅ Truck data cleared after Bay assignment");
 }
+
+
+//========================
+//Manual bay assign logic
+//=========================
+document.addEventListener("DOMContentLoaded", function () {
+  const bayInput = document.getElementById("BAY_NO");
+  const itemSelect = document.getElementById("ITEM_DESCRIPTION");
+
+  if (!bayInput || !itemSelect) return;
+
+  bayInput.addEventListener("input", function () {
+    const bay = this.value.trim();
+    const item = itemSelect.value.trim();
+
+    const map = {
+      "Lpg": "1",
+      "Propane": "2",
+      "Condensate": "3"
+    };
+
+    // If item already exists, just validate – DO NOT CHANGE it
+    if (item && map[item] && bay && bay !== map[item]) {
+      showPopup("Invalid Bay. " + item + " is allowed only in Bay " + map[item] + ".");
+      this.value = "";
+      this.focus();
+    }
+
+    // If item is empty (rare case), you may auto-fill
+    if (!item) {
+      if (bay === "1") itemSelect.value = "Lpg";
+      else if (bay === "2") itemSelect.value = "Propane";
+      else if (bay === "3") itemSelect.value = "Condensate";
+    }
+  });
+});
+
 
 </script>
 
@@ -2447,6 +2484,26 @@ router.post("/api/assign-bay", async (req, res) => {
     const pool = await sql.connect(dbConfig);
     let finalBayNo = bayNo;
 
+    // 🔒 Manual validation
+    if (bayType === "manual") {
+      const map = {
+        lpg: "1",
+        propane: "2",
+        condensate: "3"
+      };
+
+      const expectedBay = map[itemDesc?.toLowerCase()];
+      if (!expectedBay) {
+        return res.status(400).json({ message: "Invalid Item Description" });
+      }
+
+      if (bayNo !== expectedBay) {
+        return res.status(400).json({
+          message: `Invalid Bay. ${itemDesc} is allowed only in Bay ${expectedBay}.`
+        });
+      }
+    }
+
     // ✅ Auto Allocation Logic
     if (bayType === "auto") {
       let bayGroup = [];
@@ -2488,6 +2545,29 @@ router.post("/api/assign-bay", async (req, res) => {
       );
 
       console.log(`Auto selected bay for ${itemDesc}: ${finalBayNo}`);
+    }
+
+
+     // 🔧 Check Bay Maintenance BEFORE update
+    const maint = await pool.request().query(`
+        SELECT BAY_NO1, BAY_NO2, BAY_NO3 
+        FROM BAY_MAINTENANCE
+        WHERE ID = 1
+            `);
+
+
+    if (maint.recordset.length > 0) {
+      const m = maint.recordset[0];
+
+      if (finalBayNo === "1" && m.BAY_NO1 == 1) {
+        return res.status(400).json({ message: "Bay 1 is under maintenance" });
+      }
+      if (finalBayNo === "2" && m.BAY_NO2 == 1) {
+        return res.status(400).json({ message: "Bay 2 is under maintenance" });
+      }
+      if (finalBayNo === "3" && m.BAY_NO3 == 1) {
+        return res.status(400).json({ message: "Bay 3 is under maintenance" });
+      }
     }
 
     // 3️⃣ Update the TRUCK_MASTER with the selected bay
@@ -2639,6 +2719,27 @@ router.post("/api/reallocate-bay", async (req, res) => {
     const pool = await sql.connect(dbConfig);
     let finalBayNo = bayNo;
 
+
+    // 🔒 Manual validation
+    if (bayType === "manual") {
+      const map = {
+        lpg: "1",
+        propane: "2",
+        condensate: "3"
+      };
+
+      const expectedBay = map[itemDesc?.toLowerCase()];
+      if (!expectedBay) {
+        return res.status(400).json({ message: "Invalid Item Description" });
+      }
+
+      if (bayNo !== expectedBay) {
+        return res.status(400).json({
+          message: `Invalid Bay. ${itemDesc} is allowed only in Bay ${expectedBay}.`
+        });
+      }
+    }
+
     // ✅ Auto Allocation Logic
     if (bayType === "auto") {
       let bayGroup = [];
@@ -2682,6 +2783,29 @@ router.post("/api/reallocate-bay", async (req, res) => {
       console.log(`Auto selected bay for ${itemDesc}: ${finalBayNo}`);
     }
 
+    
+    // 🔧 Check Bay Maintenance BEFORE update
+    const maint = await pool.request().query(`
+        SELECT BAY_NO1, BAY_NO2, BAY_NO3 
+        FROM BAY_MAINTENANCE
+        WHERE ID = 1
+            `);
+
+
+    if (maint.recordset.length > 0) {
+      const m = maint.recordset[0];
+
+      if (finalBayNo === "1" && m.BAY_NO1 == 1) {
+        return res.status(400).json({ message: "Bay 1 is under maintenance" });
+      }
+      if (finalBayNo === "2" && m.BAY_NO2 == 1) {
+        return res.status(400).json({ message: "Bay 2 is under maintenance" });
+      }
+      if (finalBayNo === "3" && m.BAY_NO3 == 1) {
+        return res.status(400).json({ message: "Bay 3 is under maintenance" });
+      }
+    }
+
     // 3️⃣ Update the TRUCK_MASTER with the selected bay
     await pool
       .request()
@@ -2691,6 +2815,8 @@ router.post("/api/reallocate-bay", async (req, res) => {
         SET BAY_NO = @bayNo
         WHERE TRUCK_REG_NO = @truckRegNo
       `);
+
+      
 
     res.json({ message: "Bay assigned successfully", BAY_NO: finalBayNo });
   } catch (err) {
