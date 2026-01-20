@@ -317,7 +317,7 @@ router.get("/", async (req, res) => {
     // Define the fetch function
    // Replace your existing fetchTruckData() with this version
 // Replace your existing fetchTruckData() with this version
-async function fetchTruckData() {
+async function fetchTruckData(mode) {
   const truckRegNo = document.getElementById("truckRegInput").value.trim();
   const cardNo = document.getElementById("CARD_NO").value.trim();
 
@@ -459,11 +459,14 @@ async function fetchTruckData() {
   document.getElementById("truckRegInput").addEventListener("keydown", async function (e) {
     if (e.key === "Enter") {
         e.preventDefault(); // prevent form submission
+        
         const truckRegNo = this.value.trim();
         if (!truckRegNo) {
             showPopup("Please enter Truck Number");
             return;
         }
+            // 🔴 IMPORTANT: Clear Card field so card-API is not used
+            document.getElementById("CARD_NO").value = "";
 
         // Ask confirmation
         const confirmLoad = await confirmPopup("Do you want to reload the data for this truck?");
@@ -1473,7 +1476,7 @@ document.getElementById("assignBayBtn1").addEventListener("click", async functio
   clearTruckForm();
 }, 800);
     } else {
-      showPopup("Error: " + data.message);
+      showPopup(data.message);
     }
   } catch (err) {
     console.error("assignBayBtn1 error:", err);
